@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTC Pro Order Flow - Market Monkey Style</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        trade: {
+                            bg: '#0a0e1a',
+                            panel: '#0f1419',
+                            border: '#1a1f2e',
+                            accent: '#3b82f6',
+                            up: '#466BE5',
+                            down: '#E81F59',
+                            text: '#8b92a7',
+                            textLight: '#e8eaed',
+                            surface: '#12161f',
+                            pocGold: '#f0b90b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { 
+            background-color: #0a0e1a; 
+            overflow: hidden; 
+            user-select: none;
+            color: #8b92a7;
+        }
+
+        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #1a1f2e; border-radius: 3px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #2a2f3e; }
+
+        #chart-wrapper { 
+            position: relative; 
+            flex: 1; 
+            min-height: 0; 
+            background: #0a0e1a; 
+            overflow: hidden; 
+        }
+        
+        #chart-container { 
+            width: 100%; 
+            height: 100%; 
+            z-index: 10;
+        }
+        
+        #footprint-overlay { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            pointer-events: none; 
+            z-index: 20;
+        }
+        
+        .pane-overlay { 
+            position: absolute; 
+            left: 0; 
+            right: 60px;
+            background: rgba(10, 14, 26, 0.95);
+            border-top: 1px solid #1a1f2e; 
+            z-index: 30;
+            backdrop-filter: blur(4px);
+        }
+        
+        .pane-canvas { display: block; width: 100%; height: 100%; pointer-events: none; }
+        
+        .pane-label { 
+            position: absolute; 
+            top: 6px; 
+            left: 10px; 
+            font-size: 10px; 
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #5a6178; 
+            font-family: 'JetBrains Mono', monospace; 
+            pointer-events: none; 
+            background: rgba(15, 20, 25, 0.9);
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid #1a1f2e;
+        }
+
+        .resizer-handle {
+            position: absolute;
+            top: -5px; left: 0; right: 0;
+            height: 10px;
+            cursor: ns-resize;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .resizer-line { 
+            width: 100%; 
+            height: 1px; 
+            background: transparent; 
+        }
+        .resizer-handle:hover .resizer-line { background: #3b82f6; }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 14px; width: 14px; border-radius: 50%;
+            background: #e8eaed; border: 2px solid #3b82f6; cursor: pointer; margin-top: -5px;
+        }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #1a1f2e; border-radius: 2px; }
+
+        select, input[type="number"], input[type="text"] {
+            appearance: none; background-color: #0f1419; border: 1px solid #1a1f2e;
+            color: #e8eaed; font-family: 'JetBrains Mono', monospace; font-size: 12px;
+            border-radius: 4px; transition: all 0.2s;
+        }
+        select:focus, input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6; }
+        
+        .select-wrapper { position: relative; }
+        .select-wrapper::after {
+            content: '▼'; font-size: 8px; color: #5a6178; position: absolute;
+            right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none;
+        }
+        
+        .color-picker-wrapper {
+            position: relative; height: 28px; width: 100%; border-radius: 4px;
+            overflow: hidden; border: 1px solid #1a1f2e; cursor: pointer;
+        }
+        input[type="color"] { border: none; width: 200%; height: 200%; transform: translate(-25%, -25%); cursor: pointer; background: none; }
+
+        .timeframe-btn {
+            padding: 4px 10px;
+            background: transparent;
+            border: 1px solid #1a1f2e;
+            color: #8b92a7;
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .timeframe-btn:hover {
+            background: #1a1f2e;
+            color: #e8eaed;
+        }
+        .timeframe-btn.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+            font-weight: 600;
+        }
+
+        /* Custom Price Label */
+        #custom-price-label {
+            position: absolute;
+            right: 0;
+            z-index: 40;
+            pointer-events: none;
+            font-family: 'JetBrains Mono', monospace;
+            display: flex;
+            align-items: center;
+            gap: 1px;
+        }
+
+        .price-label-box {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%);
+            border: 1.5px solid;
+            border-radius: 4px;
+            padding: 4px 10px;
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: 0.02em;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            position: relative;
+        }
+
+        .price-label-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+            border-radius: 3px;
+            pointer-events: none;
+        }
+
+        .price-label-arrow {
+            width: 0;
+            height: 0;
+            border-style: solid;
+        }
+    </style>
+</head>
+<body class="font-sans text-trade-text antialiased h-screen flex flex-col">
+
+    <header class="h-[48px] bg-trade-panel/90 backdrop-blur-md border-b border-trade-border flex items-center justify-between px-4 shrink-0 z-50 relative">
+        <div class="flex items-center gap-6 font-mono">
+            <div class="flex items-center gap-2.5">
+                <div class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </div>
+                <div class="flex flex-col leading-none">
+                    <span class="text-white font-bold tracking-wider text-sm">BTCUSD</span>
+                    <span class="text-[10px] text-gray-500 font-sans">Perpetual</span>
+                </div>
+                <div class="flex gap-1 ml-2">
+                    <button class="timeframe-btn" data-tf="1">1m</button>
+                    <button class="timeframe-btn" data-tf="3">3m</button>
+                    <button class="timeframe-btn active" data-tf="5">5m</button>
+                    <button class="timeframe-btn" data-tf="15">15m</button>
+                    <button class="timeframe-btn" data-tf="30">30m</button>
+                    <button class="timeframe-btn" data-tf="60">1h</button>
+                    <button class="timeframe-btn" data-tf="240">4h</button>
+                    <button class="timeframe-btn" data-tf="D">1D</button>
+                </div>
+            </div>
+            <div class="h-6 w-px bg-trade-border/50"></div>
+            <div class="flex items-baseline gap-1.5">
+                <span id="price" class="text-[#f0b90b] text-lg font-bold tracking-tight">0.00</span>
+                <span class="text-[10px] text-gray-500">USD</span>
+            </div>
+            <div class="h-6 w-px bg-trade-border/50"></div>
+            <div class="flex items-center gap-4">
+                <div class="flex flex-col items-start leading-none gap-0.5">
+                    <span class="text-[9px] text-gray-500 uppercase tracking-wider font-sans">Tick Size</span>
+                    <span id="tick-display" class="text-xs font-medium text-gray-300">5</span>
+                </div>
+                <div class="flex flex-col items-start leading-none gap-0.5">
+                    <span class="text-[9px] text-gray-500 uppercase tracking-wider font-sans">Open Interest</span>
+                    <span id="oi-display" class="text-xs text-blue-400 font-medium font-mono">Loading...</span>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+             <button id="header-settings-btn" class="p-2 hover:bg-[#1a1f2e] rounded-md text-gray-400 hover:text-white transition-all active:scale-95 group">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:rotate-45 transition-transform duration-300"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+             </button>
+        </div>
+    </header>
+
+    <div id="chart-wrapper">
+        <div id="chart-container"></div>
+        <canvas id="footprint-overlay"></canvas>
+        <div id="custom-price-label"></div>
+
+        <div id="oi-pane-container" class="pane-overlay">
+            <div id="oi-resizer" class="resizer-handle group">
+                <div class="resizer-line bg-[#1a1f2e] group-hover:bg-blue-500/50 transition-colors"></div>
+            </div>
+            <span class="pane-label">Open Interest</span>
+            <canvas id="oi-canvas" class="pane-canvas"></canvas>
+        </div>
+        
+        <div id="timer-box" class="hidden absolute right-[10px] bg-black/90 border border-trade-border/50 backdrop-blur text-white px-1 py-1 font-mono text-[11px] font-semibold z-[60] tabular-nums flex items-center gap-1.5 pointer-events-none shadow-lg rounded" style="min-width: 60px;">
+            <span class="w-1.5 h-1.5 rounded-full bg-white/90 animate-pulse"></span>
+            <span id="timer-text">00:00</span>
+        </div>
+    </div>
+
+    <div id="settings-panel" class="absolute top-[49px] left-0 bottom-0 w-80 bg-[#0f1419]/95 backdrop-blur-xl border-r border-trade-border z-[1000] transform -translate-x-full transition-transform duration-300 ease-out shadow-2xl flex flex-col">
+        <div class="flex items-center justify-between p-5 border-b border-trade-border bg-white/5">
+            <h2 class="text-white font-semibold flex items-center gap-2">Chart Settings</h2>
+            <button id="close-settings" class="text-gray-500 hover:text-white transition p-1 rounded hover:bg-white/10">✕</button>
+        </div>
+        <div class="p-6 space-y-8 overflow-y-auto flex-1 custom-scroll">
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 pb-1 border-b border-white/5">
+                    <span class="text-[10px] uppercase font-bold tracking-widest text-blue-500">Style</span>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <span class="text-xs text-gray-400 font-medium">Chart Type</span>
+                        <div class="select-wrapper">
+                            <select id="series-type-select" class="w-full px-2 py-2">
+                                <option value="candle">Candles</option>
+                                <option value="bar" selected>Bars</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <span class="text-xs text-gray-400 font-medium">Grid Step ($)</span>
+                        <input type="number" id="grid-spacing-input" value="1000" class="w-full px-2 py-2">
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                         <span class="text-xs text-gray-400 font-medium">Opacity</span>
+                         <span id="opacity-val" class="text-xs text-white font-mono bg-white/10 px-1.5 rounded">100%</span>
+                    </div>
+                    <input type="range" id="candle-opacity" min="0" max="100" value="100">
+                </div>
+            </div>
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 pb-1 border-b border-white/5">
+                    <span class="text-[10px] uppercase font-bold tracking-widest text-blue-500">Colors</span>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <span class="text-xs text-gray-400 font-medium">Up Candle</span>
+                        <div class="color-picker-wrapper"><input type="color" id="up-candle-color" value="#466BE5"></div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <span class="text-xs text-gray-400 font-medium">Down Candle</span>
+                        <div class="color-picker-wrapper"><input type="color" id="down-candle-color" value="#E81F59"></div>
+                    </div>
+                </div>
+                <div class="space-y-1.5">
+                    <span class="text-xs text-gray-400 font-medium">Grid Lines</span>
+                    <div class="color-picker-wrapper"><input type="color" id="grid-color-input" value="#1a1f2e"></div>
+                </div>
+            </div>
+            <div class="space-y-4 pt-2">
+                <div class="flex items-center gap-2 pb-1 border-b border-white/5">
+                    <span class="text-[10px] uppercase font-bold tracking-widest text-blue-500">Imbalance</span>
+                </div>
+                <div class="space-y-1.5">
+                    <span class="text-xs text-gray-400 font-medium">Min Volume (USD)</span>
+                    <input type="number" id="bubble-threshold-input" value="500000" step="100000" class="w-full px-3 py-2.5">
+                </div>
+                <div class="space-y-1.5">
+                    <span class="text-xs text-gray-400 font-medium">Bubble Radius</span>
+                    <input type="number" id="bubble-size-input" value="12" class="w-full px-3 py-2.5">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="ctx-menu-main" class="hidden absolute w-52 bg-[#12161f] border border-trade-border rounded-lg shadow-2xl py-1.5 z-[5000] text-sm backdrop-blur-sm">
+        <div class="menu-item px-4 py-2.5 hover:bg-blue-600/10 hover:text-blue-400 cursor-pointer flex justify-between items-center text-gray-300 transition-colors group" id="ctx-reset">
+            <span class="font-medium">Reset View</span><span class="text-gray-500 text-xs group-hover:text-blue-400">R</span>
+        </div>
+        <div class="h-px bg-trade-border mx-2 my-1"></div>
+        <div class="menu-item px-4 py-2.5 hover:bg-blue-600/10 hover:text-blue-400 cursor-pointer flex justify-between items-center text-gray-300 transition-colors group" id="ctx-settings-trigger">
+            <span class="font-medium">Settings</span><span class="text-gray-500 text-[10px] group-hover:text-blue-400">▶</span>
+        </div>
+    </div>
+    <div id="ctx-menu-settings" class="hidden absolute w-48 bg-[#12161f] border border-trade-border rounded-lg shadow-2xl py-1.5 z-[5000] text-sm backdrop-blur-sm">
+        <div class="menu-item px-4 py-2 hover:bg-blue-600/10 cursor-pointer text-gray-300 transition-colors" id="toggle-price-line">
+            <div class="flex items-center gap-3"><div class="menu-checkbox w-4 h-4 border border-gray-500 rounded flex items-center justify-center bg-blue-600 border-blue-600 transition-colors"><span class="text-white text-[10px] font-bold">✓</span></div>Price Line</div>
+        </div>
+        <div class="menu-item px-4 py-2 hover:bg-blue-600/10 cursor-pointer text-gray-300 transition-colors" id="toggle-price-label">
+            <div class="flex items-center gap-3"><div class="menu-checkbox w-4 h-4 border border-gray-500 rounded flex items-center justify-center bg-blue-600 border-blue-600 transition-colors"><span class="text-white text-[10px] font-bold">✓</span></div>Price Label</div>
+        </div>
+        <div class="menu-item px-4 py-2 hover:bg-blue-600/10 cursor-pointer text-gray-300 transition-colors" id="toggle-countdown">
+            <div class="flex items-center gap-3"><div class="menu-checkbox w-4 h-4 border border-gray-500 rounded flex items-center justify-center bg-blue-600 border-blue-600 transition-colors"><span class="text-white text-[10px] font-bold">✓</span></div>Countdown</div>
+        </div>
+        <div class="menu-item px-4 py-2 hover:bg-blue-600/10 cursor-pointer text-gray-300 transition-colors" id="toggle-crosshair">
+            <div class="flex items-center gap-3"><div class="menu-checkbox w-4 h-4 border border-gray-500 rounded flex items-center justify-center bg-blue-600 border-blue-600 transition-colors"><span class="text-white text-[10px] font-bold">✓</span></div>Crosshair</div>
+        </div>
+    </div>
+
+<script>
+    const HEADER_HEIGHT = 48;
+    
+    let config = {
+        gridSpacing: 1000, gridColor: '#1a1f2e', baseTickSize: 2.5, minCellHeight: 15,
+        upColor: '#466BE5', downColor: '#E81F59', candleOpacity: 1.0, seriesType: 'candle',
+        minBubbleVolume: 500000, bubbleRadius: 12,
+        showPriceLine: true, showPriceLabel: true, showCountdown: true, showCrosshair: true,
+        oiUpColor: '#466BE5', oiDownColor: '#E81F59',
+        pocColor: '#f0b90b',
+        currentTimeframe: 5,
+        candleWidthPercent: 0.20,
+        clusterWidthPercent: 0.80
+    };
+    
+    let clustersHistory = {}; 
+    let lastBarTime = 0;
+    let currentPrice = 0;
+    let mainSeries;
+    let allCandles = []; 
+    let ws = null;
+
+    let oiPaneHeight = 100;
+    const minPaneHeight = 50;
+    const timeAxisHeight = 28;
+
+    const chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
+        layout: { background: { color: '#0a0e1a' }, textColor: '#8b92a7', fontFamily: 'Inter' },
+        grid: { vertLines: { visible: false }, horzLines: { visible: false } },
+        rightPriceScale: { borderColor: '#1a1f2e', width: 60, scaleMargins: { top: 0.05, bottom: 0.20 } },
+        crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+        timeScale: { borderColor: '#1a1f2e', timeVisible: true, barSpacing: 50, rightOffset: 5, visible: true }
+    });
+
+    function hexToRgba(hex, alpha) {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    function calculateCellOpacity(totalVolume) {
+        // Range 1: Under 50k
+        // Requirement: 20% opacity
+        if (totalVolume < 50000) {
+            return 0.10; 
+        } 
+        
+        // Range 2: 50k to 250k
+        // Requirement: Scale from 20% up to 40%
+        else if (totalVolume < 250000) {
+            const minVol = 50000;
+            const maxVol = 250000;
+            const minOp = 0.20;
+            const maxOp = 0.40;
+            
+            const normalized = (totalVolume - minVol) / (maxVol - minVol);
+            return minOp + (normalized * (maxOp - minOp));
+        } 
+        
+        // Range 3: 250k to 1m
+        // Requirement: Scale from 40% up to 65%
+        else if (totalVolume < 1000000) {
+            const minVol = 250000;
+            const maxVol = 1000000;
+            const minOp = 0.40;
+            const maxOp = 0.65;
+            
+            const normalized = (totalVolume - minVol) / (maxVol - minVol);
+            return minOp + (normalized * (maxOp - minOp));
+        } 
+        
+        // Range 4: 1m to 1.2m
+        // Requirement: Scale from 65% up to 100%
+        else if (totalVolume < 1200000) {
+            const minVol = 1000000;
+            const maxVol = 1200000;
+            const minOp = 0.65;
+            const maxOp = 1.0;
+            
+            const normalized = (totalVolume - minVol) / (maxVol - minVol);
+            return minOp + (normalized * (maxOp - minOp));
+        } 
+        
+        // Range 5: Above 1.2m
+        // Requirement: Maxed out at 100%
+        else {
+            return 1.0;
+        }
+    }
+
+    function createSeries(type) {
+        if (mainSeries) { try { chart.removeSeries(mainSeries); } catch(e){ } mainSeries = null; }
+        const options = { 
+            upColor: 'rgba(0,0,0,0)', 
+            downColor: 'rgba(0,0,0,0)', 
+            borderVisible: false,
+            wickUpColor: 'rgba(0,0,0,0)', 
+            wickDownColor: 'rgba(0,0,0,0)', 
+            priceLineVisible: config.showPriceLine, 
+            lastValueVisible: false  // We'll draw our own custom price label
+        };
+        mainSeries = (type === 'candle') ? chart.addCandlestickSeries(options) : chart.addBarSeries(options);
+        return mainSeries;
+    }
+    
+    function updateCandleAppearance() {
+        mainSeries.applyOptions({
+            upColor: 'rgba(0,0,0,0)', 
+            downColor: 'rgba(0,0,0,0)', 
+            wickUpColor: 'rgba(0,0,0,0)', 
+            wickDownColor: 'rgba(0,0,0,0)',
+            priceLineVisible: config.showPriceLine, 
+            lastValueVisible: false
+        });
+    }
+
+    mainSeries = createSeries(config.seriesType);
+
+    const chartOverlayCanvas = document.getElementById('footprint-overlay');
+    const ctxOverlay = chartOverlayCanvas.getContext('2d'); 
+    const oiCanvas = document.getElementById('oi-canvas');
+    const ctxOI = oiCanvas.getContext('2d');
+
+    const offscreenCanvas = document.createElement('canvas');
+    const offscreenCtx = offscreenCanvas.getContext('2d');
+    const oiOffscreenCanvas = document.createElement('canvas');
+    const oiOffscreenCtx = oiOffscreenCanvas.getContext('2d');
+
+    function setupBuffersForSize() {
+        const dpr = window.devicePixelRatio || 1;
+        const wrapper = document.getElementById('chart-wrapper');
+        const chartW = wrapper.clientWidth;
+        const chartH = wrapper.clientHeight;
+
+        chartOverlayCanvas.width = Math.floor(chartW * dpr);
+        chartOverlayCanvas.height = Math.floor(chartH * dpr);
+        chartOverlayCanvas.style.width = chartW + 'px';
+        chartOverlayCanvas.style.height = chartH + 'px';
+        offscreenCanvas.width = chartOverlayCanvas.width;
+        offscreenCanvas.height = chartOverlayCanvas.height;
+        offscreenCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctxOverlay.setTransform(1, 0, 0, 1, 0, 0);
+
+        oiCanvas.width = Math.floor(chartW * dpr);
+        oiCanvas.height = Math.floor(oiPaneHeight * dpr);
+        oiCanvas.style.width = chartW + 'px';
+        oiCanvas.style.height = oiPaneHeight + 'px';
+        oiOffscreenCanvas.width = oiCanvas.width;
+        oiOffscreenCanvas.height = oiCanvas.height;
+        oiOffscreenCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctxOI.setTransform(1, 0, 0, 1, 0, 0);
+    }
+
+    let rafId = null, rafRunning = false, needsRedraw = false, lastInteractionTime = 0;
+    const INTERACTION_HOLD_MS = 180; 
+
+    function scheduleDraw() {
+        needsRedraw = true;
+        lastInteractionTime = Date.now();
+        if (!rafRunning) {
+            rafRunning = true;
+            const loop = () => {
+                const now = Date.now();
+                if (now - lastInteractionTime < INTERACTION_HOLD_MS) {
+                    drawFrames(); rafId = requestAnimationFrame(loop);
+                } else {
+                    if (needsRedraw) {
+                        needsRedraw = false; drawFrames(); rafId = requestAnimationFrame(loop);
+                    } else {
+                        rafRunning = false; rafId = null;
+                    }
+                }
+            };
+            rafId = requestAnimationFrame(loop);
+        }
+    }
+
+    function formatUSD(val) {
+        if (val === 0) return '0';
+        const abs = Math.abs(val);
+        if (abs >= 1000000) return (val / 1000000).toFixed(1) + 'M';
+        if (abs >= 1000) return (val / 1000).toFixed(0) + 'K';
+        return Math.round(val).toString();
+    }
+
+    function upsertCandle(tsSec, o, h, l, c) {
+        if (!allCandles) allCandles = [];
+        const key = Math.floor(tsSec);
+        let found = false;
+        for (let i = allCandles.length - 1; i >= 0; i--) {
+            if (Math.floor(allCandles[i].time) === key) {
+                allCandles[i].open = o; allCandles[i].high = h; allCandles[i].low = l; allCandles[i].close = c;
+                found = true; break; 
+            }
+        }
+        if(!found){
+            let prevOI = allCandles.length > 0 ? (allCandles[allCandles.length-1].oiClose || 0) : 0;
+            allCandles.push({ time: key, open: o, high: h, low: l, close: c, oiOpen: prevOI, oiHigh: prevOI, oiLow: prevOI, oiClose: prevOI });
+            allCandles.sort((a,b) => a.time - b.time);
+        }
+    }
+
+    function getDynamicTickSize(baseTick, minPx) {
+        const y1 = mainSeries.priceToCoordinate(currentPrice);
+        const y2 = mainSeries.priceToCoordinate(currentPrice + baseTick);
+        if (y1 === null || y2 === null) return baseTick * 2; 
+        const pxPerBase = Math.abs(y1 - y2);
+        const multipliers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 25, 30, 40, 50, 60, 80, 100, 200];
+        for (let m of multipliers) {
+            if (pxPerBase * m >= minPx) return baseTick * m;
+        }
+        return baseTick * 500; 
+    }
+
+    function updateCustomPriceLabel() {
+        if (!config.showPriceLabel || !mainSeries || !currentPrice) {
+            document.getElementById('custom-price-label').style.display = 'none';
+            return;
+        }
+
+        const yCoord = mainSeries.priceToCoordinate(currentPrice);
+        if (yCoord === null) {
+            document.getElementById('custom-price-label').style.display = 'none';
+            return;
+        }
+
+        const wrapper = document.getElementById('chart-wrapper');
+        const totalHeight = wrapper.clientHeight;
+        const marginB = chart.priceScale('right').options().scaleMargins.bottom;
+        const candleBottomY = totalHeight * (1 - marginB);
+
+        if (yCoord < 0 || yCoord > candleBottomY) {
+            document.getElementById('custom-price-label').style.display = 'none';
+            return;
+        }
+
+        const lastCandle = allCandles[allCandles.length - 1];
+        const isUp = lastCandle ? (lastCandle.close >= lastCandle.open) : true;
+        const color = isUp ? config.upColor : config.downColor;
+
+        const labelContainer = document.getElementById('custom-price-label');
+        labelContainer.style.display = 'flex';
+        labelContainer.style.top = (yCoord - 13) + 'px';
+
+        const priceText = currentPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        
+        labelContainer.innerHTML = `
+            <div class="price-label-box" style="border-color: ${color}; color: ${color};">
+                ${priceText}
+            </div>
+            <div class="price-label-arrow" style="
+                border-width: 6px 0 6px 8px;
+                border-color: transparent transparent transparent ${color};
+            "></div>
+        `;
+    }
+
+    function drawFrames() {
+        if (!offscreenCtx) return;
+        const cssWidth = chartOverlayCanvas.clientWidth;
+        const cssHeight = chartOverlayCanvas.clientHeight;
+
+        offscreenCtx.clearRect(0, 0, cssWidth, cssHeight);
+        oiOffscreenCtx.clearRect(0, 0, cssWidth, oiPaneHeight);
+
+        const timeScale = chart.timeScale();
+        const barSpacing = timeScale.options().barSpacing;
+        const visibleRange = timeScale.getVisibleLogicalRange();
+        
+        if (!visibleRange) {
+            ctxOverlay.clearRect(0, 0, cssWidth, cssHeight);
+            ctxOverlay.drawImage(offscreenCanvas, 0, 0);
+            return;
+        }
+
+        const renderTickSize = getDynamicTickSize(config.baseTickSize, config.minCellHeight);
+        document.getElementById('tick-display').innerText = `${renderTickSize}`;
+
+        const marginB = chart.priceScale('right').options().scaleMargins.bottom;
+        const candleBottomY = cssHeight * (1 - marginB);
+
+        const totalWidth = barSpacing * 0.92;
+        const candleWidth = totalWidth * config.candleWidthPercent;
+        const clusterWidth = totalWidth * config.clusterWidthPercent;
+
+        // Grid lines
+        offscreenCtx.lineWidth = 1; 
+        offscreenCtx.strokeStyle = config.gridColor;
+        offscreenCtx.beginPath();
+        const approxRange = 60000;
+        const startPrice = Math.floor(currentPrice / config.gridSpacing) * config.gridSpacing - approxRange;
+        const endPrice = Math.floor(currentPrice / config.gridSpacing) * config.gridSpacing + approxRange;
+        for (let p = startPrice; p <= endPrice; p += config.gridSpacing) {
+            const y = mainSeries.priceToCoordinate ? mainSeries.priceToCoordinate(p) : null;
+            if (y !== null && y >= 0 && y <= candleBottomY) {
+                offscreenCtx.moveTo(0, y);
+                offscreenCtx.lineTo(cssWidth - 60, y);
+            }
+        }
+        offscreenCtx.stroke();
+
+        // Draw custom slim candles and cluster boxes
+        const timestamps = Object.keys(clustersHistory);
+        
+        allCandles.forEach(candle => {
+            const x = timeScale.timeToCoordinate(candle.time);
+            if (x === null || x < -100 || x > cssWidth + 100) return;
+
+            const openY = mainSeries.priceToCoordinate(candle.open);
+            const closeY = mainSeries.priceToCoordinate(candle.close);
+            const highY = mainSeries.priceToCoordinate(candle.high);
+            const lowY = mainSeries.priceToCoordinate(candle.low);
+            
+            if (openY === null || closeY === null || highY === null || lowY === null) return;
+
+            // Clip candles that go below the bottom boundary
+            const clippedHighY = Math.max(0, highY);
+            const clippedLowY = Math.min(candleBottomY, lowY);
+            const clippedOpenY = Math.min(candleBottomY, Math.max(0, openY));
+            const clippedCloseY = Math.min(candleBottomY, Math.max(0, closeY));
+
+            if (clippedHighY > candleBottomY) return;
+
+            const isUp = candle.close >= candle.open;
+            const color = isUp ? config.upColor : config.downColor;
+            const colorWithOpacity = hexToRgba(color, config.candleOpacity);
+
+            const startX = x - (totalWidth / 2);
+            const candleX = startX;
+
+            // Draw wick
+            offscreenCtx.strokeStyle = colorWithOpacity;
+            offscreenCtx.lineWidth = 1;
+            offscreenCtx.beginPath();
+            offscreenCtx.moveTo(candleX + candleWidth/2, clippedHighY);
+            offscreenCtx.lineTo(candleX + candleWidth/2, clippedLowY);
+            offscreenCtx.stroke();
+
+            // Draw candle body
+            const bodyTop = Math.min(clippedOpenY, clippedCloseY);
+            const bodyHeight = Math.max(1, Math.abs(clippedCloseY - clippedOpenY));
+            
+            if (config.seriesType === 'candle') {
+                offscreenCtx.fillStyle = colorWithOpacity;
+                offscreenCtx.fillRect(candleX, bodyTop, candleWidth, bodyHeight);
+            } else {
+                offscreenCtx.strokeStyle = colorWithOpacity;
+                offscreenCtx.lineWidth = 2;
+                offscreenCtx.beginPath();
+                offscreenCtx.moveTo(candleX, clippedOpenY);
+                offscreenCtx.lineTo(candleX + candleWidth/2, clippedOpenY);
+                offscreenCtx.moveTo(candleX + candleWidth/2, clippedCloseY);
+                offscreenCtx.lineTo(candleX + candleWidth, clippedCloseY);
+                offscreenCtx.stroke();
+            }
+        });
+
+        // Draw cluster boxes
+        for (let ti = 0; ti < timestamps.length; ti++) {
+            const timestamp = timestamps[ti];
+            const ts = parseInt(timestamp);
+            const x = timeScale.timeToCoordinate(ts);
+            if (x === null || x < -100 || x > cssWidth + 100) continue;
+
+            const rawClusters = clustersHistory[timestamp];
+            let aggregatedData = {};
+            
+            Object.keys(rawClusters).forEach(priceKey => {
+                const price = parseFloat(priceKey);
+                const data = rawClusters[priceKey];
+                const aggPrice = Math.floor(price / renderTickSize) * renderTickSize;
+                if (!aggregatedData[aggPrice]) aggregatedData[aggPrice] = { buy: 0, sell: 0 };
+                aggregatedData[aggPrice].buy += data.buy;
+                aggregatedData[aggPrice].sell += data.sell;
+            });
+
+            let pocBucketKey = null, pocTotal = -Infinity;
+            const aggKeys = Object.keys(aggregatedData);
+            aggKeys.forEach(pk => {
+                const total = aggregatedData[pk].buy + aggregatedData[pk].sell;
+                if (total > pocTotal) { pocTotal = total; pocBucketKey = pk; }
+            });
+
+            let minPrice = Infinity, maxPrice = -Infinity;
+            aggKeys.forEach(pk => {
+                const p = parseFloat(pk);
+                if(p < minPrice) minPrice = p;
+                if(p > maxPrice) maxPrice = p;
+            });
+            
+            const yTop = mainSeries.priceToCoordinate(maxPrice + renderTickSize);
+            const yBottom = mainSeries.priceToCoordinate(minPrice);
+            
+            if(yTop === null || yBottom === null) continue;
+
+            // Clip cluster boxes
+            const clippedYTop = Math.max(0, Math.min(yTop, candleBottomY));
+            const clippedYBottom = Math.max(0, Math.min(yBottom, candleBottomY));
+
+            if(clippedYTop >= candleBottomY) continue;
+
+            const clusterBoxHeight = Math.abs(clippedYBottom - clippedYTop);
+            const clusterBoxY = Math.min(clippedYTop, clippedYBottom);
+            
+            const startX = x - (totalWidth / 2);
+            const boxX = startX + candleWidth;
+            const boxWidth = clusterWidth;
+
+            offscreenCtx.fillStyle = 'rgba(15, 20, 25, 0.85)';
+            offscreenCtx.fillRect(boxX, clusterBoxY, boxWidth, clusterBoxHeight);
+            
+            offscreenCtx.strokeStyle = '#1a1f2e';
+            offscreenCtx.lineWidth = 1;
+            offscreenCtx.strokeRect(boxX, clusterBoxY, boxWidth, clusterBoxHeight);
+
+            offscreenCtx.font = '11px "JetBrains Mono", monospace';
+            offscreenCtx.textAlign = "center";
+            offscreenCtx.textBaseline = "middle";
+            
+            for (let pkIdx = 0; pkIdx < aggKeys.length; pkIdx++) {
+                const priceKey = aggKeys[pkIdx];
+                const priceFloor = parseFloat(priceKey);
+                const data = aggregatedData[priceKey];
+                
+                let cellYTop = mainSeries.priceToCoordinate(priceFloor + renderTickSize);
+                let cellYBottom = mainSeries.priceToCoordinate(priceFloor);
+                if (cellYTop === null || cellYBottom === null) continue;
+                
+                // Clip cells
+                cellYTop = Math.max(0, Math.min(cellYTop, candleBottomY));
+                cellYBottom = Math.max(0, Math.min(cellYBottom, candleBottomY));
+
+                if(cellYTop >= candleBottomY) continue;
+
+                const heightCell = Math.abs(cellYBottom - cellYTop); 
+                const drawY = Math.min(cellYTop, cellYBottom);
+                const delta = data.buy - data.sell;
+                const totalVolume = data.buy + data.sell;
+                
+                // Calculate gradient opacity based on total volume
+                const isBullish = delta >= 0;
+                const cellColor = isBullish ? config.upColor : config.downColor;
+                const cellOpacity = calculateCellOpacity(totalVolume);
+                
+                // Draw gradient background for each cell
+                offscreenCtx.fillStyle = hexToRgba(cellColor, cellOpacity);
+                offscreenCtx.fillRect(boxX, drawY, boxWidth, heightCell);
+                
+                //const textColor = delta >= 0 ? config.upColor : config.downColor; Activate this only if you want colored cluster text based on delta volume.
+                const textColor = '#ffffff'; // Set to white (or any hex code you want)
+
+                if (String(priceKey) === String(pocBucketKey)) {
+                    offscreenCtx.strokeStyle = config.pocColor;
+                    offscreenCtx.lineWidth = 1;
+                    offscreenCtx.strokeRect(boxX, drawY, boxWidth, heightCell);
+                }
+
+                if (heightCell > 14) {
+                    offscreenCtx.fillStyle = textColor;
+                    let textStr = formatUSD(delta);
+                    offscreenCtx.fillText(textStr, boxX + (boxWidth/2), drawY + (heightCell/2));
+                }
+            }
+        }
+
+        // Volume bubbles - positioned to the LEFT
+        if (allCandles && config.minBubbleVolume > 0) {
+            allCandles.forEach(candle => {
+                const x = timeScale.timeToCoordinate(candle.time);
+                if (x === null || x < -20 || x > cssWidth + 20) return;
+                const tsKey = String(Math.floor(candle.time));
+                const buckets = clustersHistory[tsKey];
+                if (!buckets) return;
+
+                let totalBuy = 0, totalSell = 0;
+                Object.values(buckets).forEach(d => {
+                    totalBuy += d.buy; 
+                    totalSell += d.sell;
+                });
+
+                const delta = totalBuy - totalSell;
+                if (Math.abs(delta) >= config.minBubbleVolume) {
+                    const isBullish = delta >= 0;
+                    const opacity = Math.max(0.4, Math.min(1.0, 0.4 + (0.6 * (Math.abs(delta) - config.minBubbleVolume) / config.minBubbleVolume)));
+                    const color = isBullish ? config.upColor : config.downColor;
+                    
+                    // Dead center of the total available width
+                    const bubbleX = x; // Volume bubble is dead center for visual aesthetics.
+                    const targetPrice = isBullish ? candle.low : candle.high;
+                    const yBase = mainSeries.priceToCoordinate(targetPrice) + (isBullish ? 55 : -55);
+                    
+                    // Clip bubbles
+                    if(yBase < 0 || yBase > candleBottomY) return;
+
+                    offscreenCtx.save();
+                    offscreenCtx.beginPath();
+                    offscreenCtx.arc(bubbleX, yBase, config.bubbleRadius, 0, Math.PI * 2);
+                    offscreenCtx.shadowColor = color; 
+                    offscreenCtx.shadowBlur = 12;
+                    const radGrad = offscreenCtx.createRadialGradient(bubbleX, yBase, 0, bubbleX, yBase, config.bubbleRadius);
+                    radGrad.addColorStop(0, hexToRgba(color, Math.min(1, opacity + 0.1)));
+                    radGrad.addColorStop(0.7, hexToRgba(color, opacity * 0.9));            
+                    radGrad.addColorStop(1, hexToRgba(color, 0));                           
+                    offscreenCtx.fillStyle = radGrad;
+                    offscreenCtx.fill();
+                    offscreenCtx.restore();
+                }
+            });
+        }
+
+        // Bar Statistics (V: / D:) - centered on 100% of bar, larger text
+        if(allCandles) {
+            offscreenCtx.textAlign = "center";
+            offscreenCtx.textBaseline = "middle";
+            
+            allCandles.forEach(candle => {
+                const x = timeScale.timeToCoordinate(candle.time);
+                if (x === null || x < -50 || x > cssWidth + 50) return;
+                
+                const tsKey = String(Math.floor(candle.time));
+                const buckets = clustersHistory[tsKey];
+                if (!buckets) return;
+
+                let totalBuy = 0, totalSell = 0;
+                Object.values(buckets).forEach(d => {
+                    totalBuy += d.buy;
+                    totalSell += d.sell;
+                });
+
+                const totalVol = totalBuy + totalSell;
+                const delta = totalBuy - totalSell;
+                
+                if(totalVol === 0) return;
+
+                const isBullish = candle.close >= candle.open;
+                const statsY = isBullish 
+                    ? mainSeries.priceToCoordinate(candle.high) - 40
+                    : mainSeries.priceToCoordinate(candle.low)  + 35;
+
+                // Clip stats text
+                if(statsY < 0 || statsY > candleBottomY) return;
+
+                const deltaColor = delta >= 0 ? config.upColor : config.downColor;
+                
+                // Position stats centered on the ENTIRE bar (100% width)
+                const startX = x - (totalWidth / 2);
+                const barCenterX = startX + (totalWidth / 2);
+                
+                // Larger font size based on total width
+                const baseFontSize = Math.max(9, Math.min(14, totalWidth * 0.18));
+                const fontWeight = baseFontSize >= 11 ? 'bold' : '600';
+                offscreenCtx.font = `${fontWeight} ${baseFontSize}px "JetBrains Mono", monospace`;
+                
+                const volText = `V:${formatUSD(totalVol)}`;
+                const deltaPrefix = delta >= 0 ? '+' : '';
+                const deltaText = `D:${deltaPrefix}${formatUSD(delta)}`;
+                
+                let volMetrics = offscreenCtx.measureText(volText);
+                let deltaMetrics = offscreenCtx.measureText(deltaText);
+                const maxWidth = totalWidth * 0.95;
+                
+                let finalFontSize = baseFontSize;
+                if (volMetrics.width > maxWidth || deltaMetrics.width > maxWidth) {
+                    const scaleFactor = maxWidth / Math.max(volMetrics.width, deltaMetrics.width);
+                    finalFontSize = Math.max(7, baseFontSize * scaleFactor);
+                    offscreenCtx.font = `${fontWeight} ${finalFontSize}px "JetBrains Mono", monospace`;
+                }
+                
+                // Draw V: line
+                offscreenCtx.fillStyle = '#8b92a7';
+                offscreenCtx.fillText(volText, barCenterX, statsY - 8);
+                
+                // Draw D: line
+                offscreenCtx.fillStyle = deltaColor;
+                offscreenCtx.fillText(deltaText, barCenterX, statsY + 8);
+            });
+        }
+
+        drawOIPane(cssWidth);
+
+        // Timer
+        const nowSec = Math.floor(Date.now() / 1000);
+        const barSeconds = getBarSeconds(config.currentTimeframe);
+        const nextBarTime = lastBarTime + barSeconds;
+        const diff = nextBarTime - nowSec;
+        const timerBox = document.getElementById('timer-box');
+        const timerText = document.getElementById('timer-text');
+        
+        if (config.showCountdown && mainSeries && currentPrice) {
+            const yChart = mainSeries.priceToCoordinate(currentPrice);
+            
+            if (yChart !== null && yChart >= 0 && yChart <= candleBottomY) {
+                const yViewport = yChart + HEADER_HEIGHT;
+                
+                if (timerBox.classList.contains('hidden')) {
+                    timerBox.classList.remove('hidden');
+                    timerBox.style.display = 'flex';
+                }
+                
+                const timerHeight = 28;
+                timerBox.style.top = (yViewport - timerHeight/2) + 'px';
+
+                const lastC = allCandles[allCandles.length - 1];
+                const isUp = lastC ? (lastC.close >= lastC.open) : true;
+                const bg = isUp ? config.upColor : config.downColor;
+                
+                timerBox.style.backgroundColor = hexToRgba(bg, 0.25); 
+                timerBox.style.borderColor = hexToRgba(bg, 0.8);
+                timerBox.querySelector('span').style.backgroundColor = bg; 
+                timerText.textContent = (diff > 0) ? formatTime(diff) : "0:00";
+            } else {
+                if (!timerBox.classList.contains('hidden')) {
+                    timerBox.classList.add('hidden');
+                    timerBox.style.display = 'none';
+                }
+            }
+        } else {
+            if (!timerBox.classList.contains('hidden')) {
+                timerBox.classList.add('hidden');
+                timerBox.style.display = 'none';
+            }
+        }
+
+        // Update custom price label
+        updateCustomPriceLabel();
+
+        ctxOverlay.clearRect(0, 0, chartOverlayCanvas.width, chartOverlayCanvas.height);
+        ctxOverlay.drawImage(offscreenCanvas, 0, 0);
+        ctxOI.clearRect(0, 0, oiCanvas.width, oiCanvas.height);
+        ctxOI.drawImage(oiOffscreenCanvas, 0, 0);
+
+        needsRedraw = false;
+    }
+
+    function formatTime(seconds) {
+        if (seconds >= 3600) {
+            const hours = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            return `${hours}:${mins.toString().padStart(2, '0')}`;
+        }
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function getVisibleCandles(cssWidth) {
+        const visibleCandles = [];
+        if (!allCandles) return visibleCandles;
+        for (let i = 0; i < allCandles.length; i++) {
+            const candle = allCandles[i];
+            const x = chart.timeScale().timeToCoordinate(candle.time);
+            if (x === null || x < -100 || x > cssWidth + 100) continue;
+            visibleCandles.push({ i, x, candle });
+        }
+        return visibleCandles;
+    }
+
+    function drawOIPane(cssWidth) {
+        const ctxS = oiOffscreenCtx;
+        ctxS.textAlign = 'center';
+        const barSpacing = chart.timeScale().options().barSpacing;
+        const visibleCandles = getVisibleCandles(cssWidth);
+        
+        let minOI = Infinity, maxOI = -Infinity;
+        visibleCandles.forEach(item => {
+            const c = item.candle;
+            if(c.oiClose && c.oiClose > 0) {
+                const cHigh = c.oiHigh || Math.max(c.oiOpen, c.oiClose);
+                const cLow = c.oiLow || Math.min(c.oiOpen, c.oiClose);
+                if(cHigh > maxOI) maxOI = cHigh;
+                if(cLow < minOI && cLow > 0) minOI = cLow;
+            }
+        });
+        
+        if(maxOI === -Infinity || minOI === Infinity) { minOI = 0; maxOI = 100; }
+        if(minOI === maxOI) { minOI = maxOI * 0.99; maxOI = maxOI * 1.01; }
+
+        const padding = 10;
+        const availableH = oiPaneHeight - (padding * 2);
+        const oiRange = maxOI - minOI;
+        
+        function getOIY(val) {
+            if(val <= 0) return oiPaneHeight - padding;
+            const pct = (val - minOI) / oiRange;
+            return padding + (availableH * (1 - pct));
+        }
+
+        visibleCandles.forEach(item => {
+            const { candle, x } = item;
+            if(!candle.oiClose || candle.oiClose <= 0) return;
+            
+            const cOpen = candle.oiOpen || candle.oiClose;
+            const cClose = candle.oiClose;
+            const cHigh = candle.oiHigh || Math.max(cOpen, cClose);
+            const cLow = candle.oiLow || Math.min(cOpen, cClose);
+
+            const openY = getOIY(cOpen);
+            const closeY = getOIY(cClose);
+            const highY = getOIY(cHigh);
+            const lowY = getOIY(cLow);
+            
+            const isUp = cClose >= cOpen;
+            const color = isUp ? config.oiUpColor : config.oiDownColor;
+            const w = Math.max(3, barSpacing * 0.5);
+
+            ctxS.fillStyle = color; 
+            ctxS.strokeStyle = color; 
+            ctxS.lineWidth = 1;
+            ctxS.beginPath(); 
+            ctxS.moveTo(x, highY); 
+            ctxS.lineTo(x, lowY); 
+            ctxS.stroke();
+            
+            let bodyTop = Math.min(openY, closeY);
+            let bodyHeight = Math.abs(closeY - openY);
+            if(bodyHeight < 1) bodyHeight = 1; 
+            ctxS.fillRect(x - w/2, bodyTop, w, bodyHeight);
+        });
+    }
+
+    function getIntervalString(tf) {
+        const map = {
+            1: '1', 3: '3', 5: '5', 15: '15', 30: '30',
+            60: '60', 240: '240', 'D': 'D'
+        };
+        return map[tf] || '5';
+    }
+
+    function getOIIntervalString(tf) {
+        const map = {
+            1: '5min', 3: '5min', 5: '5min', 15: '15min', 30: '30min',
+            60: '1h', 240: '4h', 'D': '1d'
+        };
+        return map[tf] || '5min';
+    }
+
+    function getBarSeconds(tf) {
+        if (tf === 'D') return 86400;
+        return tf * 60;
+    }
+
+    function getWSInterval(tf) {
+        const map = {
+            1: '1', 3: '3', 5: '5', 15: '15', 30: '30',
+            60: '60', 240: '240', 'D': 'D'
+        };
+        return map[tf] || '5';
+    }
+
+    async function changeTimeframe(newTF) {
+        config.currentTimeframe = newTF;
+        
+        if (ws) {
+            ws.close();
+            ws = null;
+        }
+        
+        clustersHistory = {};
+        allCandles = [];
+        lastBarTime = 0;
+        
+        document.querySelectorAll('.timeframe-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-tf="${newTF}"]`).classList.add('active');
+        
+        await init();
+    }
+
+    document.querySelectorAll('.timeframe-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tf = btn.getAttribute('data-tf');
+            changeTimeframe(tf === 'D' ? 'D' : parseInt(tf));
+        });
+    });
+
+    const ctxMenuMain = document.getElementById('ctx-menu-main');
+    const ctxMenuSettings = document.getElementById('ctx-menu-settings');
+    const settingsPanel = document.getElementById('settings-panel');
+
+    document.getElementById('chart-wrapper').addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        ctxMenuMain.style.left = `${Math.min(e.clientX, window.innerWidth - 200)}px`;
+        ctxMenuMain.style.top = `${Math.min(e.clientY, window.innerHeight - 100)}px`;
+        ctxMenuMain.classList.remove('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.context-menu') && !e.target.closest('#settings-panel') && !e.target.closest('#header-settings-btn')) {
+            ctxMenuMain.classList.add('hidden'); 
+            ctxMenuSettings.classList.add('hidden');
+        }
+    });
+
+    document.getElementById('ctx-reset').onclick = () => { 
+        chart.timeScale().scrollToRealTime(); 
+        chart.priceScale('right').applyOptions({ autoScale: true }); 
+    };
+    
+    document.getElementById('ctx-settings-trigger').onmouseenter = () => {
+        const rect = ctxMenuMain.getBoundingClientRect();
+        ctxMenuSettings.style.left = `${rect.right + 2}px`;
+        ctxMenuSettings.style.top = `${rect.top}px`;
+        ctxMenuSettings.classList.remove('hidden');
+    };
+
+    function toggleCheckboxUI(id, isChecked) {
+        const checkbox = document.getElementById(id).querySelector('.menu-checkbox');
+        if (isChecked) {
+            checkbox.classList.add('bg-blue-600', 'border-blue-600'); 
+            checkbox.classList.remove('bg-transparent', 'border-gray-500');
+            checkbox.innerHTML = '<span class="text-white text-[10px] font-bold">✓</span>';
+        } else {
+            checkbox.classList.remove('bg-blue-600', 'border-blue-600'); 
+            checkbox.classList.add('bg-transparent', 'border-gray-500');
+            checkbox.innerHTML = '';
+        }
+    }
+    
+    document.getElementById('toggle-price-line').onclick = () => { 
+        config.showPriceLine = !config.showPriceLine; 
+        mainSeries.applyOptions({ priceLineVisible: config.showPriceLine }); 
+        toggleCheckboxUI('toggle-price-line', config.showPriceLine); 
+    };
+    
+    document.getElementById('toggle-price-label').onclick = () => { 
+        config.showPriceLabel = !config.showPriceLabel; 
+        toggleCheckboxUI('toggle-price-label', config.showPriceLabel);
+        scheduleDraw();
+    };
+    
+    document.getElementById('toggle-countdown').onclick = () => { 
+        config.showCountdown = !config.showCountdown; 
+        toggleCheckboxUI('toggle-countdown', config.showCountdown); 
+        scheduleDraw(); 
+    };
+    
+    document.getElementById('toggle-crosshair').onclick = () => { 
+        config.showCrosshair = !config.showCrosshair; 
+        chart.applyOptions({ 
+            crosshair: { 
+                vertLine: { visible: config.showCrosshair }, 
+                horzLine: { visible: config.showCrosshair } 
+            } 
+        }); 
+        toggleCheckboxUI('toggle-crosshair', config.showCrosshair); 
+    };
+
+    const toggleSettings = () => { 
+        settingsPanel.classList.toggle('-translate-x-full'); 
+        settingsPanel.classList.toggle('translate-x-0'); 
+    };
+    
+    document.getElementById('header-settings-btn').onclick = toggleSettings;
+    document.getElementById('close-settings').onclick = toggleSettings;
+
+    function resizeAll() {
+        const wrapper = document.getElementById('chart-wrapper');
+        const totalHeight = window.innerHeight - HEADER_HEIGHT;
+        
+        if (oiPaneHeight > totalHeight * 0.4) {
+            oiPaneHeight = Math.max(minPaneHeight, totalHeight * 0.20);
+        }
+
+        const paneTotalPx = oiPaneHeight + timeAxisHeight;
+        const marginPct = paneTotalPx / totalHeight;
+
+        chart.priceScale('right').applyOptions({
+            scaleMargins: { top: 0.05, bottom: marginPct }
+        });
+
+        const oiDiv = document.getElementById('oi-pane-container');
+        oiDiv.style.height = oiPaneHeight + 'px';
+        oiDiv.style.bottom = timeAxisHeight + 'px';
+
+        setupBuffersForSize();
+        chart.applyOptions({ width: wrapper.clientWidth, height: totalHeight });
+        scheduleDraw();
+    }
+
+    (function(){
+        let dragging = false, startY = 0, startH = 0;
+        document.getElementById('oi-resizer').onmousedown = (e) => { 
+            dragging = true; 
+            startY = e.clientY; 
+            startH = oiPaneHeight; 
+            document.body.style.cursor='ns-resize'; 
+        };
+        window.addEventListener('mousemove', (e) => { 
+            if(!dragging) return; 
+            oiPaneHeight = Math.max(minPaneHeight, startH + (startY - e.clientY)); 
+            resizeAll(); 
+        });
+        window.addEventListener('mouseup', () => { 
+            dragging = false; 
+            document.body.style.cursor=''; 
+        });
+    })();
+
+    window.addEventListener('resize', resizeAll);
+    chart.timeScale().subscribeVisibleLogicalRangeChange(() => scheduleDraw());
+    
+    document.getElementById('grid-spacing-input').onchange = (e) => { 
+        config.gridSpacing = parseFloat(e.target.value); 
+        scheduleDraw(); 
+    };
+    
+    document.getElementById('grid-color-input').oninput = (e) => { 
+        config.gridColor = e.target.value; 
+        scheduleDraw(); 
+    };
+    
+    document.getElementById('bubble-threshold-input').onchange = (e) => { 
+        config.minBubbleVolume = parseFloat(e.target.value); 
+        scheduleDraw(); 
+    };
+    
+    document.getElementById('bubble-size-input').onchange = (e) => { 
+        config.bubbleRadius = parseFloat(e.target.value); 
+        scheduleDraw(); 
+    };
+    
+    document.getElementById('series-type-select').onchange = (e) => { 
+        config.seriesType = e.target.value; 
+        mainSeries = createSeries(config.seriesType); 
+        mainSeries.setData(allCandles); 
+        updateCandleAppearance(); 
+        scheduleDraw(); 
+    };
+    
+    document.getElementById('up-candle-color').onchange = (e) => { 
+        config.upColor = e.target.value; 
+        config.oiUpColor = e.target.value;
+        updateCandleAppearance(); 
+        scheduleDraw(); 
+    };
+    
+    document.getElementById('down-candle-color').onchange = (e) => { 
+        config.downColor = e.target.value; 
+        config.oiDownColor = e.target.value;
+        updateCandleAppearance(); 
+        scheduleDraw(); 
+    };
+    
+    document.getElementById('candle-opacity').oninput = (e) => { 
+        config.candleOpacity = e.target.value / 100; 
+        document.getElementById('opacity-val').innerText = e.target.value + '%'; 
+        updateCandleAppearance(); 
+    };
+
+    async function init() {
+        try {
+            const interval = getIntervalString(config.currentTimeframe);
+            const response = await fetch(`https://api.bybit.com/v5/market/kline?category=inverse&symbol=BTCUSD&interval=${interval}&limit=200`);
+            const data = await response.json();
+            if(data.result && data.result.list){
+                allCandles = data.result.list.map(d => ({ 
+                    time: parseInt(d[0]) / 1000, 
+                    open: parseFloat(d[1]), 
+                    high: parseFloat(d[2]), 
+                    low: parseFloat(d[3]), 
+                    close: parseFloat(d[4]), 
+                    oiOpen: 0, 
+                    oiHigh: 0, 
+                    oiLow: 0, 
+                    oiClose: 0
+                })).sort((a, b) => a.time - b.time);
+                
+                mainSeries.setData(allCandles);
+                lastBarTime = allCandles[allCandles.length - 1].time;
+                currentPrice = allCandles[allCandles.length - 1].close;
+                await fetchOpenInterest();
+                chart.timeScale().fitContent();
+            }
+            startWebSockets();
+            setInterval(() => { needsRedraw = true; scheduleDraw(); }, 100); 
+        } catch(e) { 
+            console.error(e); 
+        }
+    }
+
+    async function fetchOpenInterest() {
+        try {
+            const oiInterval = getOIIntervalString(config.currentTimeframe);
+            const resp = await fetch(`https://api.bybit.com/v5/market/open-interest?category=inverse&symbol=BTCUSD&intervalTime=${oiInterval}&limit=200`);
+            const oiData = await resp.json();
+            if(oiData.result && oiData.result.list) {
+                const oiMap = {};
+                const barSec = getBarSeconds(config.currentTimeframe);
+                oiData.result.list.forEach(item => { 
+                    const ts = parseInt(item.timestamp) / 1000;
+                    const normalizedTs = Math.floor(ts / barSec) * barSec;
+                    oiMap[normalizedTs] = parseFloat(item.openInterest); 
+                });
+                
+                let previousOI = 0;
+                const firstTs = Object.keys(oiMap).sort()[0];
+                if(firstTs) previousOI = oiMap[firstTs] / allCandles.find(c => c.time >= firstTs)?.close || 0;
+                
+                for(let i=0; i<allCandles.length; i++) {
+                    const c = allCandles[i];
+                    let foundRawOI = oiMap[c.time];
+                    if(foundRawOI) {
+                        const oiBTC = foundRawOI / c.close;
+                        if(previousOI === 0) previousOI = oiBTC;
+                        c.oiOpen = previousOI; 
+                        c.oiClose = oiBTC; 
+                        c.oiHigh = Math.max(previousOI, oiBTC); 
+                        c.oiLow = Math.min(previousOI, oiBTC);
+                        previousOI = oiBTC;
+                    } else { 
+                        c.oiOpen = previousOI; 
+                        c.oiClose = previousOI; 
+                        c.oiHigh = previousOI; 
+                        c.oiLow = previousOI; 
+                    }
+                }
+                if(previousOI > 0) document.getElementById('oi-display').innerText = previousOI.toFixed(2);
+            }
+        } catch(e) { 
+            console.error("OI Fetch Error", e); 
+        }
+    }
+
+    function startWebSockets() {
+        const wsInterval = getWSInterval(config.currentTimeframe);
+        ws = new WebSocket("wss://stream.bybit.com/v5/public/inverse");
+        ws.onopen = () => ws.send(JSON.stringify({ 
+            op: "subscribe", 
+            args: [`kline.${wsInterval}.BTCUSD`, "publicTrade.BTCUSD", "tickers.BTCUSD"] 
+        }));
+        
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (!msg.data) return;
+            
+            if (msg.topic && msg.topic.includes("tickers") && msg.data.openInterest) {
+                const rawOI = parseFloat(msg.data.openInterest);
+                const lastCandle = allCandles[allCandles.length - 1];
+                if(lastCandle && currentPrice > 0) {
+                    const oiBTC = rawOI / currentPrice;
+                    document.getElementById('oi-display').innerText = oiBTC.toFixed(2);
+                    if(lastCandle.oiOpen === 0 || !lastCandle.oiOpen) {
+                        lastCandle.oiOpen = (allCandles.length > 1) ? allCandles[allCandles.length-2].oiClose : oiBTC;
+                    }
+                    lastCandle.oiClose = oiBTC;
+                    lastCandle.oiHigh = Math.max(lastCandle.oiHigh||-Infinity, oiBTC);
+                    lastCandle.oiLow = Math.min(lastCandle.oiLow||Infinity, oiBTC);
+                    scheduleDraw();
+                }
+            }
+            
+            if (msg.topic && msg.topic.includes("kline")) {
+                const k = msg.data[0];
+                const ts = parseInt(k.start) / 1000;
+                if (ts > lastBarTime) {
+                    const closingOI = allCandles[allCandles.length - 1]?.oiClose || 0;
+                    clustersHistory[ts] = {}; 
+                    lastBarTime = ts; 
+                    upsertCandle(ts, parseFloat(k.open), parseFloat(k.high), parseFloat(k.low), parseFloat(k.close));
+                    const newCandle = allCandles[allCandles.length - 1];
+                    newCandle.oiOpen = closingOI; 
+                    newCandle.oiClose = closingOI; 
+                    newCandle.oiHigh = closingOI; 
+                    newCandle.oiLow = closingOI;
+                } else {
+                    upsertCandle(ts, parseFloat(k.open), parseFloat(k.high), parseFloat(k.low), parseFloat(k.close));
+                }
+                mainSeries.update({ 
+                    time: ts, 
+                    open: parseFloat(k.open), 
+                    high: parseFloat(k.high), 
+                    low: parseFloat(k.low), 
+                    close: parseFloat(k.close) 
+                });
+                scheduleDraw();
+            }
+            
+            if (msg.topic && msg.topic.includes("publicTrade")) {
+                msg.data.forEach(trade => {
+                    const price = parseFloat(trade.p); 
+                    currentPrice = price;
+                    const valUsd = parseFloat(trade.v);
+                    const bucket = Math.floor(price / config.baseTickSize) * config.baseTickSize;
+                    
+                    if (!clustersHistory[lastBarTime]) clustersHistory[lastBarTime] = {};
+                    if (!clustersHistory[lastBarTime][bucket]) clustersHistory[lastBarTime][bucket] = { buy: 0, sell: 0 };
+                    
+                    if (trade.S === "Buy") clustersHistory[lastBarTime][bucket].buy += valUsd;
+                    else clustersHistory[lastBarTime][bucket].sell += valUsd;
+                    
+                    document.getElementById('price').innerText = price.toLocaleString();
+                    scheduleDraw();
+                });
+            }
+        };
+    }
+
+    resizeAll();
+    init();
+</script>
+</body>
+</html>
