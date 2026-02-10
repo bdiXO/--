@@ -20,7 +20,7 @@
                     },
                     colors: {
                         trade: {
-                            bg: '#0a0e1a',
+                            bg: '#1a1b26',
                             panel: '#0f1419',
                             border: '#1a1f2e',
                             accent: '#3b82f6',
@@ -39,7 +39,7 @@
 
     <style>
         body { 
-            background-color: #0a0e1a; 
+            background-color: #1a1b26; 
             overflow: hidden; 
             user-select: none;
             color: #8b92a7;
@@ -54,7 +54,7 @@
             position: relative; 
             flex: 1; 
             min-height: 0; 
-            background: #0a0e1a; 
+            background: #1a1b26; 
             overflow: hidden; 
         }
         
@@ -395,7 +395,7 @@
     const timeAxisHeight = 28;
 
     const chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
-        layout: { background: { color: '#0a0e1a' }, textColor: '#8b92a7', fontFamily: 'Inter' },
+        layout: { background: { color: '#1a1b26' }, textColor: '#8b92a7', fontFamily: 'Inter' },
         grid: { vertLines: { visible: false }, horzLines: { visible: false } },
         rightPriceScale: { borderColor: '#1a1f2e', width: 60, scaleMargins: { top: 0.05, bottom: 0.20 } },
         crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
@@ -1471,4 +1471,5 @@
     init();
 </script>
 </body>
+
 </html>
