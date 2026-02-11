@@ -412,15 +412,15 @@
     function calculateCellOpacity(totalVolume) {
         if (totalVolume < 50000) return 0.10; 
         else if (totalVolume < 250000) {
-            const minVol = 50000, maxVol = 250000, minOp = 0.20, maxOp = 0.40;
+            const minVol = 50000, maxVol = 250000, minOp = 0.40, maxOp = 0.60;
             return minOp + ((totalVolume - minVol) / (maxVol - minVol) * (maxOp - minOp));
         } 
         else if (totalVolume < 1000000) {
-            const minVol = 250000, maxVol = 1000000, minOp = 0.40, maxOp = 0.65;
+            const minVol = 250000, maxVol = 1000000, minOp = 0.60, maxOp = 0.7;
             return minOp + ((totalVolume - minVol) / (maxVol - minVol) * (maxOp - minOp));
         } 
         else if (totalVolume < 1200000) {
-            const minVol = 1000000, maxVol = 1200000, minOp = 0.65, maxOp = 1.0;
+            const minVol = 1000000, maxVol = 1200000, minOp = 0.7, maxOp = 1.0;
             return minOp + ((totalVolume - minVol) / (maxVol - minVol) * (maxOp - minOp));
         } 
         else return 1.0;
