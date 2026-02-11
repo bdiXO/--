@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BTC Pro Order Flow - Market Monkey Style</title>
+    <title>BTC Pro Order Flow - Golden Dot Edition</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
@@ -410,53 +410,20 @@
     }
 
     function calculateCellOpacity(totalVolume) {
-        // Range 1: Under 50k
-        // Requirement: 20% opacity
-        if (totalVolume < 50000) {
-            return 0.10; 
-        } 
-        
-        // Range 2: 50k to 250k
-        // Requirement: Scale from 20% up to 40%
+        if (totalVolume < 50000) return 0.10; 
         else if (totalVolume < 250000) {
-            const minVol = 50000;
-            const maxVol = 250000;
-            const minOp = 0.20;
-            const maxOp = 0.40;
-            
-            const normalized = (totalVolume - minVol) / (maxVol - minVol);
-            return minOp + (normalized * (maxOp - minOp));
+            const minVol = 50000, maxVol = 250000, minOp = 0.20, maxOp = 0.40;
+            return minOp + ((totalVolume - minVol) / (maxVol - minVol) * (maxOp - minOp));
         } 
-        
-        // Range 3: 250k to 1m
-        // Requirement: Scale from 40% up to 65%
         else if (totalVolume < 1000000) {
-            const minVol = 250000;
-            const maxVol = 1000000;
-            const minOp = 0.40;
-            const maxOp = 0.65;
-            
-            const normalized = (totalVolume - minVol) / (maxVol - minVol);
-            return minOp + (normalized * (maxOp - minOp));
+            const minVol = 250000, maxVol = 1000000, minOp = 0.40, maxOp = 0.65;
+            return minOp + ((totalVolume - minVol) / (maxVol - minVol) * (maxOp - minOp));
         } 
-        
-        // Range 4: 1m to 1.2m
-        // Requirement: Scale from 65% up to 100%
         else if (totalVolume < 1200000) {
-            const minVol = 1000000;
-            const maxVol = 1200000;
-            const minOp = 0.65;
-            const maxOp = 1.0;
-            
-            const normalized = (totalVolume - minVol) / (maxVol - minVol);
-            return minOp + (normalized * (maxOp - minOp));
+            const minVol = 1000000, maxVol = 1200000, minOp = 0.65, maxOp = 1.0;
+            return minOp + ((totalVolume - minVol) / (maxVol - minVol) * (maxOp - minOp));
         } 
-        
-        // Range 5: Above 1.2m
-        // Requirement: Maxed out at 100%
-        else {
-            return 1.0;
-        }
+        else return 1.0;
     }
 
     function createSeries(type) {
@@ -468,7 +435,7 @@
             wickUpColor: 'rgba(0,0,0,0)', 
             wickDownColor: 'rgba(0,0,0,0)', 
             priceLineVisible: config.showPriceLine, 
-            lastValueVisible: false  // We'll draw our own custom price label
+            lastValueVisible: false
         };
         mainSeries = (type === 'candle') ? chart.addCandlestickSeries(options) : chart.addBarSeries(options);
         return mainSeries;
@@ -670,7 +637,6 @@
         }
         offscreenCtx.stroke();
 
-        // Draw custom slim candles and cluster boxes
         const timestamps = Object.keys(clustersHistory);
         
         allCandles.forEach(candle => {
@@ -684,7 +650,6 @@
             
             if (openY === null || closeY === null || highY === null || lowY === null) return;
 
-            // Clip candles that go below the bottom boundary
             const clippedHighY = Math.max(0, highY);
             const clippedLowY = Math.min(candleBottomY, lowY);
             const clippedOpenY = Math.min(candleBottomY, Math.max(0, openY));
@@ -699,7 +664,6 @@
             const startX = x - (totalWidth / 2);
             const candleX = startX;
 
-            // Draw wick
             offscreenCtx.strokeStyle = colorWithOpacity;
             offscreenCtx.lineWidth = 1;
             offscreenCtx.beginPath();
@@ -707,7 +671,6 @@
             offscreenCtx.lineTo(candleX + candleWidth/2, clippedLowY);
             offscreenCtx.stroke();
 
-            // Draw candle body
             const bodyTop = Math.min(clippedOpenY, clippedCloseY);
             const bodyHeight = Math.max(1, Math.abs(clippedCloseY - clippedOpenY));
             
@@ -764,7 +727,6 @@
             
             if(yTop === null || yBottom === null) continue;
 
-            // Clip cluster boxes
             const clippedYTop = Math.max(0, Math.min(yTop, candleBottomY));
             const clippedYBottom = Math.max(0, Math.min(yBottom, candleBottomY));
 
@@ -797,7 +759,6 @@
                 let cellYBottom = mainSeries.priceToCoordinate(priceFloor);
                 if (cellYTop === null || cellYBottom === null) continue;
                 
-                // Clip cells
                 cellYTop = Math.max(0, Math.min(cellYTop, candleBottomY));
                 cellYBottom = Math.max(0, Math.min(cellYBottom, candleBottomY));
 
@@ -808,17 +769,14 @@
                 const delta = data.buy - data.sell;
                 const totalVolume = data.buy + data.sell;
                 
-                // Calculate gradient opacity based on total volume
                 const isBullish = delta >= 0;
                 const cellColor = isBullish ? config.upColor : config.downColor;
                 const cellOpacity = calculateCellOpacity(totalVolume);
                 
-                // Draw gradient background for each cell
                 offscreenCtx.fillStyle = hexToRgba(cellColor, cellOpacity);
                 offscreenCtx.fillRect(boxX, drawY, boxWidth, heightCell);
                 
-                //const textColor = delta >= 0 ? config.upColor : config.downColor; Activate this only if you want colored cluster text based on delta volume.
-                const textColor = '#ffffff'; // Set to white (or any hex code you want)
+                const textColor = '#ffffff';
 
                 if (String(priceKey) === String(pocBucketKey)) {
                     offscreenCtx.strokeStyle = config.pocColor;
@@ -834,7 +792,7 @@
             }
         }
 
-        // Volume bubbles - positioned to the LEFT
+        // Volume bubbles
         if (allCandles && config.minBubbleVolume > 0) {
             allCandles.forEach(candle => {
                 const x = timeScale.timeToCoordinate(candle.time);
@@ -855,12 +813,10 @@
                     const opacity = Math.max(0.4, Math.min(1.0, 0.4 + (0.6 * (Math.abs(delta) - config.minBubbleVolume) / config.minBubbleVolume)));
                     const color = isBullish ? config.upColor : config.downColor;
                     
-                    // Dead center of the total available width
-                    const bubbleX = x; // Volume bubble is dead center for visual aesthetics.
+                    const bubbleX = x; 
                     const targetPrice = isBullish ? candle.low : candle.high;
                     const yBase = mainSeries.priceToCoordinate(targetPrice) + (isBullish ? 55 : -55);
                     
-                    // Clip bubbles
                     if(yBase < 0 || yBase > candleBottomY) return;
 
                     offscreenCtx.save();
@@ -871,7 +827,7 @@
                     const radGrad = offscreenCtx.createRadialGradient(bubbleX, yBase, 0, bubbleX, yBase, config.bubbleRadius);
                     radGrad.addColorStop(0, hexToRgba(color, Math.min(1, opacity + 0.1)));
                     radGrad.addColorStop(0.7, hexToRgba(color, opacity * 0.9));            
-                    radGrad.addColorStop(1, hexToRgba(color, 0));                           
+                    radGrad.addColorStop(1, hexToRgba(color, 0));                            
                     offscreenCtx.fillStyle = radGrad;
                     offscreenCtx.fill();
                     offscreenCtx.restore();
@@ -879,11 +835,33 @@
             });
         }
 
-        // Bar Statistics (V: / D:) - centered on 100% of bar, larger text
+        // ----------------------------------------------------------------
+        // BAR STATISTICS & GOLDEN DOT LOGIC
+        // ----------------------------------------------------------------
         if(allCandles) {
             offscreenCtx.textAlign = "center";
             offscreenCtx.textBaseline = "middle";
+
+            // 1. Calculate Average Volume (Simple Moving Average of last 50 candles)
+            let avgVol = 0;
+            const lookback = 50;
+            const len = allCandles.length;
+            let count = 0;
             
+            for(let i = Math.max(0, len - lookback); i < len; i++) {
+                const c = allCandles[i];
+                const tKey = String(Math.floor(c.time));
+                const b = clustersHistory[tKey];
+                if(b) {
+                    const v = Object.values(b).reduce((a, x) => a + x.buy + x.sell, 0);
+                    avgVol += v;
+                    count++;
+                }
+            }
+            if(count > 0) avgVol = avgVol / count;
+
+
+            // 2. Loop through candles to draw Stats and Dots
             allCandles.forEach(candle => {
                 const x = timeScale.timeToCoordinate(candle.time);
                 if (x === null || x < -50 || x > cssWidth + 50) return;
@@ -894,7 +872,7 @@
 
                 let totalBuy = 0, totalSell = 0;
                 Object.values(buckets).forEach(d => {
-                    totalBuy += d.buy;
+                    totalBuy += d.buy; 
                     totalSell += d.sell;
                 });
 
@@ -903,21 +881,70 @@
                 
                 if(totalVol === 0) return;
 
-                const isBullish = candle.close >= candle.open;
-                const statsY = isBullish 
-                    ? mainSeries.priceToCoordinate(candle.high) - 40
-                    : mainSeries.priceToCoordinate(candle.low)  + 35;
+                const isBullishCandle = candle.close >= candle.open;
+                
+                // -----------------------------
+                // GOLDEN DOT CALCULATION
+                // -----------------------------
+                const oiOpen = candle.oiOpen || 0;
+                const oiClose = candle.oiClose || 0;
+                const oiIncreasing = oiClose > oiOpen;
 
-                // Clip stats text
+                // Condition A: Trapped Shorts (Bullish reversal)
+                // Green Candle + Negative Delta + Increasing OI
+                const isTrappedShorts = isBullishCandle && delta < 0 && oiIncreasing;
+
+                // Condition B: Trapped Longs (Bearish reversal)
+                // Red Candle + Positive Delta + Increasing OI
+                const isTrappedLongs = !isBullishCandle && delta > 0 && oiIncreasing;
+
+                // Condition C: Significance Filter
+                // Vol > 50% of avg AND Delta is at least 1% of total vol (avoids 0.00 delta bugs)
+                const isSignificant = (totalVol > avgVol * 0.5) && (Math.abs(delta) > totalVol * 0.01);
+
+                if (isSignificant && (isTrappedShorts || isTrappedLongs)) {
+                    // Calculate Y position (Below low for buy, Above high for sell)
+                    const dotY = isTrappedShorts 
+                        ? mainSeries.priceToCoordinate(candle.low) + 25 
+                        : mainSeries.priceToCoordinate(candle.high) - 25;
+
+                    // Only draw if visible
+                    if (dotY > 0 && dotY < candleBottomY) {
+                        offscreenCtx.save();
+                        
+                        // Draw Golden Glow
+                        offscreenCtx.shadowColor = "#FFD700"; // Gold
+                        offscreenCtx.shadowBlur = 10;
+                        offscreenCtx.fillStyle = "#FFD700";
+                        
+                        offscreenCtx.beginPath();
+                        offscreenCtx.arc(x, dotY, 4, 0, Math.PI * 2); // 4px radius
+                        offscreenCtx.fill();
+
+                        // Draw White Border for crispness
+                        offscreenCtx.shadowBlur = 0;
+                        offscreenCtx.strokeStyle = "#FFFFFF";
+                        offscreenCtx.lineWidth = 1;
+                        offscreenCtx.stroke();
+                        
+                        offscreenCtx.restore();
+                    }
+                }
+
+                // -----------------------------
+                // STATS TEXT (V/D)
+                // -----------------------------
+                const statsY = isBullishCandle 
+                    ? mainSeries.priceToCoordinate(candle.high) - 45 // Moved up slightly to make room for dot
+                    : mainSeries.priceToCoordinate(candle.low)  + 40; // Moved down slightly
+
                 if(statsY < 0 || statsY > candleBottomY) return;
 
                 const deltaColor = delta >= 0 ? config.upColor : config.downColor;
                 
-                // Position stats centered on the ENTIRE bar (100% width)
                 const startX = x - (totalWidth / 2);
                 const barCenterX = startX + (totalWidth / 2);
                 
-                // Larger font size based on total width
                 const baseFontSize = Math.max(9, Math.min(14, totalWidth * 0.18));
                 const fontWeight = baseFontSize >= 11 ? 'bold' : '600';
                 offscreenCtx.font = `${fontWeight} ${baseFontSize}px "JetBrains Mono", monospace`;
@@ -937,11 +964,9 @@
                     offscreenCtx.font = `${fontWeight} ${finalFontSize}px "JetBrains Mono", monospace`;
                 }
                 
-                // Draw V: line
                 offscreenCtx.fillStyle = '#8b92a7';
                 offscreenCtx.fillText(volText, barCenterX, statsY - 8);
                 
-                // Draw D: line
                 offscreenCtx.fillStyle = deltaColor;
                 offscreenCtx.fillText(deltaText, barCenterX, statsY + 8);
             });
@@ -992,7 +1017,6 @@
             }
         }
 
-        // Update custom price label
         updateCustomPriceLabel();
 
         ctxOverlay.clearRect(0, 0, chartOverlayCanvas.width, chartOverlayCanvas.height);
