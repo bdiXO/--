@@ -20,9 +20,9 @@
                     },
                     colors: {
                         trade: {
-                            bg: '#1a1b26',
-                            panel: '#1a1b26',
-                            border: '#1a1b26',
+                            bg: '#0a0e1a',
+                            panel: '#0f1419',
+                            border: '#1a1f2e',
                             accent: '#3b82f6',
                             up: '#466BE5',
                             down: '#E81F59',
@@ -39,7 +39,7 @@
 
     <style>
         body { 
-            background-color: #1a1b26; 
+            background-color: #0a0e1a; 
             overflow: hidden; 
             user-select: none;
             color: #8b92a7;
@@ -54,7 +54,7 @@
             position: relative; 
             flex: 1; 
             min-height: 0; 
-            background: #1a1b26; 
+            background: #0a0e1a; 
             overflow: hidden; 
         }
         
@@ -75,8 +75,8 @@
         .pane-overlay { 
             position: absolute; 
             left: 0; 
-            right: 60px;
-            background: rgba(26, 27, 38);
+            right: 77px;
+            background: rgba(10, 14, 26, 0.95);
             border-top: 1px solid #1a1f2e; 
             z-index: 30;
             backdrop-filter: blur(4px);
@@ -395,7 +395,7 @@
     const timeAxisHeight = 28;
 
     const chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
-        layout: { background: { color: '#1a1b26' }, textColor: '#8b92a7', fontFamily: 'Inter' },
+        layout: { background: { color: '#0a0e1a' }, textColor: '#8b92a7', fontFamily: 'Inter' },
         grid: { vertLines: { visible: false }, horzLines: { visible: false } },
         rightPriceScale: { borderColor: '#1a1f2e', width: 60, scaleMargins: { top: 0.05, bottom: 0.20 } },
         crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
@@ -1471,7 +1471,4 @@
     init();
 </script>
 </body>
-
 </html>
-
-
