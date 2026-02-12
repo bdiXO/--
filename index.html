@@ -967,11 +967,11 @@
                 offscreenCtx.fillStyle = '#a6afd3';
                 offscreenCtx.fillText(volText, barCenterX, statsY - 8);
                 
-                offscreenCtx.textAlign = 'right';
+                offscreenCtx.textAlign = 'center';
                 offscreenCtx.fillStyle = '#a6afd3';
                 offscreenCtx.fillText('D:', barCenterX, statsY + 8);
 
-                offscreenCtx.textAlign = 'left';
+                offscreenCtx.textAlign = 'center';
                 offscreenCtx.fillStyle = deltaColor;
                 offscreenCtx.fillText(`${deltaPrefix}${formatUSD(delta)}`, barCenterX, statsY + 8);
 
@@ -1508,4 +1508,5 @@
 </script>
 </body>
 </html>
+
 
