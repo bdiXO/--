@@ -969,11 +969,11 @@
                 
                 offscreenCtx.textAlign = 'right';
                 offscreenCtx.fillStyle = '#a6afd3';
-                offscreenCtx.fillText('D:', barCenterX - 2, statsY + 8);
+                offscreenCtx.fillText('D:', barCenterX, statsY + 8);
 
                 offscreenCtx.textAlign = 'left';
                 offscreenCtx.fillStyle = deltaColor;
-                offscreenCtx.fillText(`${deltaPrefix}${formatUSD(delta)}`, barCenterX - 2, statsY + 8);
+                offscreenCtx.fillText(`${deltaPrefix}${formatUSD(delta)}`, barCenterX, statsY + 8);
 
                 offscreenCtx.textAlign = 'center'; // Reset for other text
             });
@@ -1508,3 +1508,4 @@
 </script>
 </body>
 </html>
+
