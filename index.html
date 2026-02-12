@@ -24,8 +24,8 @@
                             panel: '#0f1419',
                             border: '#1a1f2e',
                             accent: '#3b82f6',
-                            up: '#466BE5',
-                            down: '#E81F59',
+                            up: '#0d7f56',
+                            down: '#832a3c',
                             text: '#8b92a7',
                             textLight: '#e8eaed',
                             surface: '#12161f',
@@ -111,11 +111,11 @@
             justify-content: center;
         }
         .resizer-line { 
-            width: 100%; 
-            height: 1px; 
+            width: 0%; 
+            height: 0px; 
             background: transparent; 
         }
-        .resizer-handle:hover .resizer-line { background: #3b82f6; }
+        .resizer-handle:hover .resizer-line { background: transparent; }
 
         input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
         input[type=range]::-webkit-slider-thumb {
@@ -316,11 +316,11 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div class="space-y-1.5">
                         <span class="text-xs text-gray-400 font-medium">Up Candle</span>
-                        <div class="color-picker-wrapper"><input type="color" id="up-candle-color" value="#466BE5"></div>
+                        <div class="color-picker-wrapper"><input type="color" id="up-candle-color" value="#0d7f56"></div>
                     </div>
                     <div class="space-y-1.5">
                         <span class="text-xs text-gray-400 font-medium">Down Candle</span>
-                        <div class="color-picker-wrapper"><input type="color" id="down-candle-color" value="#E81F59"></div>
+                        <div class="color-picker-wrapper"><input type="color" id="down-candle-color" value="#832a3c"></div>
                     </div>
                 </div>
                 <div class="space-y-1.5">
@@ -330,7 +330,7 @@
             </div>
             <div class="space-y-4 pt-2">
                 <div class="flex items-center gap-2 pb-1 border-b border-white/5">
-                    <span class="text-[10px] uppercase font-bold tracking-widest text-blue-500">Imbalance</span>
+                    <span class="text-[10px] uppercase font-bold tracking-widest text-blue-500">Volume Bubbles</span>
                 </div>
                 <div class="space-y-1.5">
                     <span class="text-xs text-gray-400 font-medium">Min Volume (USD)</span>
@@ -338,7 +338,7 @@
                 </div>
                 <div class="space-y-1.5">
                     <span class="text-xs text-gray-400 font-medium">Bubble Radius</span>
-                    <input type="number" id="bubble-size-input" value="12" class="w-full px-3 py-2.5">
+                    <input type="number" id="bubble-size-input" value="8" class="w-full px-3 py-2.5">
                 </div>
             </div>
         </div>
@@ -372,11 +372,11 @@
     const HEADER_HEIGHT = 48;
     
     let config = {
-        gridSpacing: 1000, gridColor: '#1a1f2e', baseTickSize: 2.5, minCellHeight: 15,
-        upColor: '#466BE5', downColor: '#E81F59', candleOpacity: 1.0, seriesType: 'candle',
-        minBubbleVolume: 500000, bubbleRadius: 12,
+        gridSpacing: 1000, gridColor: '#636363', baseTickSize: 2.5, minCellHeight: 15,
+        upColor: '#0d7f56', downColor: '#832a3c', candleOpacity: 1.0, seriesType: 'candle',
+        minBubbleVolume: 500000, bubbleRadius: 8,
         showPriceLine: true, showPriceLabel: true, showCountdown: true, showCrosshair: true,
-        oiUpColor: '#466BE5', oiDownColor: '#E81F59',
+        oiUpColor: '#0d7f56', oiDownColor: '#832a3c',
         pocColor: '#f0b90b',
         currentTimeframe: 5,
         candleWidthPercent: 0.20,
@@ -390,7 +390,7 @@
     let allCandles = []; 
     let ws = null;
 
-    let oiPaneHeight = 100;
+    let oiPaneHeight = 200;
     const minPaneHeight = 50;
     const timeAxisHeight = 28;
 
@@ -964,11 +964,18 @@
                     offscreenCtx.font = `${fontWeight} ${finalFontSize}px "JetBrains Mono", monospace`;
                 }
                 
-                offscreenCtx.fillStyle = '#8b92a7';
+                offscreenCtx.fillStyle = '#a6afd3';
                 offscreenCtx.fillText(volText, barCenterX, statsY - 8);
                 
+                offscreenCtx.textAlign = 'right';
+                offscreenCtx.fillStyle = '#a6afd3';
+                offscreenCtx.fillText('D:', barCenterX - 2, statsY + 8);
+
+                offscreenCtx.textAlign = 'left';
                 offscreenCtx.fillStyle = deltaColor;
-                offscreenCtx.fillText(deltaText, barCenterX, statsY + 8);
+                offscreenCtx.fillText(`${deltaPrefix}${formatUSD(delta)}`, barCenterX - 2, statsY + 8);
+
+                offscreenCtx.textAlign = 'center'; // Reset for other text
             });
         }
 
@@ -1110,6 +1117,11 @@
             let bodyHeight = Math.abs(closeY - openY);
             if(bodyHeight < 1) bodyHeight = 1; 
             ctxS.fillRect(x - w/2, bodyTop, w, bodyHeight);
+            
+            // Add white border
+            ctxS.strokeStyle = '#ffffff';
+            ctxS.lineWidth = 1;
+            ctxS.strokeRect(x - w/2, bodyTop, w, bodyHeight);
         });
     }
 
