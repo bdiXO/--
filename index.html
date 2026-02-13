@@ -766,6 +766,8 @@
             offscreenCtx.fillStyle = deltaColor;
             const deltaPrefix = totalDelta >= 0 ? '+' : '';
             offscreenCtx.fillText(`${deltaPrefix}${formatUSD(totalDelta)}`, centerX - 2, statsY + 8);
+            
+            offscreenCtx.textAlign = 'center'; // Reset for other text
         }
     }
 
@@ -1701,3 +1703,4 @@
 </script>
 </body>
 </html>
+
