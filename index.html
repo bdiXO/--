@@ -24,8 +24,8 @@
                             panel: '#0f1419',
                             border: '#1a1f2e',
                             accent: '#3b82f6',
-                            up: '#0d7f56',
-                            down: '#832a3c',
+                            up: '#608feb',
+                            down: '#ff4242',
                             text: '#8b92a7',
                             textLight: '#e8eaed',
                             surface: '#12161f',
@@ -291,8 +291,8 @@
                         <span class="text-xs text-gray-400 font-medium">Chart Type</span>
                         <div class="select-wrapper">
                             <select id="series-type-select" class="w-full px-2 py-2">
-                                <option value="candle">Candles</option>
-                                <option value="bar" selected>Bars</option>
+                                <option value="candle" selected>Candles</option>
+                                <option value="bar" >Bars</option>
                             </select>
                         </div>
                     </div>
@@ -316,11 +316,11 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div class="space-y-1.5">
                         <span class="text-xs text-gray-400 font-medium">Up Candle</span>
-                        <div class="color-picker-wrapper"><input type="color" id="up-candle-color" value="#0d7f56"></div>
+                        <div class="color-picker-wrapper"><input type="color" id="up-candle-color" value="#608feb"></div>
                     </div>
                     <div class="space-y-1.5">
                         <span class="text-xs text-gray-400 font-medium">Down Candle</span>
-                        <div class="color-picker-wrapper"><input type="color" id="down-candle-color" value="#832a3c"></div>
+                        <div class="color-picker-wrapper"><input type="color" id="down-candle-color" value="#ff4242"></div>
                     </div>
                 </div>
                 <div class="space-y-1.5">
@@ -369,10 +369,10 @@
     
     let config = {
         gridSpacing: 1000, gridColor: '#636363', baseTickSize: 2.5, minCellHeight: 15,
-        upColor: '#0d7f56', downColor: '#832a3c', candleOpacity: 1.0, seriesType: 'candle',
+        upColor: '#608feb', downColor: '#ff4242', candleOpacity: 1.0, seriesType: 'candle',
         minBubbleVolume: 500000,
         showPriceLine: true, showPriceLabel: true, showCountdown: true, showCrosshair: true,
-        oiUpColor: '#0d7f56', oiDownColor: '#832a3c',
+        oiUpColor: '#608feb', oiDownColor: '#ff4242',
         pocColor: '#f0b90b',
         currentTimeframe: 5,
         candleWidthPercent: 0.20,
@@ -742,7 +742,7 @@
             }
         });
         
-        // Draw V and D stats at the top
+        // Draw V and D stats at the top - MODIFIED FOR CENTER ALIGNMENT
         const totalDelta = totalBuy - totalSell;
         const statsY = clusterBoxY - 25;
         
@@ -757,15 +757,18 @@
             offscreenCtx.fillStyle = '#a6afd3';
             offscreenCtx.fillText(`V:${formatUSD(totalBuy + totalSell)}`, centerX, statsY - 8);
             
-            // D stat
-            offscreenCtx.textAlign = 'right';
-            offscreenCtx.fillStyle = '#a6afd3';
-            offscreenCtx.fillText('D:', centerX - 4, statsY + 8);
+            // D stat - MODIFIED: Removed prefix, center-aligned
+            const deltaValue = formatUSD(totalDelta);
+            const dLabelMetrics = offscreenCtx.measureText('D:');
+            const deltaValueMetrics = offscreenCtx.measureText(deltaValue);
+            const totalDeltaWidth = dLabelMetrics.width + deltaValueMetrics.width;
             
             offscreenCtx.textAlign = 'left';
+            offscreenCtx.fillStyle = '#a6afd3';
+            offscreenCtx.fillText('D:', centerX - (totalDeltaWidth / 2), statsY + 8);
+            
             offscreenCtx.fillStyle = deltaColor;
-            const deltaPrefix = totalDelta >= 0 ? '+' : '';
-            offscreenCtx.fillText(`${deltaPrefix}${formatUSD(totalDelta)}`, centerX - 2, statsY + 8);
+            offscreenCtx.fillText(deltaValue, centerX - (totalDeltaWidth / 2) + dLabelMetrics.width, statsY + 8);
             
             offscreenCtx.textAlign = 'center'; // Reset for other text
         }
@@ -1036,7 +1039,7 @@
         }
 
         // ----------------------------------------------------------------
-        // BAR STATISTICS & GOLDEN DOT LOGIC
+        // BAR STATISTICS & GOLDEN DOT LOGIC - MODIFIED
         // ----------------------------------------------------------------
         if(allCandles) {
             offscreenCtx.textAlign = "center";
@@ -1132,7 +1135,7 @@
                 }
 
                 // -----------------------------
-                // STATS TEXT (V/D)
+                // STATS TEXT (V/D) - MODIFIED: Removed prefix, center-aligned
                 // -----------------------------
                 const statsY = isBullishCandle 
                     ? mainSeries.priceToCoordinate(candle.high) - 45 // Moved up slightly to make room for dot
@@ -1150,8 +1153,8 @@
                 offscreenCtx.font = `${fontWeight} ${baseFontSize}px "JetBrains Mono", monospace`;
                 
                 const volText = `V:${formatUSD(totalVol)}`;
-                const deltaPrefix = delta >= 0 ? '+' : '';
-                const deltaText = `D:${deltaPrefix}${formatUSD(delta)}`;
+                const deltaValue = formatUSD(delta);
+                const deltaText = `D:${deltaValue}`;
                 
                 let volMetrics = offscreenCtx.measureText(volText);
                 let deltaMetrics = offscreenCtx.measureText(deltaText);
@@ -1164,16 +1167,22 @@
                     offscreenCtx.font = `${fontWeight} ${finalFontSize}px "JetBrains Mono", monospace`;
                 }
                 
+                // V stat - center aligned
                 offscreenCtx.fillStyle = '#a6afd3';
+                offscreenCtx.textAlign = 'center';
                 offscreenCtx.fillText(volText, barCenterX, statsY - 8);
                 
-                offscreenCtx.textAlign = 'right';
-                offscreenCtx.fillStyle = '#a6afd3';
-                offscreenCtx.fillText('D:', barCenterX - 4, statsY + 8);
-
+                // D stat - MODIFIED: Removed prefix, center-aligned
+                const dLabelMetrics = offscreenCtx.measureText('D:');
+                const deltaValueMetrics = offscreenCtx.measureText(deltaValue);
+                const totalDeltaWidth = dLabelMetrics.width + deltaValueMetrics.width;
+                
                 offscreenCtx.textAlign = 'left';
+                offscreenCtx.fillStyle = '#a6afd3';
+                offscreenCtx.fillText('D:', barCenterX - (totalDeltaWidth / 2), statsY + 8);
+
                 offscreenCtx.fillStyle = deltaColor;
-                offscreenCtx.fillText(`${deltaPrefix}${formatUSD(delta)}`, barCenterX - 2, statsY + 8);
+                offscreenCtx.fillText(deltaValue, barCenterX - (totalDeltaWidth / 2) + dLabelMetrics.width, statsY + 8);
 
                 offscreenCtx.textAlign = 'center'; // Reset for other text
             });
@@ -1703,4 +1712,3 @@
 </script>
 </body>
 </html>
-
