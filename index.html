@@ -337,6 +337,20 @@
                     <input type="number" id="bubble-threshold-input" value="500000" step="100000" class="w-full px-3 py-2.5">
                 </div>
             </div>
+            <div class="space-y-4 pt-2">
+                <div class="flex items-center gap-2 pb-1 border-b border-white/5">
+                    <span class="text-[10px] uppercase font-bold tracking-widest text-blue-500">Cumulative Cluster Settings</span>
+                </div>
+                <div class="space-y-1.5">
+                    <span class="text-xs text-gray-400 font-medium">Calculation Mode</span>
+                    <div class="select-wrapper">
+                        <select id="cumulative-mode-select" class="w-full px-2 py-2">
+                            <option value="all" selected>All Candles</option>
+                            <option value="visible">Visible Candles Only</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -376,7 +390,8 @@
         pocColor: '#f0b90b',
         currentTimeframe: 5,
         candleWidthPercent: 0.20,
-        clusterWidthPercent: 0.80
+        clusterWidthPercent: 0.80,
+        cumulativeMode: 'all' // 'all' or 'visible'
     };
     
     let clustersHistory = {}; 
@@ -622,7 +637,7 @@
         }
         if (clusterX < 0) return; // Don't draw if off-screen left
         
-        // Aggregate all visible cluster data
+        // Aggregate cluster data based on mode
         let aggregatedData = {};
         let totalBuy = 0;
         let totalSell = 0;
@@ -631,8 +646,12 @@
             const ts = parseInt(timestamp);
             const x = timeScale.timeToCoordinate(ts);
             
-            // Only include visible candles
-            if (x === null || x < -100 || x > cssWidth + 100) return;
+            // MODIFIED: Check visibility only for 'visible' mode
+            if (config.cumulativeMode === 'visible') {
+                // Only include visible candles
+                if (x === null || x < -100 || x > cssWidth + 100) return;
+            }
+            // For 'all' mode, include all candles regardless of visibility
             
             const rawClusters = clustersHistory[timestamp];
             
@@ -680,13 +699,25 @@
         
         if (yTop === null || yBottom === null) return;
         
-        const clippedYTop = Math.max(0, Math.min(yTop, candleBottomY));
-        const clippedYBottom = Math.max(0, Math.min(yBottom, candleBottomY));
+        // MODIFIED: For 'all' mode, don't clip to candleBottomY
+        let clippedYTop, clippedYBottom, clusterBoxHeight, clusterBoxY;
         
-        if (clippedYTop >= candleBottomY) return;
-        
-        const clusterBoxHeight = Math.abs(clippedYBottom - clippedYTop);
-        const clusterBoxY = Math.min(clippedYTop, clippedYBottom);
+        if (config.cumulativeMode === 'all') {
+            // Don't clip - show full range even if extends beyond visible area
+            clippedYTop = yTop;
+            clippedYBottom = yBottom;
+            clusterBoxHeight = Math.abs(clippedYBottom - clippedYTop);
+            clusterBoxY = Math.min(clippedYTop, clippedYBottom);
+        } else {
+            // 'visible' mode - clip to candleBottomY
+            clippedYTop = Math.max(0, Math.min(yTop, candleBottomY));
+            clippedYBottom = Math.max(0, Math.min(yBottom, candleBottomY));
+            
+            if (clippedYTop >= candleBottomY) return;
+            
+            clusterBoxHeight = Math.abs(clippedYBottom - clippedYTop);
+            clusterBoxY = Math.min(clippedYTop, clippedYBottom);
+        }
         
         // Draw background box
         offscreenCtx.fillStyle = 'rgba(15, 20, 25, 0.85)';
@@ -710,10 +741,13 @@
             
             if (cellYTop === null || cellYBottom === null) return;
             
-            cellYTop = Math.max(0, Math.min(cellYTop, candleBottomY));
-            cellYBottom = Math.max(0, Math.min(cellYBottom, candleBottomY));
-            
-            if (cellYTop >= candleBottomY) return;
+            // MODIFIED: For 'all' mode, don't clip cells
+            if (config.cumulativeMode === 'visible') {
+                cellYTop = Math.max(0, Math.min(cellYTop, candleBottomY));
+                cellYBottom = Math.max(0, Math.min(cellYBottom, candleBottomY));
+                
+                if (cellYTop >= candleBottomY) return;
+            }
             
             const heightCell = Math.abs(cellYBottom - cellYTop);
             const drawY = Math.min(cellYTop, cellYBottom);
@@ -746,7 +780,10 @@
         const totalDelta = totalBuy - totalSell;
         const statsY = clusterBoxY - 25;
         
-        if (statsY > 0 && statsY < candleBottomY) {
+        // MODIFIED: For 'all' mode, allow stats to show even if outside visible area
+        const shouldShowStats = config.cumulativeMode === 'all' || (statsY > 0 && statsY < candleBottomY);
+        
+        if (shouldShowStats) {
             const deltaColor = totalDelta >= 0 ? config.upColor : config.downColor;
             const centerX = clusterX + (clusterWidth / 2);
             
@@ -1469,6 +1506,12 @@
     
     document.getElementById('header-settings-btn').onclick = toggleSettings;
     document.getElementById('close-settings').onclick = toggleSettings;
+
+    // NEW: Cumulative Mode Setting
+    document.getElementById('cumulative-mode-select').onchange = (e) => {
+        config.cumulativeMode = e.target.value;
+        scheduleDraw();
+    };
 
     function resizeAll() {
         const wrapper = document.getElementById('chart-wrapper');
