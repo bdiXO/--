@@ -1076,32 +1076,13 @@
         }
 
         // ----------------------------------------------------------------
-        // BAR STATISTICS & GOLDEN DOT LOGIC - MODIFIED
+        // BAR STATISTICS & GOLDEN DOT LOGIC - MODIFIED WITH VWAP ABSORPTION
         // ----------------------------------------------------------------
         if(allCandles) {
             offscreenCtx.textAlign = "center";
             offscreenCtx.textBaseline = "middle";
 
-            // 1. Calculate Average Volume (Simple Moving Average of last 50 candles)
-            let avgVol = 0;
-            const lookback = 50;
-            const len = allCandles.length;
-            let count = 0;
-            
-            for(let i = Math.max(0, len - lookback); i < len; i++) {
-                const c = allCandles[i];
-                const tKey = String(Math.floor(c.time));
-                const b = clustersHistory[tKey];
-                if(b) {
-                    const v = Object.values(b).reduce((a, x) => a + x.buy + x.sell, 0);
-                    avgVol += v;
-                    count++;
-                }
-            }
-            if(count > 0) avgVol = avgVol / count;
-
-
-            // 2. Loop through candles to draw Stats and Dots
+            // Loop through candles to draw Stats and Golden Dots
             allCandles.forEach(candle => {
                 const x = timeScale.timeToCoordinate(candle.time);
                 if (x === null || x < -50 || x > cssWidth + 50) return;
@@ -1124,27 +1105,35 @@
                 const isBullishCandle = candle.close >= candle.open;
                 
                 // -----------------------------
-                // GOLDEN DOT CALCULATION
+                // GOLDEN DOT CALCULATION - VWAP ABSORPTION
                 // -----------------------------
                 const oiOpen = candle.oiOpen || 0;
                 const oiClose = candle.oiClose || 0;
                 const oiIncreasing = oiClose > oiOpen;
 
-                // Condition A: Trapped Shorts (Bullish reversal)
-                // Green Candle + Negative Delta + Increasing OI
-                const isTrappedShorts = isBullishCandle && delta < 0 && oiIncreasing;
+                // Calculate VWAP for this candle from cluster buckets
+                let vwapNumerator = 0;
+                let vwapDenominator = 0;
+                
+                Object.keys(buckets).forEach(priceKey => {
+                    const price = parseFloat(priceKey);
+                    const data = buckets[priceKey];
+                    const volume = data.buy + data.sell;
+                    vwapNumerator += price * volume;
+                    vwapDenominator += volume;
+                });
+                
+                const candleVWAP = vwapDenominator > 0 ? vwapNumerator / vwapDenominator : candle.open;
 
-                // Condition B: Trapped Longs (Bearish reversal)
-                // Red Candle + Positive Delta + Increasing OI
-                const isTrappedLongs = !isBullishCandle && delta > 0 && oiIncreasing;
+                // Bullish Absorption: Delta ≤ -100k + Close ABOVE VWAP + OI increasing
+                const isBullishAbsorption = delta <= -100000 && candle.close > candleVWAP && oiIncreasing;
 
-                // Condition C: Significance Filter
-                // Vol > 50% of avg AND Delta is at least 1% of total vol (avoids 0.00 delta bugs)
-                const isSignificant = (totalVol > avgVol * 0.5) && (Math.abs(delta) > totalVol * 0.01);
+                // Bearish Absorption: Delta ≥ +100k + Close BELOW VWAP + OI increasing
+                const isBearishAbsorption = delta >= 100000 && candle.close < candleVWAP && oiIncreasing;
 
-                if (isSignificant && (isTrappedShorts || isTrappedLongs)) {
-                    // Calculate Y position (Below low for buy, Above high for sell)
-                    const dotY = isTrappedShorts 
+                if (isBullishAbsorption || isBearishAbsorption) {
+                    // Calculate Y position (Below low for bullish, Above high for bearish)
+                    const dotY = isBullishAbsorption 
                         ? mainSeries.priceToCoordinate(candle.low) + 25 
                         : mainSeries.priceToCoordinate(candle.high) - 25;
 
@@ -1507,7 +1496,7 @@
     document.getElementById('header-settings-btn').onclick = toggleSettings;
     document.getElementById('close-settings').onclick = toggleSettings;
 
-    // NEW: Cumulative Mode Setting
+    // Cumulative Mode Setting
     document.getElementById('cumulative-mode-select').onchange = (e) => {
         config.cumulativeMode = e.target.value;
         scheduleDraw();
