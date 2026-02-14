@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BTC Pro Order Flow - Golden Dot Edition</title>
+    <title>BTC Pro Order Flow - Modular Indicators</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
@@ -72,7 +72,7 @@
             z-index: 20;
         }
         
-        .pane-overlay { 
+        .indicator-pane { 
             position: absolute; 
             left: 0; 
             right: 77px;
@@ -80,42 +80,98 @@
             border-top: 1px solid #1a1f2e; 
             z-index: 30;
             backdrop-filter: blur(4px);
+            transition: bottom 0.2s ease;
+            pointer-events: none;
+        }
+
+        .indicator-pane.dragging {
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+            border: 1px solid #3b82f6;
         }
         
         .pane-canvas { display: block; width: 100%; height: 100%; pointer-events: none; }
         
+        .pane-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 8px;
+            background: transparent;
+            cursor: move;
+            z-index: 100;
+            pointer-events: auto;
+        }
+
+        .pane-header:hover {
+            background: rgba(10, 14, 26, 0.8);
+            backdrop-filter: blur(4px);
+        }
+
+        .pane-header:hover .pane-label {
+            color: #a6afd3;
+        }
+
+        .pane-header:hover .pane-close {
+            color: #8b92a7;
+        }
+
         .pane-label { 
-            position: absolute; 
-            top: 6px; 
-            left: 10px; 
-            font-size: 10px; 
+            font-size: 9px; 
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: #5a6178; 
+            color: rgba(139, 146, 167, 0.5); 
             font-family: 'JetBrains Mono', monospace; 
-            pointer-events: none; 
-            background: rgba(15, 20, 25, 0.9);
-            padding: 2px 6px;
-            border-radius: 3px;
-            border: 1px solid #1a1f2e;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .pane-close {
+            width: 14px;
+            height: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2px;
+            font-size: 11px;
+            color: rgba(139, 146, 167, 0.5);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pane-close:hover {
+            background: rgba(255, 66, 66, 0.2);
+            color: #ff4242;
         }
 
         .resizer-handle {
             position: absolute;
-            top: -5px; left: 0; right: 0;
+            top: -5px; 
+            left: 0; 
+            right: 0;
             height: 10px;
             cursor: ns-resize;
             z-index: 50;
             display: flex;
             align-items: center;
             justify-content: center;
+            pointer-events: auto;
         }
+        
         .resizer-line { 
             width: 0%; 
             height: 0px; 
             background: transparent; 
         }
-        .resizer-handle:hover .resizer-line { background: transparent; }
+        
+        .resizer-handle:hover .resizer-line { 
+            background: transparent; 
+        }
 
         input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
         input[type=range]::-webkit-slider-thumb {
@@ -165,7 +221,6 @@
             font-weight: 600;
         }
 
-        /* Custom Price Label */
         #custom-price-label {
             position: absolute;
             right: 0;
@@ -206,6 +261,70 @@
             width: 0;
             height: 0;
             border-style: solid;
+        }
+
+        .indicator-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: transparent;
+            border: 1px solid #1a1f2e;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            color: #8b92a7;
+        }
+
+        .indicator-toggle:hover {
+            background: #1a1f2e;
+            color: #e8eaed;
+        }
+
+        .indicator-toggle.active {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        .indicator-checkbox {
+            width: 14px;
+            height: 14px;
+            border: 2px solid #1a1f2e;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .indicator-toggle.active .indicator-checkbox {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+
+        .indicator-checkbox svg {
+            width: 10px;
+            height: 10px;
+            stroke: white;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .indicator-toggle.active .indicator-checkbox svg {
+            opacity: 1;
+        }
+
+        .drag-placeholder {
+            position: absolute;
+            left: 0;
+            right: 77px;
+            height: 2px;
+            background: #3b82f6;
+            z-index: 150;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
         }
     </style>
 </head>
@@ -251,6 +370,26 @@
             </div>
         </div>
         <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] text-gray-500 uppercase tracking-wider">Indicators:</span>
+                <button id="toggle-oi" class="indicator-toggle active">
+                    <div class="indicator-checkbox">
+                        <svg viewBox="0 0 12 12" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="2,6 5,9 10,3"></polyline>
+                        </svg>
+                    </div>
+                    <span>OI</span>
+                </button>
+                <button id="toggle-cvd" class="indicator-toggle">
+                    <div class="indicator-checkbox">
+                        <svg viewBox="0 0 12 12" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="2,6 5,9 10,3"></polyline>
+                        </svg>
+                    </div>
+                    <span>CVD</span>
+                </button>
+            </div>
+            <div class="h-6 w-px bg-trade-border/50"></div>
              <button id="header-settings-btn" class="p-2 hover:bg-[#1a1f2e] rounded-md text-gray-400 hover:text-white transition-all active:scale-95 group">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:rotate-45 transition-transform duration-300"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
              </button>
@@ -261,14 +400,8 @@
         <div id="chart-container"></div>
         <canvas id="footprint-overlay"></canvas>
         <div id="custom-price-label"></div>
-
-        <div id="oi-pane-container" class="pane-overlay">
-            <div id="oi-resizer" class="resizer-handle group">
-                <div class="resizer-line bg-[#1a1f2e] group-hover:bg-blue-500/50 transition-colors"></div>
-            </div>
-            <span class="pane-label">Open Interest</span>
-            <canvas id="oi-canvas" class="pane-canvas"></canvas>
-        </div>
+        
+        <div id="indicators-container"></div>
         
         <div id="timer-box" class="hidden absolute right-[10px] bg-black/90 border border-trade-border/50 backdrop-blur text-white px-1 py-1 font-mono text-[11px] font-semibold z-[60] tabular-nums flex items-center gap-1.5 pointer-events-none shadow-lg rounded" style="min-width: 60px;">
             <span class="w-1.5 h-1.5 rounded-full bg-white/90 animate-pulse"></span>
@@ -292,7 +425,7 @@
                         <div class="select-wrapper">
                             <select id="series-type-select" class="w-full px-2 py-2">
                                 <option value="candle" selected>Candles</option>
-                                <option value="bar" >Bars</option>
+                                <option value="bar">Bars</option>
                             </select>
                         </div>
                     </div>
@@ -380,18 +513,19 @@
 
 <script>
     const HEADER_HEIGHT = 48;
+    const TIME_AXIS_HEIGHT = 28;
+    const MIN_PANE_HEIGHT = 50;
     
     let config = {
         gridSpacing: 1000, gridColor: '#636363', baseTickSize: 2.5, minCellHeight: 15,
         upColor: '#608feb', downColor: '#ff4242', candleOpacity: 1.0, seriesType: 'candle',
         minBubbleVolume: 500000,
         showPriceLine: true, showPriceLabel: true, showCountdown: true, showCrosshair: true,
-        oiUpColor: '#608feb', oiDownColor: '#ff4242',
         pocColor: '#f0b90b',
         currentTimeframe: 5,
         candleWidthPercent: 0.20,
         clusterWidthPercent: 0.80,
-        cumulativeMode: 'all' // 'all' or 'visible'
+        cumulativeMode: 'all'
     };
     
     let clustersHistory = {}; 
@@ -401,10 +535,6 @@
     let allCandles = []; 
     let ws = null;
 
-    let oiPaneHeight = 200;
-    const minPaneHeight = 50;
-    const timeAxisHeight = 28;
-
     const chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
         layout: { background: { color: '#0a0e1a' }, textColor: '#8b92a7', fontFamily: 'Inter' },
         grid: { vertLines: { visible: false }, horzLines: { visible: false } },
@@ -412,6 +542,600 @@
         crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
         timeScale: { borderColor: '#1a1f2e', timeVisible: true, barSpacing: 50, rightOffset: 5, visible: true }
     });
+
+    // ============================================================================
+    // CORE VARIABLES - Must be declared before indicator system
+    // ============================================================================
+    
+    let rafId = null, rafRunning = false, needsRedraw = false, lastInteractionTime = 0;
+    const INTERACTION_HOLD_MS = 180;
+
+    function scheduleDraw() {
+        needsRedraw = true;
+        lastInteractionTime = Date.now();
+        if (!rafRunning) {
+            rafRunning = true;
+            const loop = () => {
+                const now = Date.now();
+                if (now - lastInteractionTime < INTERACTION_HOLD_MS) {
+                    drawFrames(); rafId = requestAnimationFrame(loop);
+                } else {
+                    if (needsRedraw) {
+                        needsRedraw = false; drawFrames(); rafId = requestAnimationFrame(loop);
+                    } else {
+                        rafRunning = false; rafId = null;
+                    }
+                }
+            };
+            rafId = requestAnimationFrame(loop);
+        }
+    }
+
+    function getVisibleCandles(cssWidth) {
+        const visibleCandles = [];
+        if (!allCandles) return visibleCandles;
+        for (let i = 0; i < allCandles.length; i++) {
+            const candle = allCandles[i];
+            const x = chart.timeScale().timeToCoordinate(candle.time);
+            if (x === null || x < -100 || x > cssWidth + 100) continue;
+            visibleCandles.push({ i, x, candle });
+        }
+        return visibleCandles;
+    }
+
+    // ============================================================================
+    // INDICATOR SYSTEM
+    // ============================================================================
+    
+    class BaseIndicator {
+        constructor(id, name, defaultHeight = 150) {
+            this.id = id;
+            this.name = name;
+            this.height = defaultHeight;
+            this.element = null;
+            this.canvas = null;
+            this.ctx = null;
+            this.offscreenCanvas = null;
+            this.offscreenCtx = null;
+            this.visible = false;
+        }
+
+        createElement() {
+            const div = document.createElement('div');
+            div.className = 'indicator-pane';
+            div.id = `indicator-${this.id}`;
+            div.style.height = this.height + 'px';
+            
+            div.innerHTML = `
+                <div class="pane-header" data-indicator="${this.id}">
+                    <span class="pane-label">${this.name}</span>
+                    <div class="pane-close" data-indicator="${this.id}">✕</div>
+                </div>
+                <div class="resizer-handle" data-indicator="${this.id}">
+                    <div class="resizer-line"></div>
+                </div>
+                <canvas class="pane-canvas" id="canvas-${this.id}"></canvas>
+            `;
+            
+            this.element = div;
+            this.canvas = div.querySelector(`#canvas-${this.id}`);
+            this.ctx = this.canvas.getContext('2d');
+            
+            this.offscreenCanvas = document.createElement('canvas');
+            this.offscreenCtx = this.offscreenCanvas.getContext('2d');
+            
+            this.setupEventListeners();
+            return div;
+        }
+
+        setupEventListeners() {
+            // Close button
+            const closeBtn = this.element.querySelector('.pane-close');
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                indicatorManager.removeIndicator(this.id);
+            });
+
+            // Resize handle
+            const resizer = this.element.querySelector('.resizer-handle');
+            let dragging = false;
+            let startY = 0;
+            let startH = 0;
+
+            resizer.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                dragging = true;
+                startY = e.clientY;
+                startH = this.height;
+                document.body.style.cursor = 'ns-resize';
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!dragging) return;
+                this.height = Math.max(MIN_PANE_HEIGHT, startH + (startY - e.clientY));
+                indicatorManager.updateLayout();
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (dragging) {
+                    dragging = false;
+                    document.body.style.cursor = '';
+                }
+            });
+
+            // Drag to reorder
+            const header = this.element.querySelector('.pane-header');
+            header.addEventListener('mousedown', (e) => {
+                if (e.target.classList.contains('pane-close')) return;
+                indicatorManager.startDrag(this.id, e);
+            });
+        }
+
+        setupBuffers(width, height) {
+            const dpr = window.devicePixelRatio || 1;
+            
+            this.canvas.width = Math.floor(width * dpr);
+            this.canvas.height = Math.floor(height * dpr);
+            this.canvas.style.width = width + 'px';
+            this.canvas.style.height = height + 'px';
+            
+            this.offscreenCanvas.width = this.canvas.width;
+            this.offscreenCanvas.height = this.canvas.height;
+            
+            this.offscreenCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        }
+
+        show() {
+            this.visible = true;
+        }
+
+        hide() {
+            this.visible = false;
+        }
+
+        draw(cssWidth) {
+            // Override in subclass
+        }
+
+        render() {
+            if (!this.visible || !this.ctx || !this.offscreenCanvas) return;
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.drawImage(this.offscreenCanvas, 0, 0);
+        }
+    }
+
+    class OIIndicator extends BaseIndicator {
+        constructor() {
+            super('oi', 'Open Interest', 200);
+        }
+
+        draw(cssWidth) {
+            if (!this.visible || !this.offscreenCtx) return;
+            
+            const ctxS = this.offscreenCtx;
+            ctxS.clearRect(0, 0, cssWidth, this.height);
+            ctxS.textAlign = 'center';
+            
+            const barSpacing = chart.timeScale().options().barSpacing;
+            const visibleCandles = getVisibleCandles(cssWidth);
+            
+            let minOI = Infinity, maxOI = -Infinity;
+            visibleCandles.forEach(item => {
+                const c = item.candle;
+                if (c.oiClose && c.oiClose > 0) {
+                    const cHigh = c.oiHigh || Math.max(c.oiOpen, c.oiClose);
+                    const cLow = c.oiLow || Math.min(c.oiOpen, c.oiClose);
+                    if (cHigh > maxOI) maxOI = cHigh;
+                    if (cLow < minOI && cLow > 0) minOI = cLow;
+                }
+            });
+            
+            if (maxOI === -Infinity || minOI === Infinity) { minOI = 0; maxOI = 100; }
+            if (minOI === maxOI) { minOI = maxOI * 0.99; maxOI = maxOI * 1.01; }
+
+            const padding = 10;
+            const availableH = this.height - (padding * 2);
+            const oiRange = maxOI - minOI;
+            
+            const getOIY = (val) => {
+                if (val <= 0) return this.height - padding;
+                const pct = (val - minOI) / oiRange;
+                return padding + (availableH * (1 - pct));
+            };
+
+            visibleCandles.forEach(item => {
+                const { candle, x } = item;
+                if (!candle.oiClose || candle.oiClose <= 0) return;
+                
+                const cOpen = candle.oiOpen || candle.oiClose;
+                const cClose = candle.oiClose;
+                const cHigh = candle.oiHigh || Math.max(cOpen, cClose);
+                const cLow = candle.oiLow || Math.min(cOpen, cClose);
+
+                const openY = getOIY(cOpen);
+                const closeY = getOIY(cClose);
+                const highY = getOIY(cHigh);
+                const lowY = getOIY(cLow);
+                
+                const isUp = cClose >= cOpen;
+                const color = isUp ? config.upColor : config.downColor;
+                const w = Math.max(3, barSpacing * 0.5);
+
+                ctxS.fillStyle = color;
+                ctxS.strokeStyle = color;
+                ctxS.lineWidth = 1;
+                ctxS.beginPath();
+                ctxS.moveTo(x, highY);
+                ctxS.lineTo(x, lowY);
+                ctxS.stroke();
+                
+                let bodyTop = Math.min(openY, closeY);
+                let bodyHeight = Math.abs(closeY - openY);
+                if (bodyHeight < 1) bodyHeight = 1;
+                ctxS.fillRect(x - w/2, bodyTop, w, bodyHeight);
+                
+                ctxS.strokeStyle = '#ffffff';
+                ctxS.lineWidth = 1;
+                ctxS.strokeRect(x - w/2, bodyTop, w, bodyHeight);
+            });
+        }
+    }
+
+    class CVDIndicator extends BaseIndicator {
+        constructor() {
+            super('cvd', 'Cumulative Volume Delta', 150);
+        }
+
+        draw(cssWidth) {
+            if (!this.visible || !this.offscreenCtx) return;
+            
+            const ctxS = this.offscreenCtx;
+            ctxS.clearRect(0, 0, cssWidth, this.height);
+            
+            // Calculate CVD for all candles
+            const cvdData = [];
+            let cumulativeDelta = 0;
+            
+            allCandles.forEach(candle => {
+                const tsKey = String(Math.floor(candle.time));
+                const buckets = clustersHistory[tsKey];
+                
+                if (buckets) {
+                    let candleDelta = 0;
+                    Object.values(buckets).forEach(d => {
+                        candleDelta += (d.buy - d.sell);
+                    });
+                    cumulativeDelta += candleDelta;
+                }
+                
+                cvdData.push({
+                    time: candle.time,
+                    cvd: cumulativeDelta
+                });
+            });
+
+            if (cvdData.length === 0) return;
+
+            // Get visible range
+            const visibleCandles = getVisibleCandles(cssWidth);
+            if (visibleCandles.length === 0) return;
+
+            // Find min/max CVD in visible range
+            let minCVD = Infinity, maxCVD = -Infinity;
+            visibleCandles.forEach(item => {
+                const cvdPoint = cvdData.find(d => d.time === item.candle.time);
+                if (cvdPoint) {
+                    if (cvdPoint.cvd < minCVD) minCVD = cvdPoint.cvd;
+                    if (cvdPoint.cvd > maxCVD) maxCVD = cvdPoint.cvd;
+                }
+            });
+
+            if (minCVD === Infinity || maxCVD === -Infinity) return;
+            if (minCVD === maxCVD) { minCVD -= 1000000; maxCVD += 1000000; }
+
+            const padding = 10;
+            const availableH = this.height - (padding * 2);
+            const cvdRange = maxCVD - minCVD;
+            
+            const getCVDY = (val) => {
+                const pct = (val - minCVD) / cvdRange;
+                return padding + (availableH * (1 - pct));
+            };
+
+            // Draw zero line if in range
+            if (minCVD <= 0 && maxCVD >= 0) {
+                const zeroY = getCVDY(0);
+                ctxS.strokeStyle = '#3a3f4e';
+                ctxS.lineWidth = 1;
+                ctxS.setLineDash([4, 4]);
+                ctxS.beginPath();
+                ctxS.moveTo(0, zeroY);
+                ctxS.lineTo(cssWidth, zeroY);
+                ctxS.stroke();
+                ctxS.setLineDash([]);
+            }
+
+            // Draw CVD line
+            ctxS.beginPath();
+            let firstPoint = true;
+            
+            visibleCandles.forEach(item => {
+                const cvdPoint = cvdData.find(d => d.time === item.candle.time);
+                if (!cvdPoint) return;
+                
+                const y = getCVDY(cvdPoint.cvd);
+                
+                if (firstPoint) {
+                    ctxS.moveTo(item.x, y);
+                    firstPoint = false;
+                } else {
+                    ctxS.lineTo(item.x, y);
+                }
+            });
+
+            const finalCVD = cvdData[cvdData.length - 1]?.cvd || 0;
+            const lineColor = finalCVD >= 0 ? config.upColor : config.downColor;
+            
+            ctxS.strokeStyle = lineColor;
+            ctxS.lineWidth = 2;
+            ctxS.stroke();
+
+            // Draw value labels
+            ctxS.font = '10px "JetBrains Mono", monospace';
+            ctxS.textAlign = 'right';
+            ctxS.fillStyle = '#8b92a7';
+            
+            const maxY = getCVDY(maxCVD);
+            const minY = getCVDY(minCVD);
+            
+            ctxS.fillText(formatUSD(maxCVD), cssWidth - 5, maxY + 12);
+            ctxS.fillText(formatUSD(minCVD), cssWidth - 5, minY - 5);
+
+            // Current value
+            if (finalCVD !== undefined) {
+                const currentY = getCVDY(finalCVD);
+                const lastX = visibleCandles[visibleCandles.length - 1]?.x || cssWidth - 80;
+                
+                ctxS.fillStyle = lineColor;
+                ctxS.font = 'bold 11px "JetBrains Mono", monospace';
+                ctxS.textAlign = 'left';
+                ctxS.fillText(formatUSD(finalCVD), lastX + 10, currentY + 4);
+            }
+        }
+    }
+
+    class IndicatorManager {
+        constructor() {
+            this.indicators = new Map();
+            this.order = []; // Track order of indicators (bottom to top)
+            this.container = document.getElementById('indicators-container');
+            this.dragState = null;
+            this.placeholder = null;
+        }
+
+        addIndicator(indicator) {
+            if (this.indicators.has(indicator.id)) return;
+            
+            const element = indicator.createElement();
+            this.container.appendChild(element);
+            this.indicators.set(indicator.id, indicator);
+            this.order.push(indicator.id);
+            indicator.show();
+            this.updateLayout();
+        }
+
+        removeIndicator(id) {
+            const indicator = this.indicators.get(id);
+            if (!indicator) return;
+            
+            indicator.hide();
+            indicator.element.remove();
+            this.indicators.delete(id);
+            this.order = this.order.filter(i => i !== id);
+            this.updateLayout();
+            
+            // Update toggle button
+            const toggleBtn = document.getElementById(`toggle-${id}`);
+            if (toggleBtn) {
+                toggleBtn.classList.remove('active');
+            }
+        }
+
+        getIndicator(id) {
+            return this.indicators.get(id);
+        }
+
+        updateLayout() {
+            const wrapper = document.getElementById('chart-wrapper');
+            const totalHeight = window.innerHeight - HEADER_HEIGHT;
+            
+            // Calculate total indicator height
+            let totalIndicatorHeight = 0;
+            this.order.forEach(id => {
+                const indicator = this.indicators.get(id);
+                if (indicator && indicator.visible) {
+                    totalIndicatorHeight += indicator.height;
+                }
+            });
+
+            // Update chart margins
+            const marginPct = (totalIndicatorHeight + TIME_AXIS_HEIGHT) / totalHeight;
+            chart.priceScale('right').applyOptions({
+                scaleMargins: { top: 0.05, bottom: marginPct }
+            });
+
+            // Position indicators from bottom up
+            let currentBottom = TIME_AXIS_HEIGHT;
+            
+            // Iterate in order (bottom to top)
+            this.order.forEach(id => {
+                const indicator = this.indicators.get(id);
+                if (!indicator || !indicator.visible) return;
+                
+                indicator.element.style.bottom = currentBottom + 'px';
+                indicator.element.style.height = indicator.height + 'px';
+                
+                const cssWidth = wrapper.clientWidth;
+                indicator.setupBuffers(cssWidth, indicator.height);
+                
+                currentBottom += indicator.height;
+            });
+
+            chart.applyOptions({ width: wrapper.clientWidth, height: totalHeight });
+            scheduleDraw();
+        }
+
+        startDrag(id, e) {
+            const indicator = this.indicators.get(id);
+            if (!indicator) return;
+
+            this.dragState = {
+                id: id,
+                startY: e.clientY,
+                startOrder: [...this.order]
+            };
+
+            indicator.element.classList.add('dragging');
+            
+            // Create placeholder
+            this.placeholder = document.createElement('div');
+            this.placeholder.className = 'drag-placeholder';
+            this.placeholder.style.height = '2px';
+            document.getElementById('chart-wrapper').appendChild(this.placeholder);
+
+            document.addEventListener('mousemove', this.handleDragMove);
+            document.addEventListener('mouseup', this.handleDragEnd);
+        }
+
+        handleDragMove = (e) => {
+            if (!this.dragState) return;
+
+            const wrapper = document.getElementById('chart-wrapper');
+            const wrapperRect = wrapper.getBoundingClientRect();
+            const relativeY = wrapperRect.bottom - e.clientY;
+
+            // Find insertion point
+            let insertIndex = 0;
+            let cumulativeHeight = TIME_AXIS_HEIGHT;
+
+            for (let i = 0; i < this.order.length; i++) {
+                const ind = this.indicators.get(this.order[i]);
+                if (!ind || ind.id === this.dragState.id) continue;
+
+                const midpoint = cumulativeHeight + (ind.height / 2);
+                
+                if (relativeY > midpoint) {
+                    insertIndex = i + 1;
+                }
+                
+                cumulativeHeight += ind.height;
+            }
+
+            // Update placeholder position
+            let placeholderBottom = TIME_AXIS_HEIGHT;
+            for (let i = 0; i < insertIndex; i++) {
+                const ind = this.indicators.get(this.order[i]);
+                if (ind && ind.id !== this.dragState.id) {
+                    placeholderBottom += ind.height;
+                }
+            }
+
+            this.placeholder.style.bottom = placeholderBottom + 'px';
+        }
+
+        handleDragEnd = () => {
+            if (!this.dragState) return;
+
+            const indicator = this.indicators.get(this.dragState.id);
+            if (indicator) {
+                indicator.element.classList.remove('dragging');
+            }
+
+            // Calculate new order based on placeholder position
+            const placeholderBottom = parseInt(this.placeholder.style.bottom);
+            let newOrder = [];
+            let cumulativeHeight = TIME_AXIS_HEIGHT;
+            let inserted = false;
+
+            this.order.forEach(id => {
+                if (id === this.dragState.id) return;
+                
+                const ind = this.indicators.get(id);
+                if (!ind) return;
+
+                if (!inserted && cumulativeHeight >= placeholderBottom) {
+                    newOrder.push(this.dragState.id);
+                    inserted = true;
+                }
+                
+                newOrder.push(id);
+                cumulativeHeight += ind.height;
+            });
+
+            if (!inserted) {
+                newOrder.push(this.dragState.id);
+            }
+
+            this.order = newOrder;
+
+            // Cleanup
+            if (this.placeholder) {
+                this.placeholder.remove();
+                this.placeholder = null;
+            }
+
+            document.removeEventListener('mousemove', this.handleDragMove);
+            document.removeEventListener('mouseup', this.handleDragEnd);
+
+            this.dragState = null;
+            this.updateLayout();
+        }
+
+        drawAll(cssWidth) {
+            this.indicators.forEach(indicator => {
+                if (indicator.visible) {
+                    indicator.draw(cssWidth);
+                    indicator.render();
+                }
+            });
+        }
+    }
+
+    const indicatorManager = new IndicatorManager();
+
+    // Initialize with OI indicator (default)
+    const oiIndicator = new OIIndicator();
+    indicatorManager.addIndicator(oiIndicator);
+
+    // Indicator toggle buttons
+    document.getElementById('toggle-oi').addEventListener('click', function() {
+        const indicator = indicatorManager.getIndicator('oi');
+        if (indicator && indicator.visible) {
+            indicatorManager.removeIndicator('oi');
+            this.classList.remove('active');
+        } else {
+            const oi = new OIIndicator();
+            indicatorManager.addIndicator(oi);
+            this.classList.add('active');
+        }
+    });
+
+    document.getElementById('toggle-cvd').addEventListener('click', function() {
+        const indicator = indicatorManager.getIndicator('cvd');
+        if (indicator && indicator.visible) {
+            indicatorManager.removeIndicator('cvd');
+            this.classList.remove('active');
+        } else {
+            const cvd = new CVDIndicator();
+            indicatorManager.addIndicator(cvd);
+            this.classList.add('active');
+        }
+    });
+
+    // ============================================================================
+    // END INDICATOR SYSTEM
+    // ============================================================================
 
     function hexToRgba(hex, alpha) {
         const r = parseInt(hex.slice(1, 3), 16);
@@ -467,13 +1191,9 @@
 
     const chartOverlayCanvas = document.getElementById('footprint-overlay');
     const ctxOverlay = chartOverlayCanvas.getContext('2d'); 
-    const oiCanvas = document.getElementById('oi-canvas');
-    const ctxOI = oiCanvas.getContext('2d');
 
     const offscreenCanvas = document.createElement('canvas');
     const offscreenCtx = offscreenCanvas.getContext('2d');
-    const oiOffscreenCanvas = document.createElement('canvas');
-    const oiOffscreenCtx = oiOffscreenCanvas.getContext('2d');
 
     function setupBuffersForSize() {
         const dpr = window.devicePixelRatio || 1;
@@ -489,39 +1209,6 @@
         offscreenCanvas.height = chartOverlayCanvas.height;
         offscreenCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctxOverlay.setTransform(1, 0, 0, 1, 0, 0);
-
-        oiCanvas.width = Math.floor(chartW * dpr);
-        oiCanvas.height = Math.floor(oiPaneHeight * dpr);
-        oiCanvas.style.width = chartW + 'px';
-        oiCanvas.style.height = oiPaneHeight + 'px';
-        oiOffscreenCanvas.width = oiCanvas.width;
-        oiOffscreenCanvas.height = oiCanvas.height;
-        oiOffscreenCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctxOI.setTransform(1, 0, 0, 1, 0, 0);
-    }
-
-    let rafId = null, rafRunning = false, needsRedraw = false, lastInteractionTime = 0;
-    const INTERACTION_HOLD_MS = 180; 
-
-    function scheduleDraw() {
-        needsRedraw = true;
-        lastInteractionTime = Date.now();
-        if (!rafRunning) {
-            rafRunning = true;
-            const loop = () => {
-                const now = Date.now();
-                if (now - lastInteractionTime < INTERACTION_HOLD_MS) {
-                    drawFrames(); rafId = requestAnimationFrame(loop);
-                } else {
-                    if (needsRedraw) {
-                        needsRedraw = false; drawFrames(); rafId = requestAnimationFrame(loop);
-                    } else {
-                        rafRunning = false; rafId = null;
-                    }
-                }
-            };
-            rafId = requestAnimationFrame(loop);
-        }
     }
 
     function formatUSD(val) {
@@ -613,10 +1300,8 @@
         
         const renderTickSize = getDynamicTickSize(config.baseTickSize, config.minCellHeight);
         
-        // Calculate cluster width (~2 candles)
         const clusterWidth = barSpacing * 2 * 0.92;
         
-        // Find rightmost visible candle position
         let rightmostX = 0;
         const timestamps = Object.keys(clustersHistory);
         timestamps.forEach(timestamp => {
@@ -627,17 +1312,14 @@
             }
         });
         
-        // Position: offset from rightmost candle
-        const offsetFromCandles = barSpacing * 20; // 3 candle widths gap
+        const offsetFromCandles = barSpacing * 20;
         let clusterX = rightmostX + offsetFromCandles;
         
-        // Safety check: ensure cluster stays on screen
         if (clusterX + clusterWidth > cssWidth - 75) {
             clusterX = cssWidth - 75 - clusterWidth;
         }
-        if (clusterX < 0) return; // Don't draw if off-screen left
+        if (clusterX < 0) return;
         
-        // Aggregate cluster data based on mode
         let aggregatedData = {};
         let totalBuy = 0;
         let totalSell = 0;
@@ -646,12 +1328,9 @@
             const ts = parseInt(timestamp);
             const x = timeScale.timeToCoordinate(ts);
             
-            // MODIFIED: Check visibility only for 'visible' mode
             if (config.cumulativeMode === 'visible') {
-                // Only include visible candles
                 if (x === null || x < -100 || x > cssWidth + 100) return;
             }
-            // For 'all' mode, include all candles regardless of visibility
             
             const rawClusters = clustersHistory[timestamp];
             
@@ -674,7 +1353,6 @@
         
         if (Object.keys(aggregatedData).length === 0) return;
         
-        // Find POC
         let pocBucketKey = null;
         let pocTotal = -Infinity;
         Object.keys(aggregatedData).forEach(pk => {
@@ -685,7 +1363,6 @@
             }
         });
         
-        // Find min/max price for the cluster box
         let minPrice = Infinity;
         let maxPrice = -Infinity;
         Object.keys(aggregatedData).forEach(pk => {
@@ -699,17 +1376,14 @@
         
         if (yTop === null || yBottom === null) return;
         
-        // MODIFIED: For 'all' mode, don't clip to candleBottomY
         let clippedYTop, clippedYBottom, clusterBoxHeight, clusterBoxY;
         
         if (config.cumulativeMode === 'all') {
-            // Don't clip - show full range even if extends beyond visible area
             clippedYTop = yTop;
             clippedYBottom = yBottom;
             clusterBoxHeight = Math.abs(clippedYBottom - clippedYTop);
             clusterBoxY = Math.min(clippedYTop, clippedYBottom);
         } else {
-            // 'visible' mode - clip to candleBottomY
             clippedYTop = Math.max(0, Math.min(yTop, candleBottomY));
             clippedYBottom = Math.max(0, Math.min(yBottom, candleBottomY));
             
@@ -719,7 +1393,6 @@
             clusterBoxY = Math.min(clippedYTop, clippedYBottom);
         }
         
-        // Draw background box
         offscreenCtx.fillStyle = 'rgba(15, 20, 25, 0.85)';
         offscreenCtx.fillRect(clusterX, clusterBoxY, clusterWidth, clusterBoxHeight);
         
@@ -727,7 +1400,6 @@
         offscreenCtx.lineWidth = 1;
         offscreenCtx.strokeRect(clusterX, clusterBoxY, clusterWidth, clusterBoxHeight);
         
-        // Draw cells
         offscreenCtx.font = '11px "JetBrains Mono", monospace';
         offscreenCtx.textAlign = "center";
         offscreenCtx.textBaseline = "middle";
@@ -741,7 +1413,6 @@
             
             if (cellYTop === null || cellYBottom === null) return;
             
-            // MODIFIED: For 'all' mode, don't clip cells
             if (config.cumulativeMode === 'visible') {
                 cellYTop = Math.max(0, Math.min(cellYTop, candleBottomY));
                 cellYBottom = Math.max(0, Math.min(cellYBottom, candleBottomY));
@@ -761,14 +1432,12 @@
             offscreenCtx.fillStyle = hexToRgba(cellColor, cellOpacity);
             offscreenCtx.fillRect(clusterX, drawY, clusterWidth, heightCell);
             
-            // POC highlight
             if (String(priceKey) === String(pocBucketKey)) {
                 offscreenCtx.strokeStyle = config.pocColor;
                 offscreenCtx.lineWidth = 1;
                 offscreenCtx.strokeRect(clusterX, drawY, clusterWidth, heightCell);
             }
             
-            // Draw delta text
             if (heightCell > 14) {
                 offscreenCtx.fillStyle = '#ffffff';
                 let textStr = formatUSD(delta);
@@ -776,11 +1445,9 @@
             }
         });
         
-        // Draw V and D stats at the top - MODIFIED FOR CENTER ALIGNMENT
         const totalDelta = totalBuy - totalSell;
         const statsY = clusterBoxY - 25;
         
-        // MODIFIED: For 'all' mode, allow stats to show even if outside visible area
         const shouldShowStats = config.cumulativeMode === 'all' || (statsY > 0 && statsY < candleBottomY);
         
         if (shouldShowStats) {
@@ -790,11 +1457,9 @@
             offscreenCtx.font = 'bold 11px "JetBrains Mono", monospace';
             offscreenCtx.textAlign = 'center';
             
-            // V stat
             offscreenCtx.fillStyle = '#a6afd3';
             offscreenCtx.fillText(`V:${formatUSD(totalBuy + totalSell)}`, centerX, statsY - 8);
             
-            // D stat - MODIFIED: Removed prefix, center-aligned
             const deltaValue = formatUSD(totalDelta);
             const dLabelMetrics = offscreenCtx.measureText('D:');
             const deltaValueMetrics = offscreenCtx.measureText(deltaValue);
@@ -807,7 +1472,7 @@
             offscreenCtx.fillStyle = deltaColor;
             offscreenCtx.fillText(deltaValue, centerX - (totalDeltaWidth / 2) + dLabelMetrics.width, statsY + 8);
             
-            offscreenCtx.textAlign = 'center'; // Reset for other text
+            offscreenCtx.textAlign = 'center';
         }
     }
 
@@ -817,7 +1482,6 @@
         const cssHeight = chartOverlayCanvas.clientHeight;
 
         offscreenCtx.clearRect(0, 0, cssWidth, cssHeight);
-        oiOffscreenCtx.clearRect(0, 0, cssWidth, oiPaneHeight);
 
         const timeScale = chart.timeScale();
         const barSpacing = timeScale.options().barSpacing;
@@ -841,7 +1505,6 @@
         
         const timestamps = Object.keys(clustersHistory);
 
-        // Grid lines
         offscreenCtx.lineWidth = 1; 
         offscreenCtx.strokeStyle = config.gridColor;
         offscreenCtx.beginPath();
@@ -907,7 +1570,6 @@
             }
         });
 
-        // Draw cluster boxes
         for (let ti = 0; ti < timestamps.length; ti++) {
             const timestamp = timestamps[ti];
             const ts = parseInt(timestamp);
@@ -1010,13 +1672,11 @@
             }
         }
 
-        // Draw cumulative cluster AFTER individual clusters
         drawCumulativeCluster(cssWidth, cssHeight, candleBottomY);
 
-        // Pulsating delta indicators (above/below V and D text)
         if (allCandles && config.minBubbleVolume > 0) {
             const currentTime = Date.now();
-            const pulsePhase = (currentTime % 1500) / 1500; // 1.5 second cycle
+            const pulsePhase = (currentTime % 1500) / 1500;
             const pulseOpacity = 0.3 + (Math.sin(pulsePhase * Math.PI * 2) * 0.3);
             
             allCandles.forEach(candle => {
@@ -1037,25 +1697,21 @@
                     const isBullishCandle = candle.close >= candle.open;
                     const isDeltaPositive = delta >= 0;
                     
-                    // Calculate V/D text position (same logic as stats display)
                     const statsY = isBullishCandle 
                         ? mainSeries.priceToCoordinate(candle.high) - 45 
                         : mainSeries.priceToCoordinate(candle.low) + 40;
                     
                     if(statsY < 0 || statsY > candleBottomY) return;
                     
-                    // Position dot above/below the V/D text
                     const dotY = isBullishCandle 
-                        ? statsY - 30  // Above the text for bullish candles
-                        : statsY + 30; // Below the text for bearish candles
+                        ? statsY - 30
+                        : statsY + 30;
                     
                     const startX = x - (totalWidth / 2);
                     const barCenterX = startX + (totalWidth / 2);
                     
-                    // Color based on delta direction
                     const dotColor = isDeltaPositive ? config.upColor : config.downColor;
 
-                    // Draw pulsating outer ring
                     offscreenCtx.save();
                     offscreenCtx.globalAlpha = pulseOpacity;
                     offscreenCtx.beginPath();
@@ -1064,7 +1720,6 @@
                     offscreenCtx.fill();
                     offscreenCtx.restore();
                     
-                    // Draw solid inner circle
                     offscreenCtx.save();
                     offscreenCtx.beginPath();
                     offscreenCtx.arc(barCenterX, dotY, 5, 0, Math.PI * 2);
@@ -1075,14 +1730,10 @@
             });
         }
 
-        // ----------------------------------------------------------------
-        // BAR STATISTICS & GOLDEN DOT LOGIC - MODIFIED WITH VWAP ABSORPTION
-        // ----------------------------------------------------------------
         if(allCandles) {
             offscreenCtx.textAlign = "center";
             offscreenCtx.textBaseline = "middle";
 
-            // Loop through candles to draw Stats and Golden Dots
             allCandles.forEach(candle => {
                 const x = timeScale.timeToCoordinate(candle.time);
                 if (x === null || x < -50 || x > cssWidth + 50) return;
@@ -1104,14 +1755,10 @@
 
                 const isBullishCandle = candle.close >= candle.open;
                 
-                // -----------------------------
-                // GOLDEN DOT CALCULATION - VWAP ABSORPTION
-                // -----------------------------
                 const oiOpen = candle.oiOpen || 0;
                 const oiClose = candle.oiClose || 0;
                 const oiIncreasing = oiClose > oiOpen;
 
-                // Calculate VWAP for this candle from cluster buckets
                 let vwapNumerator = 0;
                 let vwapDenominator = 0;
                 
@@ -1125,32 +1772,25 @@
                 
                 const candleVWAP = vwapDenominator > 0 ? vwapNumerator / vwapDenominator : candle.open;
 
-                // Bullish Absorption: Delta ≤ -100k + Close ABOVE VWAP + OI increasing
                 const isBullishAbsorption = delta <= -100000 && candle.close > candleVWAP && oiIncreasing;
-
-                // Bearish Absorption: Delta ≥ +100k + Close BELOW VWAP + OI increasing
                 const isBearishAbsorption = delta >= 100000 && candle.close < candleVWAP && oiIncreasing;
 
                 if (isBullishAbsorption || isBearishAbsorption) {
-                    // Calculate Y position (Below low for bullish, Above high for bearish)
                     const dotY = isBullishAbsorption 
                         ? mainSeries.priceToCoordinate(candle.low) + 25 
                         : mainSeries.priceToCoordinate(candle.high) - 25;
 
-                    // Only draw if visible
                     if (dotY > 0 && dotY < candleBottomY) {
                         offscreenCtx.save();
                         
-                        // Draw Golden Glow
-                        offscreenCtx.shadowColor = "#FFD700"; // Gold
+                        offscreenCtx.shadowColor = "#FFD700";
                         offscreenCtx.shadowBlur = 10;
                         offscreenCtx.fillStyle = "#FFD700";
                         
                         offscreenCtx.beginPath();
-                        offscreenCtx.arc(x, dotY, 4, 0, Math.PI * 2); // 4px radius
+                        offscreenCtx.arc(x, dotY, 4, 0, Math.PI * 2);
                         offscreenCtx.fill();
 
-                        // Draw White Border for crispness
                         offscreenCtx.shadowBlur = 0;
                         offscreenCtx.strokeStyle = "#FFFFFF";
                         offscreenCtx.lineWidth = 1;
@@ -1160,12 +1800,9 @@
                     }
                 }
 
-                // -----------------------------
-                // STATS TEXT (V/D) - MODIFIED: Removed prefix, center-aligned
-                // -----------------------------
                 const statsY = isBullishCandle 
-                    ? mainSeries.priceToCoordinate(candle.high) - 45 // Moved up slightly to make room for dot
-                    : mainSeries.priceToCoordinate(candle.low)  + 40; // Moved down slightly
+                    ? mainSeries.priceToCoordinate(candle.high) - 45
+                    : mainSeries.priceToCoordinate(candle.low)  + 40;
 
                 if(statsY < 0 || statsY > candleBottomY) return;
 
@@ -1193,12 +1830,10 @@
                     offscreenCtx.font = `${fontWeight} ${finalFontSize}px "JetBrains Mono", monospace`;
                 }
                 
-                // V stat - center aligned
                 offscreenCtx.fillStyle = '#a6afd3';
                 offscreenCtx.textAlign = 'center';
                 offscreenCtx.fillText(volText, barCenterX, statsY - 8);
                 
-                // D stat - MODIFIED: Removed prefix, center-aligned
                 const dLabelMetrics = offscreenCtx.measureText('D:');
                 const deltaValueMetrics = offscreenCtx.measureText(deltaValue);
                 const totalDeltaWidth = dLabelMetrics.width + deltaValueMetrics.width;
@@ -1210,13 +1845,13 @@
                 offscreenCtx.fillStyle = deltaColor;
                 offscreenCtx.fillText(deltaValue, barCenterX - (totalDeltaWidth / 2) + dLabelMetrics.width, statsY + 8);
 
-                offscreenCtx.textAlign = 'center'; // Reset for other text
+                offscreenCtx.textAlign = 'center';
             });
         }
 
-        drawOIPane(cssWidth);
+        // Draw indicators
+        indicatorManager.drawAll(cssWidth);
 
-        // Timer
         const nowSec = Math.floor(Date.now() / 1000);
         const barSeconds = getBarSeconds(config.currentTimeframe);
         const nextBarTime = lastBarTime + barSeconds;
@@ -1263,8 +1898,6 @@
 
         ctxOverlay.clearRect(0, 0, chartOverlayCanvas.width, chartOverlayCanvas.height);
         ctxOverlay.drawImage(offscreenCanvas, 0, 0);
-        ctxOI.clearRect(0, 0, oiCanvas.width, oiCanvas.height);
-        ctxOI.drawImage(oiOffscreenCanvas, 0, 0);
 
         needsRedraw = false;
     }
@@ -1278,86 +1911,6 @@
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins}:${secs.toString().padStart(2, '0')}`;
-    }
-
-    function getVisibleCandles(cssWidth) {
-        const visibleCandles = [];
-        if (!allCandles) return visibleCandles;
-        for (let i = 0; i < allCandles.length; i++) {
-            const candle = allCandles[i];
-            const x = chart.timeScale().timeToCoordinate(candle.time);
-            if (x === null || x < -100 || x > cssWidth + 100) continue;
-            visibleCandles.push({ i, x, candle });
-        }
-        return visibleCandles;
-    }
-
-    function drawOIPane(cssWidth) {
-        const ctxS = oiOffscreenCtx;
-        ctxS.textAlign = 'center';
-        const barSpacing = chart.timeScale().options().barSpacing;
-        const visibleCandles = getVisibleCandles(cssWidth);
-        
-        let minOI = Infinity, maxOI = -Infinity;
-        visibleCandles.forEach(item => {
-            const c = item.candle;
-            if(c.oiClose && c.oiClose > 0) {
-                const cHigh = c.oiHigh || Math.max(c.oiOpen, c.oiClose);
-                const cLow = c.oiLow || Math.min(c.oiOpen, c.oiClose);
-                if(cHigh > maxOI) maxOI = cHigh;
-                if(cLow < minOI && cLow > 0) minOI = cLow;
-            }
-        });
-        
-        if(maxOI === -Infinity || minOI === Infinity) { minOI = 0; maxOI = 100; }
-        if(minOI === maxOI) { minOI = maxOI * 0.99; maxOI = maxOI * 1.01; }
-
-        const padding = 10;
-        const availableH = oiPaneHeight - (padding * 2);
-        const oiRange = maxOI - minOI;
-        
-        function getOIY(val) {
-            if(val <= 0) return oiPaneHeight - padding;
-            const pct = (val - minOI) / oiRange;
-            return padding + (availableH * (1 - pct));
-        }
-
-        visibleCandles.forEach(item => {
-            const { candle, x } = item;
-            if(!candle.oiClose || candle.oiClose <= 0) return;
-            
-            const cOpen = candle.oiOpen || candle.oiClose;
-            const cClose = candle.oiClose;
-            const cHigh = candle.oiHigh || Math.max(cOpen, cClose);
-            const cLow = candle.oiLow || Math.min(cOpen, cClose);
-
-            const openY = getOIY(cOpen);
-            const closeY = getOIY(cClose);
-            const highY = getOIY(cHigh);
-            const lowY = getOIY(cLow);
-            
-            const isUp = cClose >= cOpen;
-            const color = isUp ? config.oiUpColor : config.oiDownColor;
-            const w = Math.max(3, barSpacing * 0.5);
-
-            ctxS.fillStyle = color; 
-            ctxS.strokeStyle = color; 
-            ctxS.lineWidth = 1;
-            ctxS.beginPath(); 
-            ctxS.moveTo(x, highY); 
-            ctxS.lineTo(x, lowY); 
-            ctxS.stroke();
-            
-            let bodyTop = Math.min(openY, closeY);
-            let bodyHeight = Math.abs(closeY - openY);
-            if(bodyHeight < 1) bodyHeight = 1; 
-            ctxS.fillRect(x - w/2, bodyTop, w, bodyHeight);
-            
-            // Add white border
-            ctxS.strokeStyle = '#ffffff';
-            ctxS.lineWidth = 1;
-            ctxS.strokeRect(x - w/2, bodyTop, w, bodyHeight);
-        });
     }
 
     function getIntervalString(tf) {
@@ -1496,54 +2049,15 @@
     document.getElementById('header-settings-btn').onclick = toggleSettings;
     document.getElementById('close-settings').onclick = toggleSettings;
 
-    // Cumulative Mode Setting
     document.getElementById('cumulative-mode-select').onchange = (e) => {
         config.cumulativeMode = e.target.value;
         scheduleDraw();
     };
 
     function resizeAll() {
-        const wrapper = document.getElementById('chart-wrapper');
-        const totalHeight = window.innerHeight - HEADER_HEIGHT;
-        
-        if (oiPaneHeight > totalHeight * 0.4) {
-            oiPaneHeight = Math.max(minPaneHeight, totalHeight * 0.20);
-        }
-
-        const paneTotalPx = oiPaneHeight + timeAxisHeight;
-        const marginPct = paneTotalPx / totalHeight;
-
-        chart.priceScale('right').applyOptions({
-            scaleMargins: { top: 0.05, bottom: marginPct }
-        });
-
-        const oiDiv = document.getElementById('oi-pane-container');
-        oiDiv.style.height = oiPaneHeight + 'px';
-        oiDiv.style.bottom = timeAxisHeight + 'px';
-
         setupBuffersForSize();
-        chart.applyOptions({ width: wrapper.clientWidth, height: totalHeight });
-        scheduleDraw();
+        indicatorManager.updateLayout();
     }
-
-    (function(){
-        let dragging = false, startY = 0, startH = 0;
-        document.getElementById('oi-resizer').onmousedown = (e) => { 
-            dragging = true; 
-            startY = e.clientY; 
-            startH = oiPaneHeight; 
-            document.body.style.cursor='ns-resize'; 
-        };
-        window.addEventListener('mousemove', (e) => { 
-            if(!dragging) return; 
-            oiPaneHeight = Math.max(minPaneHeight, startH + (startY - e.clientY)); 
-            resizeAll(); 
-        });
-        window.addEventListener('mouseup', () => { 
-            dragging = false; 
-            document.body.style.cursor=''; 
-        });
-    })();
 
     window.addEventListener('resize', resizeAll);
     chart.timeScale().subscribeVisibleLogicalRangeChange(() => scheduleDraw());
@@ -1573,14 +2087,12 @@
     
     document.getElementById('up-candle-color').onchange = (e) => { 
         config.upColor = e.target.value; 
-        config.oiUpColor = e.target.value;
         updateCandleAppearance(); 
         scheduleDraw(); 
     };
     
     document.getElementById('down-candle-color').onchange = (e) => { 
         config.downColor = e.target.value; 
-        config.oiDownColor = e.target.value;
         updateCandleAppearance(); 
         scheduleDraw(); 
     };
