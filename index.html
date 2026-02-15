@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BTC Pro Order Flow - Modular Indicators</title>
+    <title>BTC Pro Order Flow - Enhanced Settings</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <script>
         tailwind.config = {
@@ -45,7 +45,7 @@
             color: #8b92a7;
         }
 
-        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #1a1f2e; border-radius: 3px; }
         .custom-scroll::-webkit-scrollbar-thumb:hover { background: #2a2f3e; }
@@ -196,7 +196,14 @@
         .color-picker-wrapper {
             position: relative; height: 28px; width: 100%; border-radius: 4px;
             overflow: hidden; border: 1px solid #1a1f2e; cursor: pointer;
+            transition: all 0.2s;
         }
+        
+        .color-picker-wrapper:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 1px #3b82f6;
+        }
+        
         input[type="color"] { border: none; width: 200%; height: 200%; transform: translate(-25%, -25%); cursor: pointer; background: none; }
 
         .timeframe-btn {
@@ -226,7 +233,6 @@
             right: 0;
             z-index: 40;
             pointer-events: none;
-            font-family: 'JetBrains Mono', monospace;
             display: flex;
             align-items: center;
             gap: 1px;
@@ -326,6 +332,254 @@
             z-index: 150;
             box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
         }
+
+        /* Enhanced Settings Panel Styles */
+        #settings-panel {
+            background: linear-gradient(135deg, #0d1117 0%, #0f1419 100%);
+        }
+
+        .settings-section {
+            border-bottom: 1px solid rgba(26, 31, 46, 0.5);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .settings-section:last-child {
+            border-bottom: none;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .section-header::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #3b82f6;
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .section-header:hover {
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .section-header:hover::before {
+            transform: scaleY(1);
+        }
+
+        .section-title-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #3b82f6;
+            opacity: 0.8;
+            transition: all 0.3s ease;
+        }
+
+        .section-header:hover .section-icon {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .section-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 600;
+            color: #e8eaed;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .section-chevron {
+            width: 16px;
+            height: 16px;
+            color: #5a6178;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .settings-section.expanded .section-chevron {
+            transform: rotate(180deg);
+            color: #3b82f6;
+        }
+
+        .section-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .settings-section.expanded .section-content {
+            max-height: 2000px;
+        }
+
+        .section-body {
+            padding: 0 20px 20px 20px;
+            display: grid;
+            gap: 16px;
+        }
+
+        .setting-group {
+            display: grid;
+            gap: 12px;
+        }
+
+        .setting-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .setting-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .setting-item.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .setting-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: #a6afd3;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .setting-description {
+            font-size: 10px;
+            color: #5a6178;
+            margin-top: -2px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .slider-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+            padding: 2px 8px;
+            border-radius: 3px;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .setting-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(26, 31, 46, 0.5) 50%, transparent 100%);
+            margin: 8px 0;
+        }
+
+        .font-preview {
+            padding: 8px 12px;
+            background: rgba(10, 14, 26, 0.5);
+            border: 1px solid #1a1f2e;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #8b92a7;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .font-preview:hover {
+            border-color: #3b82f6;
+            color: #e8eaed;
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: #1a1f2e;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid #1a1f2e;
+        }
+
+        .toggle-switch.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(20px);
+        }
+
+        .reset-button {
+            padding: 8px 16px;
+            background: rgba(255, 66, 66, 0.1);
+            border: 1px solid rgba(255, 66, 66, 0.3);
+            color: #ff4242;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .reset-button:hover {
+            background: rgba(255, 66, 66, 0.2);
+            border-color: #ff4242;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(255, 66, 66, 0.2);
+        }
+
+        .reset-button:active {
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body class="font-sans text-trade-text antialiased h-screen flex flex-col">
@@ -409,81 +663,582 @@
         </div>
     </div>
 
-    <div id="settings-panel" class="absolute top-[49px] left-0 bottom-0 w-80 bg-[#0f1419]/95 backdrop-blur-xl border-r border-trade-border z-[1000] transform -translate-x-full transition-transform duration-300 ease-out shadow-2xl flex flex-col">
-        <div class="flex items-center justify-between p-5 border-b border-trade-border bg-white/5">
-            <h2 class="text-white font-semibold flex items-center gap-2">Chart Settings</h2>
-            <button id="close-settings" class="text-gray-500 hover:text-white transition p-1 rounded hover:bg-white/10">✕</button>
-        </div>
-        <div class="p-6 space-y-8 overflow-y-auto flex-1 custom-scroll">
-            <div class="space-y-4">
-                <div class="flex items-center gap-2 pb-1 border-b border-white/5">
-                    <span class="text-[10px] uppercase font-bold tracking-widest text-blue-500">Style</span>
+    <!-- Enhanced Settings Panel -->
+    <div id="settings-panel" class="absolute top-[49px] left-0 bottom-0 w-96 backdrop-blur-xl border-r border-trade-border z-[1000] transform -translate-x-full transition-transform duration-300 ease-out shadow-2xl flex flex-col">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between p-5 border-b border-trade-border/50 bg-gradient-to-r from-blue-600/10 to-transparent">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="space-y-1.5">
-                        <span class="text-xs text-gray-400 font-medium">Chart Type</span>
-                        <div class="select-wrapper">
-                            <select id="series-type-select" class="w-full px-2 py-2">
-                                <option value="candle" selected>Candles</option>
-                                <option value="bar">Bars</option>
-                            </select>
+                <h2 class="text-white font-semibold text-base">Chart Settings</h2>
+            </div>
+            <button id="close-settings" class="text-gray-500 hover:text-white transition p-2 rounded-lg hover:bg-white/10 active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+
+        <!-- Scrollable Content -->
+        <div class="flex-1 overflow-y-auto custom-scroll">
+            
+            <!-- Chart Appearance Section -->
+            <div class="settings-section expanded">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <div class="section-title-wrapper">
+                        <div class="section-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                        </div>
+                        <span class="section-title">Chart Appearance</span>
+                    </div>
+                    <svg class="section-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="section-content">
+                    <div class="section-body">
+                        <div class="setting-row">
+                            <div class="setting-item">
+                                <label class="setting-label">Chart Type</label>
+                                <div class="select-wrapper">
+                                    <select id="series-type-select" class="w-full px-3 py-2">
+                                        <option value="candle" selected>Candles</option>
+                                        <option value="bar">Bars</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <label class="setting-label">Bar Spacing</label>
+                                <input type="number" id="bar-spacing-input" value="50" min="10" max="200" step="5" class="w-full px-3 py-2">
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label class="setting-label">Candle Opacity</label>
+                                    <span id="opacity-val" class="slider-value">100%</span>
+                                </div>
+                                <input type="range" id="candle-opacity" min="0" max="100" value="100" step="5">
+                            </div>
+                        </div>
+
+                        <div class="setting-divider"></div>
+
+                        <div class="setting-row">
+                            <div class="setting-item">
+                                <label class="setting-label">Candle Width %</label>
+                                <input type="number" id="candle-width-input" value="20" min="5" max="80" step="5" class="w-full px-3 py-2">
+                            </div>
+                            <div class="setting-item">
+                                <label class="setting-label">Cluster Width %</label>
+                                <input type="number" id="cluster-width-input" value="80" min="20" max="95" step="5" class="w-full px-3 py-2">
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label class="setting-label">Wick Thickness</label>
+                                    <span id="wick-thickness-val" class="slider-value">1px</span>
+                                </div>
+                                <input type="range" id="wick-thickness" min="1" max="5" value="1" step="0.5">
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label class="setting-label">Border Thickness</label>
+                                    <span id="border-thickness-val" class="slider-value">1px</span>
+                                </div>
+                                <input type="range" id="border-thickness" min="0" max="5" value="1" step="0.5">
+                            </div>
                         </div>
                     </div>
-                    <div class="space-y-1.5">
-                        <span class="text-xs text-gray-400 font-medium">Grid Step ($)</span>
-                        <input type="number" id="grid-spacing-input" value="1000" class="w-full px-2 py-2">
-                    </div>
-                </div>
-                <div class="space-y-2">
-                    <div class="flex justify-between items-center">
-                         <span class="text-xs text-gray-400 font-medium">Opacity</span>
-                         <span id="opacity-val" class="text-xs text-white font-mono bg-white/10 px-1.5 rounded">100%</span>
-                    </div>
-                    <input type="range" id="candle-opacity" min="0" max="100" value="100">
                 </div>
             </div>
-            <div class="space-y-4">
-                <div class="flex items-center gap-2 pb-1 border-b border-white/5">
-                    <span class="text-[10px] uppercase font-bold tracking-widest text-blue-500">Colors</span>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="space-y-1.5">
-                        <span class="text-xs text-gray-400 font-medium">Up Candle</span>
-                        <div class="color-picker-wrapper"><input type="color" id="up-candle-color" value="#608feb"></div>
+
+            <!-- Colors Section -->
+            <div class="settings-section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <div class="section-title-wrapper">
+                        <div class="section-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"></circle><circle cx="17.5" cy="10.5" r=".5"></circle><circle cx="8.5" cy="7.5" r=".5"></circle><circle cx="6.5" cy="12.5" r=".5"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg>
+                        </div>
+                        <span class="section-title">Colors & Theme</span>
                     </div>
-                    <div class="space-y-1.5">
-                        <span class="text-xs text-gray-400 font-medium">Down Candle</span>
-                        <div class="color-picker-wrapper"><input type="color" id="down-candle-color" value="#ff4242"></div>
-                    </div>
+                    <svg class="section-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </div>
-                <div class="space-y-1.5">
-                    <span class="text-xs text-gray-400 font-medium">Grid Lines</span>
-                    <div class="color-picker-wrapper"><input type="color" id="grid-color-input" value="#1a1f2e"></div>
+                <div class="section-content">
+                    <div class="section-body">
+                        <div class="setting-row">
+                            <div class="setting-item">
+                                <label class="setting-label">Bullish Color</label>
+                                <div class="color-picker-wrapper"><input type="color" id="up-candle-color" value="#608feb"></div>
+                            </div>
+                            <div class="setting-item">
+                                <label class="setting-label">Bearish Color</label>
+                                <div class="color-picker-wrapper"><input type="color" id="down-candle-color" value="#ff4242"></div>
+                            </div>
+                        </div>
+
+                        <div class="setting-divider"></div>
+
+                        <div class="setting-item">
+                            <label class="setting-label">Grid Lines</label>
+                            <div class="color-picker-wrapper"><input type="color" id="grid-color-input" value="#636363"></div>
+                        </div>
+
+                        <div class="setting-item">
+                            <label class="setting-label">POC Highlight</label>
+                            <div class="color-picker-wrapper"><input type="color" id="poc-color-input" value="#f0b90b"></div>
+                        </div>
+
+                        <div class="setting-divider"></div>
+
+                        <div class="setting-row">
+                            <div class="setting-item">
+                                <label class="setting-label">Background</label>
+                                <div class="color-picker-wrapper"><input type="color" id="bg-color-input" value="#0a0e1a"></div>
+                            </div>
+                            <div class="setting-item">
+                                <label class="setting-label">Panel Color</label>
+                                <div class="color-picker-wrapper"><input type="color" id="panel-color-input" value="#0f1419"></div>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <label class="setting-label">Accent Color</label>
+                            <div class="color-picker-wrapper"><input type="color" id="accent-color-input" value="#3b82f6"></div>
+                        </div>
+
+                        <div class="setting-item">
+                            <label class="setting-label">Absorption Dot Color</label>
+                            <div class="color-picker-wrapper"><input type="color" id="absorption-color-input" value="#FFD700"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="space-y-4 pt-2">
-                <div class="flex items-center gap-2 pb-1 border-b border-white/5">
-                    <span class="text-[10px] uppercase font-bold tracking-widest text-blue-500">Delta Indicators</span>
+
+            <!-- Typography Section -->
+            <div class="settings-section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <div class="section-title-wrapper">
+                        <div class="section-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+                        </div>
+                        <span class="section-title">Typography</span>
+                    </div>
+                    <svg class="section-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </div>
-                <div class="space-y-1.5">
-                    <span class="text-xs text-gray-400 font-medium">Min Delta (USD)</span>
-                    <input type="number" id="bubble-threshold-input" value="500000" step="100000" class="w-full px-3 py-2.5">
-                </div>
-            </div>
-            <div class="space-y-4 pt-2">
-                <div class="flex items-center gap-2 pb-1 border-b border-white/5">
-                    <span class="text-[10px] uppercase font-bold tracking-widest text-blue-500">Cumulative Cluster Settings</span>
-                </div>
-                <div class="space-y-1.5">
-                    <span class="text-xs text-gray-400 font-medium">Calculation Mode</span>
-                    <div class="select-wrapper">
-                        <select id="cumulative-mode-select" class="w-full px-2 py-2">
-                            <option value="all" selected>All Candles</option>
-                            <option value="visible">Visible Candles Only</option>
-                        </select>
+                <div class="section-content">
+                    <div class="section-body">
+                        <div class="setting-item">
+                            <label class="setting-label">Stats Font Family</label>
+                            <div class="select-wrapper">
+                                <select id="stats-font-family" class="w-full px-3 py-2">
+                                    <option value="'JetBrains Mono', monospace" selected>JetBrains Mono</option>
+                                    <option value="'IBM Plex Mono', monospace">IBM Plex Mono</option>
+                                    <option value="'Fira Code', monospace">Fira Code</option>
+                                    <option value="monospace">System Mono</option>
+                                </select>
+                            </div>
+                            <div class="font-preview" id="stats-font-preview" style="font-family: 'JetBrains Mono', monospace;">V:1.2M D:+250K</div>
+                        </div>
+
+                        <div class="setting-divider"></div>
+
+                        <div class="setting-item">
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label class="setting-label">Stats Font Size</label>
+                                    <span id="stats-font-size-val" class="slider-value">Auto</span>
+                                </div>
+                                <input type="range" id="stats-font-size" min="7" max="16" value="11" step="1">
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <label class="setting-label">Stats Font Weight</label>
+                            <div class="select-wrapper">
+                                <select id="stats-font-weight" class="w-full px-3 py-2">
+                                    <option value="400">Regular (400)</option>
+                                    <option value="500">Medium (500)</option>
+                                    <option value="600" selected>Semi-Bold (600)</option>
+                                    <option value="700">Bold (700)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="setting-divider"></div>
+
+                        <div class="setting-item">
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label class="setting-label">Cell Font Size</label>
+                                    <span id="cell-font-size-val" class="slider-value">11px</span>
+                                </div>
+                                <input type="range" id="cell-font-size" min="8" max="16" value="11" step="1">
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <label class="setting-label">Cell Font Weight</label>
+                            <div class="select-wrapper">
+                                <select id="cell-font-weight" class="w-full px-3 py-2">
+                                    <option value="400" selected>Regular (400)</option>
+                                    <option value="500">Medium (500)</option>
+                                    <option value="600">Semi-Bold (600)</option>
+                                    <option value="700">Bold (700)</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Grid & Scale Section -->
+            <div class="settings-section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <div class="section-title-wrapper">
+                        <div class="section-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>
+                        </div>
+                        <span class="section-title">Grid & Scale</span>
+                    </div>
+                    <svg class="section-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="section-content">
+                    <div class="section-body">
+                        <div class="setting-item">
+                            <label class="setting-label">Grid Spacing ($)</label>
+                            <input type="number" id="grid-spacing-input" value="1000" step="100" min="100" max="10000" class="w-full px-3 py-2">
+                            <span class="setting-description">Price interval between horizontal grid lines</span>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label class="setting-label">Grid Opacity</label>
+                                    <span id="grid-opacity-val" class="slider-value">100%</span>
+                                </div>
+                                <input type="range" id="grid-opacity" min="0" max="100" value="100" step="5">
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label class="setting-label">Grid Line Width</label>
+                                    <span id="grid-line-width-val" class="slider-value">1px</span>
+                                </div>
+                                <input type="range" id="grid-line-width" min="0.5" max="3" value="1" step="0.5">
+                            </div>
+                        </div>
+
+                        <div class="setting-divider"></div>
+
+                        <div class="setting-item">
+                            <label class="setting-label">Base Tick Size</label>
+                            <input type="number" id="base-tick-input" value="2.5" step="0.5" min="0.5" max="50" class="w-full px-3 py-2">
+                            <span class="setting-description">Minimum price level grouping</span>
+                        </div>
+
+                        <div class="setting-item">
+                            <label class="setting-label">Min Cell Height (px)</label>
+                            <input type="number" id="min-cell-height-input" value="15" step="1" min="8" max="40" class="w-full px-3 py-2">
+                            <span class="setting-description">Minimum height before auto-scaling kicks in</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footprint Clusters Section -->
+            <div class="settings-section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <div class="section-title-wrapper">
+                        <div class="section-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                        </div>
+                        <span class="section-title">Footprint Clusters</span>
+                    </div>
+                    <svg class="section-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="section-content">
+                    <div class="section-body">
+                        <div class="setting-item">
+                            <label class="setting-label">Calculation Mode</label>
+                            <div class="select-wrapper">
+                                <select id="cumulative-mode-select" class="w-full px-3 py-2">
+                                    <option value="all" selected>All Candles</option>
+                                    <option value="visible">Visible Candles Only</option>
+                                </select>
+                            </div>
+                            <span class="setting-description">Cumulative cluster aggregation range</span>
+                        </div>
+
+                        <div class="setting-divider"></div>
+
+                        <div class="setting-item">
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label class="setting-label">Cluster BG Opacity</label>
+                                    <span id="cluster-bg-opacity-val" class="slider-value">85%</span>
+                                </div>
+                                <input type="range" id="cluster-bg-opacity" min="0" max="100" value="85" step="5">
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label class="setting-label">POC Border Width</label>
+                                    <span id="poc-border-width-val" class="slider-value">1px</span>
+                                </div>
+                                <input type="range" id="poc-border-width" min="1" max="5" value="1" step="0.5">
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label class="setting-label">Cell Border Width</label>
+                                    <span id="cell-border-width-val" class="slider-value">1px</span>
+                                </div>
+                                <input type="range" id="cell-border-width" min="0" max="3" value="1" step="0.5">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Volume Analysis Section -->
+            <div class="settings-section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <div class="section-title-wrapper">
+                        <div class="section-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                        </div>
+                        <span class="section-title">Volume Analysis</span>
+                    </div>
+                    <svg class="section-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="section-content">
+                    <div class="section-body">
+                        <div class="setting-item">
+                            <label class="setting-label">Min Delta for Bubbles (USD)</label>
+                            <input type="number" id="bubble-threshold-input" value="500000" step="100000" min="0" max="10000000" class="w-full px-3 py-2">
+                            <span class="setting-description">Show pulsing indicator when delta exceeds this threshold</span>
+                        </div>
+
+                        <div class="setting-divider"></div>
+
+                        <div class="setting-row">
+                            <div class="setting-item">
+                                <label class="setting-label">Bubble Inner Size</label>
+                                <input type="number" id="bubble-inner-size" value="5" min="2" max="15" step="1" class="w-full px-3 py-2">
+                            </div>
+                            <div class="setting-item">
+                                <label class="setting-label">Bubble Outer Size</label>
+                                <input type="number" id="bubble-outer-size" value="10" min="5" max="25" step="1" class="w-full px-3 py-2">
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label class="setting-label">Bubble Pulse Speed</label>
+                                    <span id="bubble-pulse-speed-val" class="slider-value">1.5s</span>
+                                </div>
+                                <input type="range" id="bubble-pulse-speed" min="500" max="3000" value="1500" step="100">
+                            </div>
+                        </div>
+
+                        <div class="setting-divider"></div>
+
+                        <div class="setting-row">
+                            <div class="setting-item">
+                                <label class="setting-label">Absorption Dot Size</label>
+                                <input type="number" id="absorption-dot-size" value="4" min="2" max="12" step="1" class="w-full px-3 py-2">
+                            </div>
+                            <div class="setting-item">
+                                <label class="setting-label">Absorption Glow</label>
+                                <input type="number" id="absorption-glow" value="10" min="0" max="30" step="1" class="w-full px-3 py-2">
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <label class="setting-label">Absorption Threshold (USD)</label>
+                            <input type="number" id="absorption-threshold" value="100000" step="10000" min="0" max="1000000" class="w-full px-3 py-2">
+                            <span class="setting-description">Minimum delta for absorption detection</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- UI Elements Section -->
+            <div class="settings-section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <div class="section-title-wrapper">
+                        <div class="section-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 1v6m0 6v6m0 0"></path><circle cx="12" cy="12" r="10"></circle></svg>
+                        </div>
+                        <span class="section-title">UI Elements</span>
+                    </div>
+                    <svg class="section-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="section-content">
+                    <div class="section-body">
+                        <div class="setting-row">
+                            <div class="setting-item">
+                                <label class="setting-label">Price Line</label>
+                                <div class="toggle-switch" id="toggle-price-line-switch" onclick="toggleSwitch(this)"></div>
+                            </div>
+                            <div class="setting-item">
+                                <label class="setting-label">Price Label</label>
+                                <div class="toggle-switch active" id="toggle-price-label-switch" onclick="toggleSwitch(this)"></div>
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-item">
+                                <label class="setting-label">Countdown Timer</label>
+                                <div class="toggle-switch active" id="toggle-countdown-switch" onclick="toggleSwitch(this)"></div>
+                            </div>
+                            <div class="setting-item">
+                                <label class="setting-label">Crosshair</label>
+                                <div class="toggle-switch active" id="toggle-crosshair-switch" onclick="toggleSwitch(this)"></div>
+                            </div>
+                        </div>
+
+                        <div class="setting-divider"></div>
+
+                        <div class="setting-item">
+                            <label class="setting-label">Price Label Font Size</label>
+                            <input type="number" id="price-label-font-size" value="10" min="8" max="16" step="1" class="w-full px-3 py-2">
+                        </div>
+
+                        <div class="setting-item">
+                            <label class="setting-label">Timer Font Size</label>
+                            <input type="number" id="timer-font-size" value="11" min="8" max="16" step="1" class="w-full px-3 py-2">
+                        </div>
+
+                        <div class="setting-divider"></div>
+
+                        <div class="setting-item">
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label class="setting-label">Timer Opacity</label>
+                                    <span id="timer-opacity-val" class="slider-value">90%</span>
+                                </div>
+                                <input type="range" id="timer-opacity" min="0" max="100" value="90" step="5">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Indicators Section -->
+            <div class="settings-section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <div class="section-title-wrapper">
+                        <div class="section-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                        </div>
+                        <span class="section-title">Indicators</span>
+                    </div>
+                    <svg class="section-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="section-content">
+                    <div class="section-body">
+                        <div class="setting-item">
+                            <label class="setting-label">Default Indicator Height</label>
+                            <input type="number" id="default-indicator-height" value="150" min="50" max="500" step="10" class="w-full px-3 py-2">
+                            <span class="setting-description">Initial height for new indicators (px)</span>
+                        </div>
+
+                        <div class="setting-divider"></div>
+
+                        <div class="setting-item">
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label class="setting-label">OI Candle Width</label>
+                                    <span id="oi-candle-width-val" class="slider-value">50%</span>
+                                </div>
+                                <input type="range" id="oi-candle-width" min="20" max="100" value="50" step="5">
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label class="setting-label">CVD Line Thickness</label>
+                                    <span id="cvd-line-thickness-val" class="slider-value">2px</span>
+                                </div>
+                                <input type="range" id="cvd-line-thickness" min="1" max="5" value="2" step="0.5">
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-item">
+                                <label class="setting-label">Indicator Padding</label>
+                                <input type="number" id="indicator-padding" value="10" min="0" max="30" step="2" class="w-full px-3 py-2">
+                            </div>
+                            <div class="setting-item">
+                                <label class="setting-label">Indicator BG Opacity</label>
+                                <input type="number" id="indicator-bg-opacity" value="95" min="0" max="100" step="5" class="w-full px-3 py-2">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Section -->
+            <div class="settings-section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <div class="section-title-wrapper">
+                        <div class="section-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                        </div>
+                        <span class="section-title">Advanced</span>
+                    </div>
+                    <svg class="section-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="section-content">
+                    <div class="section-body">
+                        <div class="setting-item">
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label class="setting-label">Draw Frame Delay</label>
+                                    <span id="draw-delay-val" class="slider-value">100ms</span>
+                                </div>
+                                <input type="range" id="draw-delay" min="50" max="500" value="100" step="50">
+                            </div>
+                            <span class="setting-description">Lower = more responsive, higher = better performance</span>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label class="setting-label">Interaction Hold Time</label>
+                                    <span id="interaction-hold-val" class="slider-value">180ms</span>
+                                </div>
+                                <input type="range" id="interaction-hold" min="50" max="500" value="180" step="10">
+                            </div>
+                            <span class="setting-description">Duration to keep drawing after user interaction</span>
+                        </div>
+
+                        <div class="setting-divider"></div>
+
+                        <div class="setting-item full-width">
+                            <button class="reset-button w-full" onclick="resetToDefaults()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                                Reset All Settings to Defaults
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -496,20 +1251,6 @@
             <span class="font-medium">Settings</span><span class="text-gray-500 text-[10px] group-hover:text-blue-400">▶</span>
         </div>
     </div>
-    <div id="ctx-menu-settings" class="hidden absolute w-48 bg-[#12161f] border border-trade-border rounded-lg shadow-2xl py-1.5 z-[5000] text-sm backdrop-blur-sm">
-        <div class="menu-item px-4 py-2 hover:bg-blue-600/10 cursor-pointer text-gray-300 transition-colors" id="toggle-price-line">
-            <div class="flex items-center gap-3"><div class="menu-checkbox w-4 h-4 border border-gray-500 rounded flex items-center justify-center bg-blue-600 border-blue-600 transition-colors"><span class="text-white text-[10px] font-bold">✓</span></div>Price Line</div>
-        </div>
-        <div class="menu-item px-4 py-2 hover:bg-blue-600/10 cursor-pointer text-gray-300 transition-colors" id="toggle-price-label">
-            <div class="flex items-center gap-3"><div class="menu-checkbox w-4 h-4 border border-gray-500 rounded flex items-center justify-center bg-blue-600 border-blue-600 transition-colors"><span class="text-white text-[10px] font-bold">✓</span></div>Price Label</div>
-        </div>
-        <div class="menu-item px-4 py-2 hover:bg-blue-600/10 cursor-pointer text-gray-300 transition-colors" id="toggle-countdown">
-            <div class="flex items-center gap-3"><div class="menu-checkbox w-4 h-4 border border-gray-500 rounded flex items-center justify-center bg-blue-600 border-blue-600 transition-colors"><span class="text-white text-[10px] font-bold">✓</span></div>Countdown</div>
-        </div>
-        <div class="menu-item px-4 py-2 hover:bg-blue-600/10 cursor-pointer text-gray-300 transition-colors" id="toggle-crosshair">
-            <div class="flex items-center gap-3"><div class="menu-checkbox w-4 h-4 border border-gray-500 rounded flex items-center justify-center bg-blue-600 border-blue-600 transition-colors"><span class="text-white text-[10px] font-bold">✓</span></div>Crosshair</div>
-        </div>
-    </div>
 
 <script>
     const HEADER_HEIGHT = 48;
@@ -517,15 +1258,57 @@
     const MIN_PANE_HEIGHT = 50;
     
     let config = {
-        gridSpacing: 1000, gridColor: '#636363', baseTickSize: 2.5, minCellHeight: 15,
-        upColor: '#608feb', downColor: '#ff4242', candleOpacity: 1.0, seriesType: 'candle',
+        gridSpacing: 1000, 
+        gridColor: '#636363', 
+        gridOpacity: 1.0,
+        gridLineWidth: 1,
+        baseTickSize: 2.5, 
+        minCellHeight: 15,
+        upColor: '#608feb', 
+        downColor: '#ff4242', 
+        candleOpacity: 1.0, 
+        seriesType: 'candle',
         minBubbleVolume: 500000,
-        showPriceLine: true, showPriceLabel: true, showCountdown: true, showCrosshair: true,
+        showPriceLine: false, 
+        showPriceLabel: true, 
+        showCountdown: true, 
+        showCrosshair: true,
         pocColor: '#f0b90b',
         currentTimeframe: 5,
         candleWidthPercent: 0.20,
         clusterWidthPercent: 0.80,
-        cumulativeMode: 'all'
+        cumulativeMode: 'all',
+        wickThickness: 1,
+        borderThickness: 1,
+        bgColor: '#0a0e1a',
+        panelColor: '#0f1419',
+        accentColor: '#3b82f6',
+        absorptionColor: '#FFD700',
+        statsFontFamily: "'JetBrains Mono', monospace",
+        statsFontSize: 11,
+        statsFontWeight: '600',
+        cellFontSize: 11,
+        cellFontWeight: '400',
+        barSpacing: 50,
+        clusterBgOpacity: 0.85,
+        pocBorderWidth: 1,
+        cellBorderWidth: 1,
+        bubbleInnerSize: 5,
+        bubbleOuterSize: 10,
+        bubblePulseSpeed: 1500,
+        absorptionDotSize: 4,
+        absorptionGlow: 10,
+        absorptionThreshold: 100000,
+        priceLabelFontSize: 10,
+        timerFontSize: 11,
+        timerOpacity: 0.9,
+        defaultIndicatorHeight: 150,
+        oiCandleWidth: 0.5,
+        cvdLineThickness: 2,
+        indicatorPadding: 10,
+        indicatorBgOpacity: 0.95,
+        drawDelay: 100,
+        interactionHold: 180
     };
     
     let clustersHistory = {}; 
@@ -536,11 +1319,368 @@
     let ws = null;
 
     const chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
-        layout: { background: { color: '#0a0e1a' }, textColor: '#8b92a7', fontFamily: 'Inter' },
+        layout: { background: { color: config.bgColor }, textColor: '#8b92a7', fontFamily: 'Inter' },
         grid: { vertLines: { visible: false }, horzLines: { visible: false } },
         rightPriceScale: { borderColor: '#1a1f2e', width: 60, scaleMargins: { top: 0.05, bottom: 0.20 } },
         crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-        timeScale: { borderColor: '#1a1f2e', timeVisible: true, barSpacing: 50, rightOffset: 5, visible: true }
+        timeScale: { borderColor: '#1a1f2e', timeVisible: true, barSpacing: config.barSpacing, rightOffset: 5, visible: true }
+    });
+
+    // ============================================================================
+    // SETTINGS PANEL FUNCTIONS
+    // ============================================================================
+    
+    function toggleSection(header) {
+        const section = header.parentElement;
+        section.classList.toggle('expanded');
+    }
+
+    function toggleSwitch(element) {
+        element.classList.toggle('active');
+        const switchId = element.id;
+        
+        // Map switches to their settings
+        if (switchId === 'toggle-price-line-switch') {
+            config.showPriceLine = element.classList.contains('active');
+            mainSeries.applyOptions({ priceLineVisible: config.showPriceLine });
+        } else if (switchId === 'toggle-price-label-switch') {
+            config.showPriceLabel = element.classList.contains('active');
+            scheduleDraw();
+        } else if (switchId === 'toggle-countdown-switch') {
+            config.showCountdown = element.classList.contains('active');
+            scheduleDraw();
+        } else if (switchId === 'toggle-crosshair-switch') {
+            config.showCrosshair = element.classList.contains('active');
+            chart.applyOptions({ 
+                crosshair: { 
+                    vertLine: { visible: config.showCrosshair }, 
+                    horzLine: { visible: config.showCrosshair } 
+                } 
+            });
+        }
+    }
+
+    function resetToDefaults() {
+        if (!confirm('Reset all settings to default values? This cannot be undone.')) return;
+        
+        // Reset config to defaults
+        config = {
+            gridSpacing: 1000, gridColor: '#636363', gridOpacity: 1.0, gridLineWidth: 1,
+            baseTickSize: 2.5, minCellHeight: 15, upColor: '#608feb', downColor: '#ff4242',
+            candleOpacity: 1.0, seriesType: 'candle', minBubbleVolume: 500000,
+            showPriceLine: false, showPriceLabel: true, showCountdown: true, showCrosshair: true,
+            pocColor: '#f0b90b', currentTimeframe: 5, candleWidthPercent: 0.20,
+            clusterWidthPercent: 0.80, cumulativeMode: 'all', wickThickness: 1, borderThickness: 1,
+            bgColor: '#0a0e1a', panelColor: '#0f1419', accentColor: '#3b82f6',
+            absorptionColor: '#FFD700', statsFontFamily: "'JetBrains Mono', monospace",
+            statsFontSize: 11, statsFontWeight: '600', cellFontSize: 11, cellFontWeight: '400',
+            barSpacing: 50, clusterBgOpacity: 0.85, pocBorderWidth: 1, cellBorderWidth: 1,
+            bubbleInnerSize: 5, bubbleOuterSize: 10, bubblePulseSpeed: 1500,
+            absorptionDotSize: 4, absorptionGlow: 10, absorptionThreshold: 100000,
+            priceLabelFontSize: 10, timerFontSize: 11, timerOpacity: 0.9,
+            defaultIndicatorHeight: 150, oiCandleWidth: 0.5, cvdLineThickness: 2,
+            indicatorPadding: 10, indicatorBgOpacity: 0.95, drawDelay: 100, interactionHold: 180
+        };
+        
+        // Update all UI controls
+        document.getElementById('series-type-select').value = 'candle';
+        document.getElementById('bar-spacing-input').value = 50;
+        document.getElementById('candle-opacity').value = 100;
+        document.getElementById('opacity-val').textContent = '100%';
+        document.getElementById('candle-width-input').value = 20;
+        document.getElementById('cluster-width-input').value = 80;
+        document.getElementById('wick-thickness').value = 1;
+        document.getElementById('wick-thickness-val').textContent = '1px';
+        document.getElementById('border-thickness').value = 1;
+        document.getElementById('border-thickness-val').textContent = '1px';
+        document.getElementById('up-candle-color').value = '#608feb';
+        document.getElementById('down-candle-color').value = '#ff4242';
+        document.getElementById('grid-color-input').value = '#636363';
+        document.getElementById('poc-color-input').value = '#f0b90b';
+        document.getElementById('bg-color-input').value = '#0a0e1a';
+        document.getElementById('panel-color-input').value = '#0f1419';
+        document.getElementById('accent-color-input').value = '#3b82f6';
+        document.getElementById('absorption-color-input').value = '#FFD700';
+        document.getElementById('stats-font-family').value = "'JetBrains Mono', monospace";
+        document.getElementById('stats-font-size').value = 11;
+        document.getElementById('stats-font-size-val').textContent = '11px';
+        document.getElementById('stats-font-weight').value = '600';
+        document.getElementById('cell-font-size').value = 11;
+        document.getElementById('cell-font-size-val').textContent = '11px';
+        document.getElementById('cell-font-weight').value = '400';
+        document.getElementById('grid-spacing-input').value = 1000;
+        document.getElementById('grid-opacity').value = 100;
+        document.getElementById('grid-opacity-val').textContent = '100%';
+        document.getElementById('grid-line-width').value = 1;
+        document.getElementById('grid-line-width-val').textContent = '1px';
+        document.getElementById('base-tick-input').value = 2.5;
+        document.getElementById('min-cell-height-input').value = 15;
+        document.getElementById('cumulative-mode-select').value = 'all';
+        document.getElementById('cluster-bg-opacity').value = 85;
+        document.getElementById('cluster-bg-opacity-val').textContent = '85%';
+        document.getElementById('poc-border-width').value = 1;
+        document.getElementById('poc-border-width-val').textContent = '1px';
+        document.getElementById('cell-border-width').value = 1;
+        document.getElementById('cell-border-width-val').textContent = '1px';
+        document.getElementById('bubble-threshold-input').value = 500000;
+        document.getElementById('bubble-inner-size').value = 5;
+        document.getElementById('bubble-outer-size').value = 10;
+        document.getElementById('bubble-pulse-speed').value = 1500;
+        document.getElementById('bubble-pulse-speed-val').textContent = '1.5s';
+        document.getElementById('absorption-dot-size').value = 4;
+        document.getElementById('absorption-glow').value = 10;
+        document.getElementById('absorption-threshold').value = 100000;
+        document.getElementById('toggle-price-line-switch').classList.remove('active');
+        document.getElementById('toggle-price-label-switch').classList.add('active');
+        document.getElementById('toggle-countdown-switch').classList.add('active');
+        document.getElementById('toggle-crosshair-switch').classList.add('active');
+        document.getElementById('price-label-font-size').value = 10;
+        document.getElementById('timer-font-size').value = 11;
+        document.getElementById('timer-opacity').value = 90;
+        document.getElementById('timer-opacity-val').textContent = '90%';
+        document.getElementById('default-indicator-height').value = 150;
+        document.getElementById('oi-candle-width').value = 50;
+        document.getElementById('oi-candle-width-val').textContent = '50%';
+        document.getElementById('cvd-line-thickness').value = 2;
+        document.getElementById('cvd-line-thickness-val').textContent = '2px';
+        document.getElementById('indicator-padding').value = 10;
+        document.getElementById('indicator-bg-opacity').value = 95;
+        document.getElementById('draw-delay').value = 100;
+        document.getElementById('draw-delay-val').textContent = '100ms';
+        document.getElementById('interaction-hold').value = 180;
+        document.getElementById('interaction-hold-val').textContent = '180ms';
+        
+        // Apply changes
+        updateCandleAppearance();
+        chart.applyOptions({
+            layout: { background: { color: config.bgColor } },
+            timeScale: { barSpacing: config.barSpacing }
+        });
+        mainSeries.applyOptions({ priceLineVisible: config.showPriceLine });
+        chart.applyOptions({ 
+            crosshair: { 
+                vertLine: { visible: config.showCrosshair }, 
+                horzLine: { visible: config.showCrosshair } 
+            } 
+        });
+        scheduleDraw();
+    }
+
+    // ============================================================================
+    // SETTINGS PANEL EVENT LISTENERS
+    // ============================================================================
+    
+    // Chart Appearance
+    document.getElementById('bar-spacing-input').addEventListener('input', (e) => {
+        config.barSpacing = parseInt(e.target.value);
+        chart.timeScale().applyOptions({ barSpacing: config.barSpacing });
+        scheduleDraw();
+    });
+
+    document.getElementById('candle-width-input').addEventListener('input', (e) => {
+        config.candleWidthPercent = parseInt(e.target.value) / 100;
+        scheduleDraw();
+    });
+
+    document.getElementById('cluster-width-input').addEventListener('input', (e) => {
+        config.clusterWidthPercent = parseInt(e.target.value) / 100;
+        scheduleDraw();
+    });
+
+    document.getElementById('wick-thickness').addEventListener('input', (e) => {
+        config.wickThickness = parseFloat(e.target.value);
+        document.getElementById('wick-thickness-val').textContent = config.wickThickness + 'px';
+        scheduleDraw();
+    });
+
+    document.getElementById('border-thickness').addEventListener('input', (e) => {
+        config.borderThickness = parseFloat(e.target.value);
+        document.getElementById('border-thickness-val').textContent = config.borderThickness + 'px';
+        scheduleDraw();
+    });
+
+    // Colors
+    document.getElementById('bg-color-input').addEventListener('change', (e) => {
+        config.bgColor = e.target.value;
+        chart.applyOptions({ layout: { background: { color: config.bgColor } } });
+    });
+
+    document.getElementById('panel-color-input').addEventListener('change', (e) => {
+        config.panelColor = e.target.value;
+        // Could update panel colors here if needed
+    });
+
+    document.getElementById('accent-color-input').addEventListener('change', (e) => {
+        config.accentColor = e.target.value;
+        // Could update accent colors throughout UI
+    });
+
+    document.getElementById('poc-color-input').addEventListener('change', (e) => {
+        config.pocColor = e.target.value;
+        scheduleDraw();
+    });
+
+    document.getElementById('absorption-color-input').addEventListener('change', (e) => {
+        config.absorptionColor = e.target.value;
+        scheduleDraw();
+    });
+
+    // Typography
+    document.getElementById('stats-font-family').addEventListener('change', (e) => {
+        config.statsFontFamily = e.target.value;
+        document.getElementById('stats-font-preview').style.fontFamily = e.target.value;
+        scheduleDraw();
+    });
+
+    document.getElementById('stats-font-size').addEventListener('input', (e) => {
+        config.statsFontSize = parseInt(e.target.value);
+        document.getElementById('stats-font-size-val').textContent = config.statsFontSize + 'px';
+        scheduleDraw();
+    });
+
+    document.getElementById('stats-font-weight').addEventListener('change', (e) => {
+        config.statsFontWeight = e.target.value;
+        scheduleDraw();
+    });
+
+    document.getElementById('cell-font-size').addEventListener('input', (e) => {
+        config.cellFontSize = parseInt(e.target.value);
+        document.getElementById('cell-font-size-val').textContent = config.cellFontSize + 'px';
+        scheduleDraw();
+    });
+
+    document.getElementById('cell-font-weight').addEventListener('change', (e) => {
+        config.cellFontWeight = e.target.value;
+        scheduleDraw();
+    });
+
+    // Grid & Scale
+    document.getElementById('grid-opacity').addEventListener('input', (e) => {
+        config.gridOpacity = parseInt(e.target.value) / 100;
+        document.getElementById('grid-opacity-val').textContent = e.target.value + '%';
+        scheduleDraw();
+    });
+
+    document.getElementById('grid-line-width').addEventListener('input', (e) => {
+        config.gridLineWidth = parseFloat(e.target.value);
+        document.getElementById('grid-line-width-val').textContent = config.gridLineWidth + 'px';
+        scheduleDraw();
+    });
+
+    document.getElementById('base-tick-input').addEventListener('change', (e) => {
+        config.baseTickSize = parseFloat(e.target.value);
+        scheduleDraw();
+    });
+
+    document.getElementById('min-cell-height-input').addEventListener('change', (e) => {
+        config.minCellHeight = parseInt(e.target.value);
+        scheduleDraw();
+    });
+
+    // Footprint Clusters
+    document.getElementById('cluster-bg-opacity').addEventListener('input', (e) => {
+        config.clusterBgOpacity = parseInt(e.target.value) / 100;
+        document.getElementById('cluster-bg-opacity-val').textContent = e.target.value + '%';
+        scheduleDraw();
+    });
+
+    document.getElementById('poc-border-width').addEventListener('input', (e) => {
+        config.pocBorderWidth = parseFloat(e.target.value);
+        document.getElementById('poc-border-width-val').textContent = config.pocBorderWidth + 'px';
+        scheduleDraw();
+    });
+
+    document.getElementById('cell-border-width').addEventListener('input', (e) => {
+        config.cellBorderWidth = parseFloat(e.target.value);
+        document.getElementById('cell-border-width-val').textContent = config.cellBorderWidth + 'px';
+        scheduleDraw();
+    });
+
+    // Volume Analysis
+    document.getElementById('bubble-inner-size').addEventListener('input', (e) => {
+        config.bubbleInnerSize = parseInt(e.target.value);
+        scheduleDraw();
+    });
+
+    document.getElementById('bubble-outer-size').addEventListener('input', (e) => {
+        config.bubbleOuterSize = parseInt(e.target.value);
+        scheduleDraw();
+    });
+
+    document.getElementById('bubble-pulse-speed').addEventListener('input', (e) => {
+        config.bubblePulseSpeed = parseInt(e.target.value);
+        document.getElementById('bubble-pulse-speed-val').textContent = (config.bubblePulseSpeed / 1000).toFixed(1) + 's';
+        scheduleDraw();
+    });
+
+    document.getElementById('absorption-dot-size').addEventListener('input', (e) => {
+        config.absorptionDotSize = parseInt(e.target.value);
+        scheduleDraw();
+    });
+
+    document.getElementById('absorption-glow').addEventListener('input', (e) => {
+        config.absorptionGlow = parseInt(e.target.value);
+        scheduleDraw();
+    });
+
+    document.getElementById('absorption-threshold').addEventListener('input', (e) => {
+        config.absorptionThreshold = parseInt(e.target.value);
+        scheduleDraw();
+    });
+
+    // UI Elements
+    document.getElementById('price-label-font-size').addEventListener('input', (e) => {
+        config.priceLabelFontSize = parseInt(e.target.value);
+        scheduleDraw();
+    });
+
+    document.getElementById('timer-font-size').addEventListener('input', (e) => {
+        config.timerFontSize = parseInt(e.target.value);
+        scheduleDraw();
+    });
+
+    document.getElementById('timer-opacity').addEventListener('input', (e) => {
+        config.timerOpacity = parseInt(e.target.value) / 100;
+        document.getElementById('timer-opacity-val').textContent = e.target.value + '%';
+        scheduleDraw();
+    });
+
+    // Indicators
+    document.getElementById('default-indicator-height').addEventListener('input', (e) => {
+        config.defaultIndicatorHeight = parseInt(e.target.value);
+    });
+
+    document.getElementById('oi-candle-width').addEventListener('input', (e) => {
+        config.oiCandleWidth = parseInt(e.target.value) / 100;
+        document.getElementById('oi-candle-width-val').textContent = e.target.value + '%';
+        scheduleDraw();
+    });
+
+    document.getElementById('cvd-line-thickness').addEventListener('input', (e) => {
+        config.cvdLineThickness = parseFloat(e.target.value);
+        document.getElementById('cvd-line-thickness-val').textContent = config.cvdLineThickness + 'px';
+        scheduleDraw();
+    });
+
+    document.getElementById('indicator-padding').addEventListener('input', (e) => {
+        config.indicatorPadding = parseInt(e.target.value);
+        scheduleDraw();
+    });
+
+    document.getElementById('indicator-bg-opacity').addEventListener('input', (e) => {
+        config.indicatorBgOpacity = parseInt(e.target.value) / 100;
+        scheduleDraw();
+    });
+
+    // Advanced
+    document.getElementById('draw-delay').addEventListener('input', (e) => {
+        config.drawDelay = parseInt(e.target.value);
+        document.getElementById('draw-delay-val').textContent = config.drawDelay + 'ms';
+    });
+
+    document.getElementById('interaction-hold').addEventListener('input', (e) => {
+        config.interactionHold = parseInt(e.target.value);
+        document.getElementById('interaction-hold-val').textContent = config.interactionHold + 'ms';
     });
 
     // ============================================================================
@@ -548,7 +1688,6 @@
     // ============================================================================
     
     let rafId = null, rafRunning = false, needsRedraw = false, lastInteractionTime = 0;
-    const INTERACTION_HOLD_MS = 180;
 
     function scheduleDraw() {
         needsRedraw = true;
@@ -557,7 +1696,7 @@
             rafRunning = true;
             const loop = () => {
                 const now = Date.now();
-                if (now - lastInteractionTime < INTERACTION_HOLD_MS) {
+                if (now - lastInteractionTime < config.interactionHold) {
                     drawFrames(); rafId = requestAnimationFrame(loop);
                 } else {
                     if (needsRedraw) {
@@ -588,7 +1727,7 @@
     // ============================================================================
     
     class BaseIndicator {
-        constructor(id, name, defaultHeight = 150) {
+        constructor(id, name, defaultHeight = config.defaultIndicatorHeight) {
             this.id = id;
             this.name = name;
             this.height = defaultHeight;
@@ -629,14 +1768,12 @@
         }
 
         setupEventListeners() {
-            // Close button
             const closeBtn = this.element.querySelector('.pane-close');
             closeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 indicatorManager.removeIndicator(this.id);
             });
 
-            // Resize handle
             const resizer = this.element.querySelector('.resizer-handle');
             let dragging = false;
             let startY = 0;
@@ -663,7 +1800,6 @@
                 }
             });
 
-            // Drag to reorder
             const header = this.element.querySelector('.pane-header');
             header.addEventListener('mousedown', (e) => {
                 if (e.target.classList.contains('pane-close')) return;
@@ -734,7 +1870,7 @@
             if (maxOI === -Infinity || minOI === Infinity) { minOI = 0; maxOI = 100; }
             if (minOI === maxOI) { minOI = maxOI * 0.99; maxOI = maxOI * 1.01; }
 
-            const padding = 10;
+            const padding = config.indicatorPadding;
             const availableH = this.height - (padding * 2);
             const oiRange = maxOI - minOI;
             
@@ -760,7 +1896,7 @@
                 
                 const isUp = cClose >= cOpen;
                 const color = isUp ? config.upColor : config.downColor;
-                const w = Math.max(3, barSpacing * 0.5);
+                const w = Math.max(3, barSpacing * config.oiCandleWidth);
 
                 ctxS.fillStyle = color;
                 ctxS.strokeStyle = color;
@@ -793,7 +1929,6 @@
             const ctxS = this.offscreenCtx;
             ctxS.clearRect(0, 0, cssWidth, this.height);
             
-            // Calculate CVD for all candles
             const cvdData = [];
             let cumulativeDelta = 0;
             
@@ -817,11 +1952,9 @@
 
             if (cvdData.length === 0) return;
 
-            // Get visible range
             const visibleCandles = getVisibleCandles(cssWidth);
             if (visibleCandles.length === 0) return;
 
-            // Find min/max CVD in visible range
             let minCVD = Infinity, maxCVD = -Infinity;
             visibleCandles.forEach(item => {
                 const cvdPoint = cvdData.find(d => d.time === item.candle.time);
@@ -834,7 +1967,7 @@
             if (minCVD === Infinity || maxCVD === -Infinity) return;
             if (minCVD === maxCVD) { minCVD -= 1000000; maxCVD += 1000000; }
 
-            const padding = 10;
+            const padding = config.indicatorPadding;
             const availableH = this.height - (padding * 2);
             const cvdRange = maxCVD - minCVD;
             
@@ -843,7 +1976,6 @@
                 return padding + (availableH * (1 - pct));
             };
 
-            // Draw zero line if in range
             if (minCVD <= 0 && maxCVD >= 0) {
                 const zeroY = getCVDY(0);
                 ctxS.strokeStyle = '#3a3f4e';
@@ -856,7 +1988,6 @@
                 ctxS.setLineDash([]);
             }
 
-            // Draw CVD line
             ctxS.beginPath();
             let firstPoint = true;
             
@@ -878,11 +2009,10 @@
             const lineColor = finalCVD >= 0 ? config.upColor : config.downColor;
             
             ctxS.strokeStyle = lineColor;
-            ctxS.lineWidth = 2;
+            ctxS.lineWidth = config.cvdLineThickness;
             ctxS.stroke();
 
-            // Draw value labels
-            ctxS.font = '10px "JetBrains Mono", monospace';
+            ctxS.font = `10px ${config.statsFontFamily}`;
             ctxS.textAlign = 'right';
             ctxS.fillStyle = '#8b92a7';
             
@@ -892,13 +2022,12 @@
             ctxS.fillText(formatUSD(maxCVD), cssWidth - 5, maxY + 12);
             ctxS.fillText(formatUSD(minCVD), cssWidth - 5, minY - 5);
 
-            // Current value
             if (finalCVD !== undefined) {
                 const currentY = getCVDY(finalCVD);
                 const lastX = visibleCandles[visibleCandles.length - 1]?.x || cssWidth - 80;
                 
                 ctxS.fillStyle = lineColor;
-                ctxS.font = 'bold 11px "JetBrains Mono", monospace';
+                ctxS.font = `bold 11px ${config.statsFontFamily}`;
                 ctxS.textAlign = 'left';
                 ctxS.fillText(formatUSD(finalCVD), lastX + 10, currentY + 4);
             }
@@ -908,7 +2037,7 @@
     class IndicatorManager {
         constructor() {
             this.indicators = new Map();
-            this.order = []; // Track order of indicators (bottom to top)
+            this.order = [];
             this.container = document.getElementById('indicators-container');
             this.dragState = null;
             this.placeholder = null;
@@ -935,7 +2064,6 @@
             this.order = this.order.filter(i => i !== id);
             this.updateLayout();
             
-            // Update toggle button
             const toggleBtn = document.getElementById(`toggle-${id}`);
             if (toggleBtn) {
                 toggleBtn.classList.remove('active');
@@ -950,7 +2078,6 @@
             const wrapper = document.getElementById('chart-wrapper');
             const totalHeight = window.innerHeight - HEADER_HEIGHT;
             
-            // Calculate total indicator height
             let totalIndicatorHeight = 0;
             this.order.forEach(id => {
                 const indicator = this.indicators.get(id);
@@ -959,16 +2086,13 @@
                 }
             });
 
-            // Update chart margins
             const marginPct = (totalIndicatorHeight + TIME_AXIS_HEIGHT) / totalHeight;
             chart.priceScale('right').applyOptions({
                 scaleMargins: { top: 0.05, bottom: marginPct }
             });
 
-            // Position indicators from bottom up
             let currentBottom = TIME_AXIS_HEIGHT;
             
-            // Iterate in order (bottom to top)
             this.order.forEach(id => {
                 const indicator = this.indicators.get(id);
                 if (!indicator || !indicator.visible) return;
@@ -998,7 +2122,6 @@
 
             indicator.element.classList.add('dragging');
             
-            // Create placeholder
             this.placeholder = document.createElement('div');
             this.placeholder.className = 'drag-placeholder';
             this.placeholder.style.height = '2px';
@@ -1015,7 +2138,6 @@
             const wrapperRect = wrapper.getBoundingClientRect();
             const relativeY = wrapperRect.bottom - e.clientY;
 
-            // Find insertion point
             let insertIndex = 0;
             let cumulativeHeight = TIME_AXIS_HEIGHT;
 
@@ -1032,7 +2154,6 @@
                 cumulativeHeight += ind.height;
             }
 
-            // Update placeholder position
             let placeholderBottom = TIME_AXIS_HEIGHT;
             for (let i = 0; i < insertIndex; i++) {
                 const ind = this.indicators.get(this.order[i]);
@@ -1052,7 +2173,6 @@
                 indicator.element.classList.remove('dragging');
             }
 
-            // Calculate new order based on placeholder position
             const placeholderBottom = parseInt(this.placeholder.style.bottom);
             let newOrder = [];
             let cumulativeHeight = TIME_AXIS_HEIGHT;
@@ -1079,7 +2199,6 @@
 
             this.order = newOrder;
 
-            // Cleanup
             if (this.placeholder) {
                 this.placeholder.remove();
                 this.placeholder = null;
@@ -1104,11 +2223,9 @@
 
     const indicatorManager = new IndicatorManager();
 
-    // Initialize with OI indicator (default)
     const oiIndicator = new OIIndicator();
     indicatorManager.addIndicator(oiIndicator);
 
-    // Indicator toggle buttons
     document.getElementById('toggle-oi').addEventListener('click', function() {
         const indicator = indicatorManager.getIndicator('oi');
         if (indicator && indicator.visible) {
@@ -1277,6 +2394,8 @@
         const labelContainer = document.getElementById('custom-price-label');
         labelContainer.style.display = 'flex';
         labelContainer.style.top = (yCoord - 13) + 'px';
+        labelContainer.style.fontFamily = config.statsFontFamily;
+        labelContainer.style.fontSize = config.priceLabelFontSize + 'px';
 
         const priceText = currentPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         
@@ -1393,14 +2512,14 @@
             clusterBoxY = Math.min(clippedYTop, clippedYBottom);
         }
         
-        offscreenCtx.fillStyle = 'rgba(15, 20, 25, 0.85)';
+        offscreenCtx.fillStyle = hexToRgba(config.panelColor, config.clusterBgOpacity);
         offscreenCtx.fillRect(clusterX, clusterBoxY, clusterWidth, clusterBoxHeight);
         
         offscreenCtx.strokeStyle = '#1a1f2e';
-        offscreenCtx.lineWidth = 1;
+        offscreenCtx.lineWidth = config.cellBorderWidth;
         offscreenCtx.strokeRect(clusterX, clusterBoxY, clusterWidth, clusterBoxHeight);
         
-        offscreenCtx.font = '11px "JetBrains Mono", monospace';
+        offscreenCtx.font = `${config.cellFontWeight} ${config.cellFontSize}px ${config.statsFontFamily}`;
         offscreenCtx.textAlign = "center";
         offscreenCtx.textBaseline = "middle";
         
@@ -1434,7 +2553,7 @@
             
             if (String(priceKey) === String(pocBucketKey)) {
                 offscreenCtx.strokeStyle = config.pocColor;
-                offscreenCtx.lineWidth = 1;
+                offscreenCtx.lineWidth = config.pocBorderWidth;
                 offscreenCtx.strokeRect(clusterX, drawY, clusterWidth, heightCell);
             }
             
@@ -1454,7 +2573,7 @@
             const deltaColor = totalDelta >= 0 ? config.upColor : config.downColor;
             const centerX = clusterX + (clusterWidth / 2);
             
-            offscreenCtx.font = 'bold 11px "JetBrains Mono", monospace';
+            offscreenCtx.font = `${config.statsFontWeight} ${config.statsFontSize}px ${config.statsFontFamily}`;
             offscreenCtx.textAlign = 'center';
             
             offscreenCtx.fillStyle = '#a6afd3';
@@ -1505,8 +2624,8 @@
         
         const timestamps = Object.keys(clustersHistory);
 
-        offscreenCtx.lineWidth = 1; 
-        offscreenCtx.strokeStyle = config.gridColor;
+        offscreenCtx.lineWidth = config.gridLineWidth; 
+        offscreenCtx.strokeStyle = hexToRgba(config.gridColor, config.gridOpacity);
         offscreenCtx.beginPath();
         const approxRange = 60000;
         const startPrice = Math.floor(currentPrice / config.gridSpacing) * config.gridSpacing - approxRange;
@@ -1546,7 +2665,7 @@
             const candleX = startX;
 
             offscreenCtx.strokeStyle = colorWithOpacity;
-            offscreenCtx.lineWidth = 1;
+            offscreenCtx.lineWidth = config.wickThickness;
             offscreenCtx.beginPath();
             offscreenCtx.moveTo(candleX + candleWidth/2, clippedHighY);
             offscreenCtx.lineTo(candleX + candleWidth/2, clippedLowY);
@@ -1558,6 +2677,12 @@
             if (config.seriesType === 'candle') {
                 offscreenCtx.fillStyle = colorWithOpacity;
                 offscreenCtx.fillRect(candleX, bodyTop, candleWidth, bodyHeight);
+                
+                if (config.borderThickness > 0) {
+                    offscreenCtx.strokeStyle = colorWithOpacity;
+                    offscreenCtx.lineWidth = config.borderThickness;
+                    offscreenCtx.strokeRect(candleX, bodyTop, candleWidth, bodyHeight);
+                }
             } else {
                 offscreenCtx.strokeStyle = colorWithOpacity;
                 offscreenCtx.lineWidth = 2;
@@ -1619,14 +2744,14 @@
             const boxX = startX + candleWidth;
             const boxWidth = clusterWidth;
 
-            offscreenCtx.fillStyle = 'rgba(15, 20, 25, 0.85)';
+            offscreenCtx.fillStyle = hexToRgba(config.panelColor, config.clusterBgOpacity);
             offscreenCtx.fillRect(boxX, clusterBoxY, boxWidth, clusterBoxHeight);
             
             offscreenCtx.strokeStyle = '#1a1f2e';
-            offscreenCtx.lineWidth = 1;
+            offscreenCtx.lineWidth = config.cellBorderWidth;
             offscreenCtx.strokeRect(boxX, clusterBoxY, boxWidth, clusterBoxHeight);
 
-            offscreenCtx.font = '11px "JetBrains Mono", monospace';
+            offscreenCtx.font = `${config.cellFontWeight} ${config.cellFontSize}px ${config.statsFontFamily}`;
             offscreenCtx.textAlign = "center";
             offscreenCtx.textBaseline = "middle";
             
@@ -1660,7 +2785,7 @@
 
                 if (String(priceKey) === String(pocBucketKey)) {
                     offscreenCtx.strokeStyle = config.pocColor;
-                    offscreenCtx.lineWidth = 1;
+                    offscreenCtx.lineWidth = config.pocBorderWidth;
                     offscreenCtx.strokeRect(boxX, drawY, boxWidth, heightCell);
                 }
 
@@ -1676,7 +2801,7 @@
 
         if (allCandles && config.minBubbleVolume > 0) {
             const currentTime = Date.now();
-            const pulsePhase = (currentTime % 1500) / 1500;
+            const pulsePhase = (currentTime % config.bubblePulseSpeed) / config.bubblePulseSpeed;
             const pulseOpacity = 0.3 + (Math.sin(pulsePhase * Math.PI * 2) * 0.3);
             
             allCandles.forEach(candle => {
@@ -1715,14 +2840,14 @@
                     offscreenCtx.save();
                     offscreenCtx.globalAlpha = pulseOpacity;
                     offscreenCtx.beginPath();
-                    offscreenCtx.arc(barCenterX, dotY, 10, 0, Math.PI * 2);
+                    offscreenCtx.arc(barCenterX, dotY, config.bubbleOuterSize, 0, Math.PI * 2);
                     offscreenCtx.fillStyle = dotColor;
                     offscreenCtx.fill();
                     offscreenCtx.restore();
                     
                     offscreenCtx.save();
                     offscreenCtx.beginPath();
-                    offscreenCtx.arc(barCenterX, dotY, 5, 0, Math.PI * 2);
+                    offscreenCtx.arc(barCenterX, dotY, config.bubbleInnerSize, 0, Math.PI * 2);
                     offscreenCtx.fillStyle = dotColor;
                     offscreenCtx.fill();
                     offscreenCtx.restore();
@@ -1772,8 +2897,8 @@
                 
                 const candleVWAP = vwapDenominator > 0 ? vwapNumerator / vwapDenominator : candle.open;
 
-                const isBullishAbsorption = delta <= -100000 && candle.close > candleVWAP && oiIncreasing;
-                const isBearishAbsorption = delta >= 100000 && candle.close < candleVWAP && oiIncreasing;
+                const isBullishAbsorption = delta <= -config.absorptionThreshold && candle.close > candleVWAP && oiIncreasing;
+                const isBearishAbsorption = delta >= config.absorptionThreshold && candle.close < candleVWAP && oiIncreasing;
 
                 if (isBullishAbsorption || isBearishAbsorption) {
                     const dotY = isBullishAbsorption 
@@ -1783,12 +2908,12 @@
                     if (dotY > 0 && dotY < candleBottomY) {
                         offscreenCtx.save();
                         
-                        offscreenCtx.shadowColor = "#FFD700";
-                        offscreenCtx.shadowBlur = 10;
-                        offscreenCtx.fillStyle = "#FFD700";
+                        offscreenCtx.shadowColor = config.absorptionColor;
+                        offscreenCtx.shadowBlur = config.absorptionGlow;
+                        offscreenCtx.fillStyle = config.absorptionColor;
                         
                         offscreenCtx.beginPath();
-                        offscreenCtx.arc(x, dotY, 4, 0, Math.PI * 2);
+                        offscreenCtx.arc(x, dotY, config.absorptionDotSize, 0, Math.PI * 2);
                         offscreenCtx.fill();
 
                         offscreenCtx.shadowBlur = 0;
@@ -1811,24 +2936,12 @@
                 const startX = x - (totalWidth / 2);
                 const barCenterX = startX + (totalWidth / 2);
                 
-                const baseFontSize = Math.max(9, Math.min(14, totalWidth * 0.18));
-                const fontWeight = baseFontSize >= 11 ? 'bold' : '600';
-                offscreenCtx.font = `${fontWeight} ${baseFontSize}px "JetBrains Mono", monospace`;
+                const fontWeight = config.statsFontWeight;
+                offscreenCtx.font = `${fontWeight} ${config.statsFontSize}px ${config.statsFontFamily}`;
                 
                 const volText = `V:${formatUSD(totalVol)}`;
                 const deltaValue = formatUSD(delta);
                 const deltaText = `D:${deltaValue}`;
-                
-                let volMetrics = offscreenCtx.measureText(volText);
-                let deltaMetrics = offscreenCtx.measureText(deltaText);
-                const maxWidth = totalWidth * 0.95;
-                
-                let finalFontSize = baseFontSize;
-                if (volMetrics.width > maxWidth || deltaMetrics.width > maxWidth) {
-                    const scaleFactor = maxWidth / Math.max(volMetrics.width, deltaMetrics.width);
-                    finalFontSize = Math.max(7, baseFontSize * scaleFactor);
-                    offscreenCtx.font = `${fontWeight} ${finalFontSize}px "JetBrains Mono", monospace`;
-                }
                 
                 offscreenCtx.fillStyle = '#a6afd3';
                 offscreenCtx.textAlign = 'center';
@@ -1849,7 +2962,6 @@
             });
         }
 
-        // Draw indicators
         indicatorManager.drawAll(cssWidth);
 
         const nowSec = Math.floor(Date.now() / 1000);
@@ -1872,13 +2984,15 @@
                 
                 const timerHeight = 28;
                 timerBox.style.top = (yViewport - timerHeight/2) + 'px';
+                timerBox.style.fontSize = config.timerFontSize + 'px';
+                timerBox.style.fontFamily = config.statsFontFamily;
 
                 const lastC = allCandles[allCandles.length - 1];
                 const isUp = lastC ? (lastC.close >= lastC.open) : true;
                 const bg = isUp ? config.upColor : config.downColor;
                 
-                timerBox.style.backgroundColor = hexToRgba(bg, 0.25); 
-                timerBox.style.borderColor = hexToRgba(bg, 0.8);
+                timerBox.style.backgroundColor = hexToRgba(bg, config.timerOpacity * 0.25); 
+                timerBox.style.borderColor = hexToRgba(bg, config.timerOpacity);
                 timerBox.querySelector('span').style.backgroundColor = bg; 
                 timerText.textContent = (diff > 0) ? formatTime(diff) : "0:00";
             } else {
@@ -1970,7 +3084,6 @@
     });
 
     const ctxMenuMain = document.getElementById('ctx-menu-main');
-    const ctxMenuSettings = document.getElementById('ctx-menu-settings');
     const settingsPanel = document.getElementById('settings-panel');
 
     document.getElementById('chart-wrapper').addEventListener('contextmenu', (e) => {
@@ -1982,63 +3095,13 @@
 
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.context-menu') && !e.target.closest('#settings-panel') && !e.target.closest('#header-settings-btn')) {
-            ctxMenuMain.classList.add('hidden'); 
-            ctxMenuSettings.classList.add('hidden');
+            ctxMenuMain.classList.add('hidden');
         }
     });
 
     document.getElementById('ctx-reset').onclick = () => { 
         chart.timeScale().scrollToRealTime(); 
         chart.priceScale('right').applyOptions({ autoScale: true }); 
-    };
-    
-    document.getElementById('ctx-settings-trigger').onmouseenter = () => {
-        const rect = ctxMenuMain.getBoundingClientRect();
-        ctxMenuSettings.style.left = `${rect.right + 2}px`;
-        ctxMenuSettings.style.top = `${rect.top}px`;
-        ctxMenuSettings.classList.remove('hidden');
-    };
-
-    function toggleCheckboxUI(id, isChecked) {
-        const checkbox = document.getElementById(id).querySelector('.menu-checkbox');
-        if (isChecked) {
-            checkbox.classList.add('bg-blue-600', 'border-blue-600'); 
-            checkbox.classList.remove('bg-transparent', 'border-gray-500');
-            checkbox.innerHTML = '<span class="text-white text-[10px] font-bold">✓</span>';
-        } else {
-            checkbox.classList.remove('bg-blue-600', 'border-blue-600'); 
-            checkbox.classList.add('bg-transparent', 'border-gray-500');
-            checkbox.innerHTML = '';
-        }
-    }
-    
-    document.getElementById('toggle-price-line').onclick = () => { 
-        config.showPriceLine = !config.showPriceLine; 
-        mainSeries.applyOptions({ priceLineVisible: config.showPriceLine }); 
-        toggleCheckboxUI('toggle-price-line', config.showPriceLine); 
-    };
-    
-    document.getElementById('toggle-price-label').onclick = () => { 
-        config.showPriceLabel = !config.showPriceLabel; 
-        toggleCheckboxUI('toggle-price-label', config.showPriceLabel);
-        scheduleDraw();
-    };
-    
-    document.getElementById('toggle-countdown').onclick = () => { 
-        config.showCountdown = !config.showCountdown; 
-        toggleCheckboxUI('toggle-countdown', config.showCountdown); 
-        scheduleDraw(); 
-    };
-    
-    document.getElementById('toggle-crosshair').onclick = () => { 
-        config.showCrosshair = !config.showCrosshair; 
-        chart.applyOptions({ 
-            crosshair: { 
-                vertLine: { visible: config.showCrosshair }, 
-                horzLine: { visible: config.showCrosshair } 
-            } 
-        }); 
-        toggleCheckboxUI('toggle-crosshair', config.showCrosshair); 
     };
 
     const toggleSettings = () => { 
@@ -2048,35 +3111,13 @@
     
     document.getElementById('header-settings-btn').onclick = toggleSettings;
     document.getElementById('close-settings').onclick = toggleSettings;
+    document.getElementById('ctx-settings-trigger').onclick = toggleSettings;
 
     document.getElementById('cumulative-mode-select').onchange = (e) => {
         config.cumulativeMode = e.target.value;
         scheduleDraw();
     };
 
-    function resizeAll() {
-        setupBuffersForSize();
-        indicatorManager.updateLayout();
-    }
-
-    window.addEventListener('resize', resizeAll);
-    chart.timeScale().subscribeVisibleLogicalRangeChange(() => scheduleDraw());
-    
-    document.getElementById('grid-spacing-input').onchange = (e) => { 
-        config.gridSpacing = parseFloat(e.target.value); 
-        scheduleDraw(); 
-    };
-    
-    document.getElementById('grid-color-input').oninput = (e) => { 
-        config.gridColor = e.target.value; 
-        scheduleDraw(); 
-    };
-    
-    document.getElementById('bubble-threshold-input').onchange = (e) => { 
-        config.minBubbleVolume = parseFloat(e.target.value); 
-        scheduleDraw(); 
-    };
-    
     document.getElementById('series-type-select').onchange = (e) => { 
         config.seriesType = e.target.value; 
         mainSeries = createSeries(config.seriesType); 
@@ -2100,8 +3141,32 @@
     document.getElementById('candle-opacity').oninput = (e) => { 
         config.candleOpacity = e.target.value / 100; 
         document.getElementById('opacity-val').innerText = e.target.value + '%'; 
-        updateCandleAppearance(); 
+        updateCandleAppearance();
+        scheduleDraw(); 
     };
+    
+    document.getElementById('grid-spacing-input').onchange = (e) => { 
+        config.gridSpacing = parseFloat(e.target.value); 
+        scheduleDraw(); 
+    };
+    
+    document.getElementById('grid-color-input').oninput = (e) => { 
+        config.gridColor = e.target.value; 
+        scheduleDraw(); 
+    };
+    
+    document.getElementById('bubble-threshold-input').onchange = (e) => { 
+        config.minBubbleVolume = parseFloat(e.target.value); 
+        scheduleDraw(); 
+    };
+
+    function resizeAll() {
+        setupBuffersForSize();
+        indicatorManager.updateLayout();
+    }
+
+    window.addEventListener('resize', resizeAll);
+    chart.timeScale().subscribeVisibleLogicalRangeChange(() => scheduleDraw());
 
     async function init() {
         try {
@@ -2128,7 +3193,7 @@
                 chart.timeScale().fitContent();
             }
             startWebSockets();
-            setInterval(() => { needsRedraw = true; scheduleDraw(); }, 100); 
+            setInterval(() => { needsRedraw = true; scheduleDraw(); }, config.drawDelay); 
         } catch(e) { 
             console.error(e); 
         }
