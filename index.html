@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BTC Pro Order Flow - Enhanced Settings</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>📊</text></svg>">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
@@ -228,6 +229,27 @@
             font-weight: 600;
         }
 
+        .timeframe-btn-plus {
+            padding: 4px 8px;
+            background: transparent;
+            border: 1px solid #1a1f2e;
+            color: #8b92a7;
+            font-size: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .timeframe-btn-plus:hover {
+            background: #1a1f2e;
+            color: #3b82f6;
+            border-color: #3b82f6;
+            transform: rotate(90deg);
+        }
+
         #custom-price-label {
             position: absolute;
             right: 0;
@@ -331,6 +353,122 @@
             background: #3b82f6;
             z-index: 150;
             box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+
+        /* Custom Timeframe Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #0d1117 0%, #0f1419 100%);
+            border: 1px solid #1a1f2e;
+            border-radius: 12px;
+            padding: 32px;
+            min-width: 400px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 18px;
+            font-weight: 600;
+            color: #e8eaed;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .modal-description {
+            font-size: 13px;
+            color: #8b92a7;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: #0a0e1a;
+            border: 2px solid #1a1f2e;
+            border-radius: 8px;
+            color: #e8eaed;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            transition: all 0.2s;
+            margin-bottom: 24px;
+        }
+
+        .modal-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .modal-btn-cancel {
+            background: transparent;
+            border: 1px solid #1a1f2e;
+            color: #8b92a7;
+        }
+
+        .modal-btn-cancel:hover {
+            background: #1a1f2e;
+            color: #e8eaed;
+        }
+
+        .modal-btn-confirm {
+            background: #3b82f6;
+            border: 1px solid #3b82f6;
+            color: white;
+        }
+
+        .modal-btn-confirm:hover {
+            background: #2563eb;
+            border-color: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
 
         /* Enhanced Settings Panel Styles */
@@ -604,6 +742,7 @@
                     <button class="timeframe-btn" data-tf="60">1h</button>
                     <button class="timeframe-btn" data-tf="240">4h</button>
                     <button class="timeframe-btn" data-tf="D">1D</button>
+                    <button class="timeframe-btn-plus" id="custom-tf-btn">+</button>
                 </div>
             </div>
             <div class="h-6 w-px bg-trade-border/50"></div>
@@ -660,6 +799,22 @@
         <div id="timer-box" class="hidden absolute right-[10px] bg-black/90 border border-trade-border/50 backdrop-blur text-white px-1 py-1 font-mono text-[11px] font-semibold z-[60] tabular-nums flex items-center gap-1.5 pointer-events-none shadow-lg rounded" style="min-width: 60px;">
             <span class="w-1.5 h-1.5 rounded-full bg-white/90 animate-pulse"></span>
             <span id="timer-text">00:00</span>
+        </div>
+    </div>
+
+    <!-- Custom Timeframe Modal -->
+    <div id="custom-tf-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="modal-title">Custom Timeframe</h2>
+            <p class="modal-description">
+                Enter a timeframe: Numbers for minutes (e.g., "15", "45")<br>
+                Add suffix for periods: "d" = days, "w" = weeks, "M" = months
+            </p>
+            <input type="text" id="custom-tf-input" class="modal-input" placeholder="e.g., 15, 1h, 1d, 1w" autocomplete="off">
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel" id="custom-tf-cancel">Cancel</button>
+                <button class="modal-btn modal-btn-confirm" id="custom-tf-confirm">Apply</button>
+            </div>
         </div>
     </div>
 
@@ -1256,6 +1411,7 @@
     const HEADER_HEIGHT = 48;
     const TIME_AXIS_HEIGHT = 28;
     const MIN_PANE_HEIGHT = 50;
+    const BASE_TIMEFRAME = 5; // Base 5m timeframe for data collection
     
     let config = {
         gridSpacing: 1000, 
@@ -1275,6 +1431,7 @@
         showCrosshair: true,
         pocColor: '#f0b90b',
         currentTimeframe: 5,
+        displayTimeframe: 5, // The timeframe being displayed
         candleWidthPercent: 0.20,
         clusterWidthPercent: 0.80,
         cumulativeMode: 'all',
@@ -1311,11 +1468,14 @@
         interactionHold: 180
     };
     
-    let clustersHistory = {}; 
+    let base5mClusters = {}; // Always stores 5m data
+    let base5mCandles = []; // Always stores 5m candles
+    let displayCandles = []; // Candles shown on chart (can be aggregated)
+    let displayClusters = {}; // Clusters shown on chart (can be aggregated)
+    
     let lastBarTime = 0;
     let currentPrice = 0;
     let mainSeries;
-    let allCandles = []; 
     let ws = null;
 
     const chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
@@ -1325,6 +1485,270 @@
         crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
         timeScale: { borderColor: '#1a1f2e', timeVisible: true, barSpacing: config.barSpacing, rightOffset: 5, visible: true }
     });
+
+    // ============================================================================
+    // CUSTOM TIMEFRAME FUNCTIONS
+    // ============================================================================
+
+    function parseCustomTimeframe(input) {
+        input = input.trim().toLowerCase();
+        
+        // Handle formats like "1h", "4h"
+        if (input.endsWith('h')) {
+            const hours = parseFloat(input.slice(0, -1));
+            if (isNaN(hours) || hours <= 0) return null;
+            return hours * 60;
+        }
+        
+        // Handle formats like "1d", "7d"
+        if (input.endsWith('d')) {
+            const days = parseFloat(input.slice(0, -1));
+            if (isNaN(days) || days <= 0) return null;
+            return days * 1440; // 1440 minutes in a day
+        }
+        
+        // Handle formats like "1w", "2w"
+        if (input.endsWith('w')) {
+            const weeks = parseFloat(input.slice(0, -1));
+            if (isNaN(weeks) || weeks <= 0) return null;
+            return weeks * 10080; // 10080 minutes in a week
+        }
+        
+        // Handle formats like "1M", "3M" (months)
+        if (input.endsWith('m') && input.length > 1) {
+            const char = input[input.length - 2];
+            if (!isNaN(char)) {
+                // Just a number followed by 'm', treat as minutes
+                const mins = parseFloat(input.slice(0, -1));
+                if (isNaN(mins) || mins <= 0) return null;
+                return mins;
+            }
+        }
+        
+        // Plain number = minutes
+        const mins = parseFloat(input);
+        if (isNaN(mins) || mins <= 0) return null;
+        return mins;
+    }
+
+    function validateTimeframe(minutes) {
+        // Check if lower than base timeframe
+        if (minutes < BASE_TIMEFRAME) {
+            alert(`Footprint information will not migrate to timeframes lower than ${BASE_TIMEFRAME}m`);
+            return false;
+        }
+        
+        // Check if divisible by base timeframe
+        if (minutes % BASE_TIMEFRAME !== 0) {
+            alert(`Please use timeframes divisible by ${BASE_TIMEFRAME}m`);
+            return false;
+        }
+        
+        return true;
+    }
+
+    function aggregateCandles(source5mCandles, targetTFMinutes) {
+        if (targetTFMinutes === BASE_TIMEFRAME) {
+            return source5mCandles.slice(); // Return copy
+        }
+        
+        const aggregated = [];
+        const targetBarSeconds = targetTFMinutes * 60;
+        
+        // Group candles by their aligned timeframe boundary
+        const grouped = {};
+        source5mCandles.forEach(candle => {
+            // Align to target timeframe boundary
+            const alignedTime = Math.floor(candle.time / targetBarSeconds) * targetBarSeconds;
+            if (!grouped[alignedTime]) {
+                grouped[alignedTime] = [];
+            }
+            grouped[alignedTime].push(candle);
+        });
+        
+        // Sort aligned times
+        const alignedTimes = Object.keys(grouped).map(Number).sort((a, b) => a - b);
+        
+        alignedTimes.forEach(alignedTime => {
+            const chunk = grouped[alignedTime];
+            if (chunk.length === 0) return;
+            
+            const first = chunk[0];
+            const last = chunk[chunk.length - 1];
+            
+            const aggregatedBar = {
+                time: alignedTime,
+                open: first.open,
+                high: Math.max(...chunk.map(c => c.high)),
+                low: Math.min(...chunk.map(c => c.low)),
+                close: last.close,
+                oiOpen: first.oiOpen,
+                oiHigh: Math.max(...chunk.map(c => c.oiHigh || 0)),
+                oiLow: Math.min(...chunk.map(c => c.oiLow || Infinity)),
+                oiClose: last.oiClose
+            };
+            
+            aggregated.push(aggregatedBar);
+        });
+        
+        return aggregated;
+    }
+
+    function aggregateClusters(source5mClusters, targetTFMinutes) {
+        if (targetTFMinutes === BASE_TIMEFRAME) {
+            return JSON.parse(JSON.stringify(source5mClusters)); // Deep copy
+        }
+        
+        const aggregated = {};
+        const targetBarSeconds = targetTFMinutes * 60;
+        const barsPerAggregated = targetTFMinutes / BASE_TIMEFRAME;
+        
+        // Get all timestamps sorted (as numbers for sorting, but we'll use strings as keys)
+        const timestamps = Object.keys(source5mClusters).map(Number).sort((a, b) => a - b);
+        
+        console.log('Aggregating clusters from', timestamps.length, '5m bars to', targetTFMinutes, 'min bars');
+        console.log('Bars per aggregated bar:', barsPerAggregated);
+        
+        // Group timestamps by their aligned timeframe boundary
+        const grouped = {};
+        timestamps.forEach(ts => {
+            // Align to target timeframe boundary
+            const alignedTime = Math.floor(ts / targetBarSeconds) * targetBarSeconds;
+            if (!grouped[alignedTime]) {
+                grouped[alignedTime] = [];
+            }
+            grouped[alignedTime].push(ts);
+        });
+        
+        console.log('Grouped into', Object.keys(grouped).length, 'aligned timeframe bars');
+        
+        // Aggregate each group
+        Object.keys(grouped).forEach(alignedTime => {
+            const timeKey = String(alignedTime);
+            const timestamps = grouped[alignedTime];
+            
+            // Check if any of these bars have actual cluster data
+            let hasData = false;
+            timestamps.forEach(ts => {
+                const buckets = source5mClusters[String(ts)];
+                if (buckets && Object.keys(buckets).length > 0) {
+                    hasData = true;
+                }
+            });
+            
+            // Only create aggregated bar if at least one source bar has data
+            if (!hasData) return;
+            
+            aggregated[timeKey] = {};
+            
+            // Aggregate all price buckets across the time period
+            timestamps.forEach(ts => {
+                const buckets = source5mClusters[String(ts)];
+                if (!buckets) return;
+                
+                Object.keys(buckets).forEach(priceKey => {
+                    const price = parseFloat(priceKey);
+                    const data = buckets[priceKey];
+                    
+                    // Skip empty data
+                    if (data.buy === 0 && data.sell === 0) return;
+                    
+                    if (!aggregated[timeKey][price]) {
+                        aggregated[timeKey][price] = { buy: 0, sell: 0 };
+                    }
+                    
+                    aggregated[timeKey][price].buy += data.buy;
+                    aggregated[timeKey][price].sell += data.sell;
+                });
+            });
+            
+            // Only keep the aggregated bar if it has non-zero data
+            if (Object.keys(aggregated[timeKey]).length === 0) {
+                delete aggregated[timeKey];
+            } else {
+                console.log('Aggregated bar at time', alignedTime, 'from', timestamps.length, 'bars, has', Object.keys(aggregated[timeKey]).length, 'price levels');
+            }
+        });
+        
+        console.log('Total aggregated bars:', Object.keys(aggregated).length);
+        return aggregated;
+    }
+
+    function applyTimeframeChange(newTFMinutes) {
+        config.displayTimeframe = newTFMinutes;
+        
+        // Aggregate data
+        displayCandles = aggregateCandles(base5mCandles, newTFMinutes);
+        displayClusters = aggregateClusters(base5mClusters, newTFMinutes);
+        
+        console.log('Timeframe changed to', newTFMinutes, 'minutes');
+        console.log('Display candles:', displayCandles.length);
+        console.log('Display cluster timestamps:', Object.keys(displayClusters).length);
+        
+        // Update chart
+        mainSeries.setData(displayCandles);
+        
+        // Update UI
+        document.querySelectorAll('.timeframe-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Highlight button if it's a standard timeframe
+        const tfMap = { 1: 1, 3: 3, 5: 5, 15: 15, 30: 30, 60: 60, 240: 240, 1440: 'D' };
+        const btnValue = tfMap[newTFMinutes];
+        if (btnValue) {
+            const btn = document.querySelector(`[data-tf="${btnValue}"]`);
+            if (btn) btn.classList.add('active');
+        }
+        
+        // Force a redraw after a small delay to ensure chart is ready
+        setTimeout(() => {
+            chart.timeScale().fitContent();
+            needsRedraw = true;
+            scheduleDraw();
+        }, 100);
+    }
+
+    // Modal event listeners
+    document.getElementById('custom-tf-btn').onclick = () => {
+        const modal = document.getElementById('custom-tf-modal');
+        modal.classList.add('active');
+        document.getElementById('custom-tf-input').value = '';
+        document.getElementById('custom-tf-input').focus();
+    };
+
+    document.getElementById('custom-tf-cancel').onclick = () => {
+        document.getElementById('custom-tf-modal').classList.remove('active');
+    };
+
+    document.getElementById('custom-tf-modal').onclick = (e) => {
+        if (e.target.id === 'custom-tf-modal') {
+            document.getElementById('custom-tf-modal').classList.remove('active');
+        }
+    };
+
+    document.getElementById('custom-tf-input').onkeypress = (e) => {
+        if (e.key === 'Enter') {
+            document.getElementById('custom-tf-confirm').click();
+        }
+    };
+
+    document.getElementById('custom-tf-confirm').onclick = () => {
+        const input = document.getElementById('custom-tf-input').value;
+        const minutes = parseCustomTimeframe(input);
+        
+        if (minutes === null) {
+            alert('Invalid timeframe format. Examples: 15, 1h, 4h, 1d, 1w');
+            return;
+        }
+        
+        if (!validateTimeframe(minutes)) {
+            return;
+        }
+        
+        document.getElementById('custom-tf-modal').classList.remove('active');
+        applyTimeframeChange(minutes);
+    };
 
     // ============================================================================
     // SETTINGS PANEL FUNCTIONS
@@ -1369,7 +1793,7 @@
             baseTickSize: 2.5, minCellHeight: 15, upColor: '#608feb', downColor: '#ff4242',
             candleOpacity: 1.0, seriesType: 'candle', minBubbleVolume: 500000,
             showPriceLine: false, showPriceLabel: true, showCountdown: true, showCrosshair: true,
-            pocColor: '#f0b90b', currentTimeframe: 5, candleWidthPercent: 0.20,
+            pocColor: '#f0b90b', currentTimeframe: 5, displayTimeframe: 5, candleWidthPercent: 0.20,
             clusterWidthPercent: 0.80, cumulativeMode: 'all', wickThickness: 1, borderThickness: 1,
             bgColor: '#0a0e1a', panelColor: '#0f1419', accentColor: '#3b82f6',
             absorptionColor: '#FFD700', statsFontFamily: "'JetBrains Mono', monospace",
@@ -1463,7 +1887,9 @@
                 horzLine: { visible: config.showCrosshair } 
             } 
         });
-        scheduleDraw();
+        
+        // Reset to 5m timeframe
+        applyTimeframeChange(5);
     }
 
     // ============================================================================
@@ -1712,9 +2138,9 @@
 
     function getVisibleCandles(cssWidth) {
         const visibleCandles = [];
-        if (!allCandles) return visibleCandles;
-        for (let i = 0; i < allCandles.length; i++) {
-            const candle = allCandles[i];
+        if (!displayCandles) return visibleCandles;
+        for (let i = 0; i < displayCandles.length; i++) {
+            const candle = displayCandles[i];
             const x = chart.timeScale().timeToCoordinate(candle.time);
             if (x === null || x < -100 || x > cssWidth + 100) continue;
             visibleCandles.push({ i, x, candle });
@@ -1932,9 +2358,9 @@
             const cvdData = [];
             let cumulativeDelta = 0;
             
-            allCandles.forEach(candle => {
+            displayCandles.forEach(candle => {
                 const tsKey = String(Math.floor(candle.time));
-                const buckets = clustersHistory[tsKey];
+                const buckets = displayClusters[tsKey];
                 
                 if (buckets) {
                     let candleDelta = 0;
@@ -2337,19 +2763,19 @@
     }
 
     function upsertCandle(tsSec, o, h, l, c) {
-        if (!allCandles) allCandles = [];
+        if (!base5mCandles) base5mCandles = [];
         const key = Math.floor(tsSec);
         let found = false;
-        for (let i = allCandles.length - 1; i >= 0; i--) {
-            if (Math.floor(allCandles[i].time) === key) {
-                allCandles[i].open = o; allCandles[i].high = h; allCandles[i].low = l; allCandles[i].close = c;
+        for (let i = base5mCandles.length - 1; i >= 0; i--) {
+            if (Math.floor(base5mCandles[i].time) === key) {
+                base5mCandles[i].open = o; base5mCandles[i].high = h; base5mCandles[i].low = l; base5mCandles[i].close = c;
                 found = true; break; 
             }
         }
         if(!found){
-            let prevOI = allCandles.length > 0 ? (allCandles[allCandles.length-1].oiClose || 0) : 0;
-            allCandles.push({ time: key, open: o, high: h, low: l, close: c, oiOpen: prevOI, oiHigh: prevOI, oiLow: prevOI, oiClose: prevOI });
-            allCandles.sort((a,b) => a.time - b.time);
+            let prevOI = base5mCandles.length > 0 ? (base5mCandles[base5mCandles.length-1].oiClose || 0) : 0;
+            base5mCandles.push({ time: key, open: o, high: h, low: l, close: c, oiOpen: prevOI, oiHigh: prevOI, oiLow: prevOI, oiClose: prevOI });
+            base5mCandles.sort((a,b) => a.time - b.time);
         }
     }
 
@@ -2387,7 +2813,7 @@
             return;
         }
 
-        const lastCandle = allCandles[allCandles.length - 1];
+        const lastCandle = displayCandles[displayCandles.length - 1];
         const isUp = lastCandle ? (lastCandle.close >= lastCandle.open) : true;
         const color = isUp ? config.upColor : config.downColor;
 
@@ -2421,17 +2847,32 @@
         
         const clusterWidth = barSpacing * 2 * 0.92;
         
+        // Find the rightmost VISIBLE candle from displayCandles
         let rightmostX = 0;
-        const timestamps = Object.keys(clustersHistory);
-        timestamps.forEach(timestamp => {
-            const ts = parseInt(timestamp);
-            const x = timeScale.timeToCoordinate(ts);
-            if (x !== null && x > rightmostX && x < cssWidth) {
+        let rightmostTime = 0;
+        
+        for (let i = displayCandles.length - 1; i >= 0; i--) {
+            const candle = displayCandles[i];
+            const x = timeScale.timeToCoordinate(candle.time);
+            if (x !== null && x >= 0 && x <= cssWidth) {
+                if (candle.time > rightmostTime) {
+                    rightmostTime = candle.time;
+                    rightmostX = x;
+                }
+            }
+        }
+        
+        // If no visible candles, fallback to last candle
+        if (rightmostX === 0 && displayCandles.length > 0) {
+            const lastCandle = displayCandles[displayCandles.length - 1];
+            const x = timeScale.timeToCoordinate(lastCandle.time);
+            if (x !== null) {
                 rightmostX = x;
             }
-        });
+        }
         
-        const offsetFromCandles = barSpacing * 20;
+        // Use a fixed pixel offset instead of bar spacing multiple
+        const offsetFromCandles = 150; // Fixed 150px offset
         let clusterX = rightmostX + offsetFromCandles;
         
         if (clusterX + clusterWidth > cssWidth - 75) {
@@ -2443,6 +2884,9 @@
         let totalBuy = 0;
         let totalSell = 0;
         
+        // Get all cluster timestamps for aggregation
+        const timestamps = Object.keys(displayClusters);
+        
         timestamps.forEach(timestamp => {
             const ts = parseInt(timestamp);
             const x = timeScale.timeToCoordinate(ts);
@@ -2451,7 +2895,7 @@
                 if (x === null || x < -100 || x > cssWidth + 100) return;
             }
             
-            const rawClusters = clustersHistory[timestamp];
+            const rawClusters = displayClusters[timestamp];
             
             Object.keys(rawClusters).forEach(priceKey => {
                 const price = parseFloat(priceKey);
@@ -2622,7 +3066,7 @@
         const candleWidth = totalWidth * config.candleWidthPercent;
         const clusterWidth = totalWidth * config.clusterWidthPercent;
         
-        const timestamps = Object.keys(clustersHistory);
+        const timestamps = Object.keys(displayClusters);
 
         offscreenCtx.lineWidth = config.gridLineWidth; 
         offscreenCtx.strokeStyle = hexToRgba(config.gridColor, config.gridOpacity);
@@ -2639,7 +3083,7 @@
         }
         offscreenCtx.stroke();
         
-        allCandles.forEach(candle => {
+        displayCandles.forEach(candle => {
             const x = timeScale.timeToCoordinate(candle.time);
             if (x === null || x < -100 || x > cssWidth + 100) return;
 
@@ -2701,7 +3145,9 @@
             const x = timeScale.timeToCoordinate(ts);
             if (x === null || x < -100 || x > cssWidth + 100) continue;
 
-            const rawClusters = clustersHistory[timestamp];
+            const rawClusters = displayClusters[timestamp];
+            if (!rawClusters || Object.keys(rawClusters).length === 0) continue; // Skip if no cluster data
+            
             let aggregatedData = {};
             
             Object.keys(rawClusters).forEach(priceKey => {
@@ -2799,16 +3245,16 @@
 
         drawCumulativeCluster(cssWidth, cssHeight, candleBottomY);
 
-        if (allCandles && config.minBubbleVolume > 0) {
+        if (displayCandles && config.minBubbleVolume > 0) {
             const currentTime = Date.now();
             const pulsePhase = (currentTime % config.bubblePulseSpeed) / config.bubblePulseSpeed;
             const pulseOpacity = 0.3 + (Math.sin(pulsePhase * Math.PI * 2) * 0.3);
             
-            allCandles.forEach(candle => {
+            displayCandles.forEach(candle => {
                 const x = timeScale.timeToCoordinate(candle.time);
                 if (x === null || x < -20 || x > cssWidth + 20) return;
                 const tsKey = String(Math.floor(candle.time));
-                const buckets = clustersHistory[tsKey];
+                const buckets = displayClusters[tsKey];
                 if (!buckets) return;
 
                 let totalBuy = 0, totalSell = 0;
@@ -2855,16 +3301,16 @@
             });
         }
 
-        if(allCandles) {
+        if(displayCandles) {
             offscreenCtx.textAlign = "center";
             offscreenCtx.textBaseline = "middle";
 
-            allCandles.forEach(candle => {
+            displayCandles.forEach(candle => {
                 const x = timeScale.timeToCoordinate(candle.time);
                 if (x === null || x < -50 || x > cssWidth + 50) return;
                 
                 const tsKey = String(Math.floor(candle.time));
-                const buckets = clustersHistory[tsKey];
+                const buckets = displayClusters[tsKey];
                 if (!buckets) return;
 
                 let totalBuy = 0, totalSell = 0;
@@ -2965,7 +3411,7 @@
         indicatorManager.drawAll(cssWidth);
 
         const nowSec = Math.floor(Date.now() / 1000);
-        const barSeconds = getBarSeconds(config.currentTimeframe);
+        const barSeconds = getBarSeconds(config.displayTimeframe);
         const nextBarTime = lastBarTime + barSeconds;
         const diff = nextBarTime - nowSec;
         const timerBox = document.getElementById('timer-box');
@@ -2987,7 +3433,7 @@
                 timerBox.style.fontSize = config.timerFontSize + 'px';
                 timerBox.style.fontFamily = config.statsFontFamily;
 
-                const lastC = allCandles[allCandles.length - 1];
+                const lastC = displayCandles[displayCandles.length - 1];
                 const isUp = lastC ? (lastC.close >= lastC.open) : true;
                 const bg = isUp ? config.upColor : config.downColor;
                 
@@ -3043,9 +3489,9 @@
         return map[tf] || '5min';
     }
 
-    function getBarSeconds(tf) {
-        if (tf === 'D') return 86400;
-        return tf * 60;
+    function getBarSeconds(tfMinutes) {
+        if (tfMinutes === 'D') return 86400;
+        return tfMinutes * 60;
     }
 
     function getWSInterval(tf) {
@@ -3057,29 +3503,19 @@
     }
 
     async function changeTimeframe(newTF) {
-        config.currentTimeframe = newTF;
-        
-        if (ws) {
-            ws.close();
-            ws = null;
+        // Standard timeframe buttons - only change display if >= 5m
+        if (newTF < BASE_TIMEFRAME) {
+            alert(`Footprint information will not migrate to timeframes lower than ${BASE_TIMEFRAME}m`);
+            return;
         }
         
-        clustersHistory = {};
-        allCandles = [];
-        lastBarTime = 0;
-        
-        document.querySelectorAll('.timeframe-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        document.querySelector(`[data-tf="${newTF}"]`).classList.add('active');
-        
-        await init();
+        applyTimeframeChange(newTF);
     }
 
     document.querySelectorAll('.timeframe-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const tf = btn.getAttribute('data-tf');
-            changeTimeframe(tf === 'D' ? 'D' : parseInt(tf));
+            changeTimeframe(tf === 'D' ? 1440 : parseInt(tf));
         });
     });
 
@@ -3121,7 +3557,7 @@
     document.getElementById('series-type-select').onchange = (e) => { 
         config.seriesType = e.target.value; 
         mainSeries = createSeries(config.seriesType); 
-        mainSeries.setData(allCandles); 
+        mainSeries.setData(displayCandles); 
         updateCandleAppearance(); 
         scheduleDraw(); 
     };
@@ -3170,11 +3606,11 @@
 
     async function init() {
         try {
-            const interval = getIntervalString(config.currentTimeframe);
+            const interval = getIntervalString(BASE_TIMEFRAME);
             const response = await fetch(`https://api.bybit.com/v5/market/kline?category=inverse&symbol=BTCUSD&interval=${interval}&limit=200`);
             const data = await response.json();
             if(data.result && data.result.list){
-                allCandles = data.result.list.map(d => ({ 
+                base5mCandles = data.result.list.map(d => ({ 
                     time: parseInt(d[0]) / 1000, 
                     open: parseFloat(d[1]), 
                     high: parseFloat(d[2]), 
@@ -3186,9 +3622,17 @@
                     oiClose: 0
                 })).sort((a, b) => a.time - b.time);
                 
-                mainSeries.setData(allCandles);
-                lastBarTime = allCandles[allCandles.length - 1].time;
-                currentPrice = allCandles[allCandles.length - 1].close;
+                // Don't initialize empty clusters - only real trade data will populate them
+                console.log('Loaded', base5mCandles.length, 'historical candles');
+                console.log('⚠️ Note: Footprint clusters will only appear for bars with live trade data.');
+                console.log('📊 Clusters are being collected in real-time and will migrate when changing timeframes.');
+                
+                // Initialize display with base data
+                displayCandles = base5mCandles.slice();
+                displayClusters = aggregateClusters(base5mClusters, config.displayTimeframe);
+                mainSeries.setData(displayCandles);
+                lastBarTime = base5mCandles[base5mCandles.length - 1].time;
+                currentPrice = base5mCandles[base5mCandles.length - 1].close;
                 await fetchOpenInterest();
                 chart.timeScale().fitContent();
             }
@@ -3201,12 +3645,12 @@
 
     async function fetchOpenInterest() {
         try {
-            const oiInterval = getOIIntervalString(config.currentTimeframe);
+            const oiInterval = getOIIntervalString(BASE_TIMEFRAME);
             const resp = await fetch(`https://api.bybit.com/v5/market/open-interest?category=inverse&symbol=BTCUSD&intervalTime=${oiInterval}&limit=200`);
             const oiData = await resp.json();
             if(oiData.result && oiData.result.list) {
                 const oiMap = {};
-                const barSec = getBarSeconds(config.currentTimeframe);
+                const barSec = getBarSeconds(BASE_TIMEFRAME);
                 oiData.result.list.forEach(item => { 
                     const ts = parseInt(item.timestamp) / 1000;
                     const normalizedTs = Math.floor(ts / barSec) * barSec;
@@ -3215,10 +3659,10 @@
                 
                 let previousOI = 0;
                 const firstTs = Object.keys(oiMap).sort()[0];
-                if(firstTs) previousOI = oiMap[firstTs] / allCandles.find(c => c.time >= firstTs)?.close || 0;
+                if(firstTs) previousOI = oiMap[firstTs] / base5mCandles.find(c => c.time >= firstTs)?.close || 0;
                 
-                for(let i=0; i<allCandles.length; i++) {
-                    const c = allCandles[i];
+                for(let i=0; i<base5mCandles.length; i++) {
+                    const c = base5mCandles[i];
                     let foundRawOI = oiMap[c.time];
                     if(foundRawOI) {
                         const oiBTC = foundRawOI / c.close;
@@ -3235,6 +3679,10 @@
                         c.oiLow = previousOI; 
                     }
                 }
+                
+                // Update display candles with OI data
+                displayCandles = base5mCandles.slice();
+                
                 if(previousOI > 0) document.getElementById('oi-display').innerText = previousOI.toFixed(2);
             }
         } catch(e) { 
@@ -3243,7 +3691,7 @@
     }
 
     function startWebSockets() {
-        const wsInterval = getWSInterval(config.currentTimeframe);
+        const wsInterval = getWSInterval(BASE_TIMEFRAME);
         ws = new WebSocket("wss://stream.bybit.com/v5/public/inverse");
         ws.onopen = () => ws.send(JSON.stringify({ 
             op: "subscribe", 
@@ -3256,16 +3704,19 @@
             
             if (msg.topic && msg.topic.includes("tickers") && msg.data.openInterest) {
                 const rawOI = parseFloat(msg.data.openInterest);
-                const lastCandle = allCandles[allCandles.length - 1];
+                const lastCandle = base5mCandles[base5mCandles.length - 1];
                 if(lastCandle && currentPrice > 0) {
                     const oiBTC = rawOI / currentPrice;
                     document.getElementById('oi-display').innerText = oiBTC.toFixed(2);
                     if(lastCandle.oiOpen === 0 || !lastCandle.oiOpen) {
-                        lastCandle.oiOpen = (allCandles.length > 1) ? allCandles[allCandles.length-2].oiClose : oiBTC;
+                        lastCandle.oiOpen = (base5mCandles.length > 1) ? base5mCandles[base5mCandles.length-2].oiClose : oiBTC;
                     }
                     lastCandle.oiClose = oiBTC;
                     lastCandle.oiHigh = Math.max(lastCandle.oiHigh||-Infinity, oiBTC);
                     lastCandle.oiLow = Math.min(lastCandle.oiLow||Infinity, oiBTC);
+                    
+                    // Re-aggregate and update display
+                    displayCandles = aggregateCandles(base5mCandles, config.displayTimeframe);
                     scheduleDraw();
                 }
             }
@@ -3274,11 +3725,11 @@
                 const k = msg.data[0];
                 const ts = parseInt(k.start) / 1000;
                 if (ts > lastBarTime) {
-                    const closingOI = allCandles[allCandles.length - 1]?.oiClose || 0;
-                    clustersHistory[ts] = {}; 
+                    const closingOI = base5mCandles[base5mCandles.length - 1]?.oiClose || 0;
+                    base5mClusters[String(ts)] = {}; 
                     lastBarTime = ts; 
                     upsertCandle(ts, parseFloat(k.open), parseFloat(k.high), parseFloat(k.low), parseFloat(k.close));
-                    const newCandle = allCandles[allCandles.length - 1];
+                    const newCandle = base5mCandles[base5mCandles.length - 1];
                     newCandle.oiOpen = closingOI; 
                     newCandle.oiClose = closingOI; 
                     newCandle.oiHigh = closingOI; 
@@ -3286,13 +3737,12 @@
                 } else {
                     upsertCandle(ts, parseFloat(k.open), parseFloat(k.high), parseFloat(k.low), parseFloat(k.close));
                 }
-                mainSeries.update({ 
-                    time: ts, 
-                    open: parseFloat(k.open), 
-                    high: parseFloat(k.high), 
-                    low: parseFloat(k.low), 
-                    close: parseFloat(k.close) 
-                });
+                
+                // Re-aggregate and update display
+                displayCandles = aggregateCandles(base5mCandles, config.displayTimeframe);
+                displayClusters = aggregateClusters(base5mClusters, config.displayTimeframe);
+                
+                mainSeries.update(displayCandles[displayCandles.length - 1]);
                 scheduleDraw();
             }
             
@@ -3303,11 +3753,17 @@
                     const valUsd = parseFloat(trade.v);
                     const bucket = Math.floor(price / config.baseTickSize) * config.baseTickSize;
                     
-                    if (!clustersHistory[lastBarTime]) clustersHistory[lastBarTime] = {};
-                    if (!clustersHistory[lastBarTime][bucket]) clustersHistory[lastBarTime][bucket] = { buy: 0, sell: 0 };
+                    const timeKey = String(lastBarTime);
+                    const bucketKey = String(bucket);
                     
-                    if (trade.S === "Buy") clustersHistory[lastBarTime][bucket].buy += valUsd;
-                    else clustersHistory[lastBarTime][bucket].sell += valUsd;
+                    if (!base5mClusters[timeKey]) base5mClusters[timeKey] = {};
+                    if (!base5mClusters[timeKey][bucketKey]) base5mClusters[timeKey][bucketKey] = { buy: 0, sell: 0 };
+                    
+                    if (trade.S === "Buy") base5mClusters[timeKey][bucketKey].buy += valUsd;
+                    else base5mClusters[timeKey][bucketKey].sell += valUsd;
+                    
+                    // Re-aggregate clusters for display
+                    displayClusters = aggregateClusters(base5mClusters, config.displayTimeframe);
                     
                     document.getElementById('price').innerText = price.toLocaleString();
                     scheduleDraw();
