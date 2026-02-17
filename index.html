@@ -37,7 +37,6 @@
             }
         }
     </script>
-
     <style>
         body { 
             background-color: #0a0e1a; 
@@ -51,7 +50,7 @@
         .custom-scroll::-webkit-scrollbar-thumb { background: #1a1f2e; border-radius: 3px; }
         .custom-scroll::-webkit-scrollbar-thumb:hover { background: #2a2f3e; }
 
-        #chart-wrapper { 
+        #panel-wrapper-0 { 
             position: relative; 
             flex: 1; 
             min-height: 0; 
@@ -408,6 +407,39 @@
             border: 1px solid rgba(255,255,255,0.08);
         }
         .tpo-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+        /* ── Multi-panel layout ── */
+        #charts-container { display:flex; flex-direction:row; flex:1; min-height:0; overflow:hidden; }
+        .chart-panel-wrapper { position:relative; display:flex; flex-direction:column; min-width:150px; overflow:hidden; }
+        .vertical-resizer {
+            width:5px; background:#1a1f2e; cursor:col-resize; flex-shrink:0;
+            z-index:100; transition:background 0.15s;
+            display:flex; align-items:center; justify-content:center;
+        }
+        .vertical-resizer::after { content:''; width:1px; height:30px; background:rgba(139,146,167,0.18); border-radius:1px; }
+        .vertical-resizer:hover, .vertical-resizer.resizing { background:rgba(59,130,246,0.2); }
+        .vertical-resizer:hover::after, .vertical-resizer.resizing::after { background:#3b82f6; box-shadow:0 0 6px rgba(59,130,246,0.5); }
+        .panel-close-btn {
+            position:absolute; top:6px; right:84px; z-index:200;
+            background:rgba(255,66,66,0.15); border:1px solid rgba(255,66,66,0.3);
+            color:#ff4242; border-radius:4px; width:22px; height:22px;
+            display:flex; align-items:center; justify-content:center;
+            cursor:pointer; font-size:11px; opacity:0; pointer-events:none; transition:all 0.2s;
+        }
+        .chart-panel-wrapper:hover .panel-close-btn { opacity:1; pointer-events:all; }
+        .panel-close-btn:hover { background:rgba(255,66,66,0.4); border-color:#ff4242; }
+        .panel-tf-bar {
+            position:absolute; top:6px; left:6px; z-index:200;
+            display:flex; gap:3px; opacity:0; pointer-events:none; transition:opacity 0.2s;
+            background:rgba(10,14,26,0.88); border:1px solid #1a1f2e;
+            border-radius:5px; padding:3px 4px; backdrop-filter:blur(4px);
+        }
+        .chart-panel-wrapper:hover .panel-tf-bar { opacity:1; pointer-events:all; }
+
+        .chart-panel-wrapper.selected {
+    box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.4);
+}
+
     </style>
 </head>
 <body class="font-sans text-trade-text antialiased h-screen flex flex-col">
@@ -480,22 +512,33 @@
                     </div>
                     <span>TPO</span>
                 </button>
+                <!-- ★ VWAP Toggle Button -->
+                <button id="toggle-vwap" class="indicator-toggle">
+                    <div class="indicator-checkbox">
+                        <svg viewBox="0 0 12 12" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,6 5,9 10,3"></polyline></svg>
+                    </div>
+                    <span>VWAP</span>
+                </button>
             </div>
             <div class="h-6 w-px bg-trade-border/50"></div>
+            <button id="add-chart-btn" class="px-3 py-1.5 text-[11px] font-mono font-semibold bg-transparent border border-trade-border hover:border-blue-500 text-gray-400 hover:text-blue-400 rounded-md transition-all active:scale-95" title="Add chart panel">+ Chart</button>
+            <div class="h-6 w-px bg-trade-border/50"></div>
             <button id="header-settings-btn" class="p-2 hover:bg-[#1a1f2e] rounded-md text-gray-400 hover:text-white transition-all active:scale-95 group">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:rotate-45 transition-transform duration-300"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:rotate-45 transition-transform duration-300"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             </button>
         </div>
     </header>
 
-    <div id="chart-wrapper">
-        <div id="chart-container"></div>
-        <canvas id="footprint-overlay"></canvas>
-        <div id="custom-price-label"></div>
-        <div id="indicators-container"></div>
-        <div id="timer-box" class="hidden absolute right-[10px] bg-black/90 border border-trade-border/50 backdrop-blur text-white px-1 py-1 font-mono text-[11px] font-semibold z-[60] tabular-nums flex items-center gap-1.5 pointer-events-none shadow-lg rounded" style="min-width: 60px;">
-            <span class="w-1.5 h-1.5 rounded-full bg-white/90 animate-pulse"></span>
-            <span id="timer-text">00:00</span>
+<div id="charts-container">
+        <div class="chart-panel-wrapper" id="panel-wrapper-0" style="flex:1;">
+            <div id="chart-container" style="width:100%;height:100%;"></div>
+            <canvas id="footprint-overlay" style="position:absolute;top:0;left:0;pointer-events:none;z-index:20;"></canvas>
+            <div id="custom-price-label" style="position:absolute;right:0;z-index:40;pointer-events:none;display:flex;align-items:center;gap:1px;"></div>
+            <div id="indicators-container"></div>
+            <div id="timer-box" class="hidden absolute right-[10px] bg-black/90 border border-trade-border/50 backdrop-blur text-white px-1 py-1 font-mono text-[11px] font-semibold z-[60] tabular-nums flex items-center gap-1.5 pointer-events-none shadow-lg rounded" style="min-width:60px;">
+                <span class="w-1.5 h-1.5 rounded-full bg-white/90 animate-pulse"></span>
+                <span id="timer-text">00:00</span>
+            </div>
         </div>
     </div>
 
@@ -1186,6 +1229,8 @@
         defaultIndicatorHeight: 150, oiCandleWidth: 0.5, cvdLineThickness: 2,
         indicatorPadding: 10, indicatorBgOpacity: 0.95, drawDelay: 100, interactionHold: 180,
         clusterVolumeThreshold: 50000,
+        //vwap
+        vwapVisible: false,
         // ── TPO / Market Profile ──────────────────────────────────────
         showTPO: false,
         tpoTickSize: 50,
@@ -1207,11 +1252,361 @@
     let mainSeries;
     let ws = null;
 
-    // ── TPO Cache ────────────────────────────────────────────────────────────────
+// ── TPO Cache ────────────────────────────────────────────────────────────────
     let tpoProfilesCache = null;
     let tpoCacheKey = '';
 
-    const chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
+    // ── Active-panel context globals (swapped when drawing extra panels) ──────────
+    // For panel 0 these always equal the original variables.
+    // They are set by activateExtraPanel() / deactivateExtraPanel().
+    let activePriceLabelEl = null;   // set after DOM ready
+    let activeTimerBox     = null;   // set after DOM ready
+    let activeWrapperEl    = null;   // set after DOM ready
+
+    // ── Stub indicator manager (used by extra panels which have no indicator panes)
+    const stubIndicatorManager = {
+        indicators: new Map(), order: [],
+        getIndicator: () => null,
+        drawAll: () => {},
+        updateLayout: () => {},
+        addIndicator: () => {},
+        removeIndicator: () => {},
+    };
+
+    // ── Extra panels array ────────────────────────────────────────────────────────
+    const extraPanels = [];
+    let extraPanelCounter = 0;
+    let selectedPanelId = 0; // 0 = main panel, >0 = extra panel ID
+
+    function _saveP0() {
+        return { chart, mainSeries, chartOverlayCanvas, ctxOverlay,
+                 offscreenCanvas, offscreenCtx, displayCandles, displayClusters,
+                 tpoProfilesCache, tpoCacheKey, indicatorManager: indicatorManager,
+                 activePriceLabelEl, activeTimerBox, activeWrapperEl, showTPO: config.showTPO,
+                 vwapVisible: config.vwapVisible };
+    }
+    function _restoreP0(s) {
+        chart = s.chart; mainSeries = s.mainSeries;
+        chartOverlayCanvas = s.chartOverlayCanvas; ctxOverlay = s.ctxOverlay;
+        offscreenCanvas = s.offscreenCanvas; offscreenCtx = s.offscreenCtx;
+        displayCandles = s.displayCandles; displayClusters = s.displayClusters;
+        tpoProfilesCache = s.tpoProfilesCache; tpoCacheKey = s.tpoCacheKey;
+        indicatorManager = s.indicatorManager;
+        activePriceLabelEl = s.activePriceLabelEl;
+        activeTimerBox = s.activeTimerBox;
+        activeWrapperEl = s.activeWrapperEl;
+        config.showTPO = s.showTPO;
+        config.vwapVisible = s.vwapVisible;
+    }
+    function _activatePanel(panel) {
+        chart = panel.chart; mainSeries = panel.mainSeries;
+        chartOverlayCanvas = panel.overlayCanvas; ctxOverlay = panel.ctxOverlay;
+        offscreenCanvas = panel.offscreenCanvas; offscreenCtx = panel.offscreenCtx;
+        displayCandles = panel.displayCandles; displayClusters = panel.displayClusters;
+        tpoProfilesCache = panel.tpoProfilesCache; tpoCacheKey = panel.tpoCacheKey;
+        indicatorManager = panel.indicatorManager;
+        activePriceLabelEl = panel.priceLabelEl;
+        activeTimerBox = panel.timerBoxEl;
+        activeWrapperEl = panel.wrapperEl;
+        config.showTPO = panel.showTPO;
+        config.vwapVisible = panel.vwapVisible;
+    }
+    function _deactivatePanel(panel) {
+        panel.tpoProfilesCache = tpoProfilesCache;
+        panel.tpoCacheKey = tpoCacheKey;
+        panel.showTPO = config.showTPO;
+        panel.vwapVisible = config.vwapVisible;
+    }
+
+    function schedulePanelDraw(panel) {
+        panel.needsRedraw = true;
+        panel.lastInteractionTime = Date.now();
+        if (!panel.rafRunning) {
+            panel.rafRunning = true;
+            const loop = () => {
+                const saved = _saveP0();
+                _activatePanel(panel);
+                const now = Date.now();
+                if (now - panel.lastInteractionTime < config.interactionHold) {
+                    drawFrames(); _deactivatePanel(panel);
+                    _restoreP0(saved);
+                    panel.rafId = requestAnimationFrame(loop);
+                } else {
+                    if (panel.needsRedraw) {
+                        panel.needsRedraw = false;
+                        drawFrames(); _deactivatePanel(panel);
+                        _restoreP0(saved);
+                        panel.rafId = requestAnimationFrame(loop);
+                    } else {
+                        _restoreP0(saved);
+                        panel.rafRunning = false;
+                        panel.rafId = null;
+                    }
+                }
+            };
+            panel.rafId = requestAnimationFrame(loop);
+        }
+    }
+
+    function setupPanelBuffers(panel) {
+        const dpr = window.devicePixelRatio || 1;
+        const w = panel.wrapperEl.clientWidth;
+        const h = panel.wrapperEl.clientHeight;
+        panel.overlayCanvas.width  = Math.floor(w * dpr);
+        panel.overlayCanvas.height = Math.floor(h * dpr);
+        panel.overlayCanvas.style.width  = w + 'px';
+        panel.overlayCanvas.style.height = h + 'px';
+        panel.offscreenCanvas.width  = panel.overlayCanvas.width;
+        panel.offscreenCanvas.height = panel.overlayCanvas.height;
+        panel.offscreenCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        panel.ctxOverlay.setTransform(1, 0, 0, 1, 0, 0);
+        panel.chart.applyOptions({ width: w, height: h });
+    }
+
+    function createExtraPanel() {
+        extraPanelCounter++;
+        const pid = extraPanelCounter;
+
+        // ── DOM ──────────────────────────────────────────────────────────────
+        const wrapperEl = document.createElement('div');
+        wrapperEl.className = 'chart-panel-wrapper';
+        wrapperEl.id = `panel-wrapper-${pid}`;
+        wrapperEl.style.flex = '1';
+
+        const chartContEl = document.createElement('div');
+        chartContEl.style.cssText = 'width:100%;height:100%;';
+
+        const overlayEl = document.createElement('canvas');
+        overlayEl.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;z-index:20;';
+
+        const priceLabelEl = document.createElement('div');
+        priceLabelEl.style.cssText = 'position:absolute;right:0;z-index:40;pointer-events:none;display:flex;align-items:center;gap:1px;';
+
+        const timerEl = document.createElement('div');
+        timerEl.className = 'hidden absolute bg-black/90 border border-trade-border/50 backdrop-blur text-white px-1 py-1 font-mono text-[11px] font-semibold z-[60] tabular-nums flex items-center gap-1.5 pointer-events-none shadow-lg rounded';
+        timerEl.style.cssText = 'min-width:60px;right:10px;';
+        timerEl.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-white/90 animate-pulse"></span><span class="timer-text-extra">00:00</span>';
+
+        wrapperEl.appendChild(chartContEl);
+        wrapperEl.appendChild(overlayEl);
+        wrapperEl.appendChild(priceLabelEl);
+        wrapperEl.appendChild(timerEl);
+
+        // ── Per-panel TF bar ─────────────────────────────────────────────────
+        const tfBar = document.createElement('div');
+        tfBar.className = 'panel-tf-bar';
+        const tfs = [5, 15, 30, 60, 240, 1440];
+        const tfLabels = { 5:'5m', 15:'15m', 30:'30m', 60:'1h', 240:'4h', 1440:'1D' };
+        tfs.forEach(tf => {
+            const btn = document.createElement('button');
+            btn.className = 'timeframe-btn' + (tf === 5 ? ' active' : '');
+            btn.style.cssText = 'padding:2px 7px;font-size:10px;';
+            btn.textContent = tfLabels[tf];
+            btn.onclick = () => {
+                tfBar.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                panel.displayTimeframe = tf;
+                panel.displayCandles = aggregateCandles(base5mCandles, tf);
+                panel.displayClusters = aggregateClusters(base5mClusters, tf);
+                panel.mainSeries.setData(panel.displayCandles);
+                panel.tpoCacheKey = '';
+                setTimeout(() => { panel.chart.timeScale().fitContent(); schedulePanelDraw(panel); }, 80);
+            };
+            tfBar.appendChild(btn);
+        });
+        wrapperEl.appendChild(tfBar);
+
+// ── Click to select panel ────────────────────────────────────────────
+        wrapperEl.addEventListener('click', () => {
+            selectedPanelId = pid;
+            document.querySelectorAll('.chart-panel-wrapper').forEach(w => w.classList.remove('selected'));
+            wrapperEl.classList.add('selected');
+            syncHeaderButtons();
+        });
+
+
+        // ── Close button ─────────────────────────────────────────────────────
+        const closeBtn = document.createElement('div');
+        closeBtn.className = 'panel-close-btn';
+        closeBtn.innerHTML = '✕';
+        closeBtn.onclick = () => removeExtraPanel(pid);
+        wrapperEl.appendChild(closeBtn);
+
+        // ── Resizer + insert into container ──────────────────────────────────
+        const container = document.getElementById('charts-container');
+        const resizer = document.createElement('div');
+        resizer.className = 'vertical-resizer';
+        resizer.dataset.resizerId = pid;
+        container.appendChild(resizer);
+        container.appendChild(wrapperEl);
+
+        // ── LW Chart ─────────────────────────────────────────────────────────
+        const newChart = LightweightCharts.createChart(chartContEl, {
+            layout: { background: { color: config.bgColor }, textColor: '#8b92a7', fontFamily: 'Inter' },
+            grid: { vertLines: { visible: false }, horzLines: { visible: false } },
+            rightPriceScale: { borderColor: '#1a1f2e', width: 60, scaleMargins: { top: 0.05, bottom: 0.20 } },
+            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+            timeScale: { borderColor: '#1a1f2e', timeVisible: true, barSpacing: config.barSpacing, rightOffset: 5 }
+        });
+        const newSeries = newChart.addCandlestickSeries({
+            upColor:'rgba(0,0,0,0)', downColor:'rgba(0,0,0,0)', borderVisible:false,
+            wickUpColor:'rgba(0,0,0,0)', wickDownColor:'rgba(0,0,0,0)',
+            priceLineVisible:false, lastValueVisible:false
+        });
+
+        const offscreenC = document.createElement('canvas');
+
+        // ── Create indicators container for this panel ──────────────────────
+        const indicatorsContainer = document.createElement('div');
+        indicatorsContainer.id = `indicators-container-${pid}`;
+        indicatorsContainer.style.cssText = 'position:absolute;left:0;right:0;bottom:0;pointer-events:none;';
+        wrapperEl.appendChild(indicatorsContainer);
+
+        const panelIndicatorManager = new IndicatorManager();
+        panelIndicatorManager.container = indicatorsContainer;
+
+        const panel = {
+            id: pid,
+            indicatorManager: panelIndicatorManager,
+            wrapperEl,
+            chart: newChart,
+            mainSeries: newSeries,
+            overlayCanvas: overlayEl,
+            ctxOverlay: overlayEl.getContext('2d'),
+            offscreenCanvas: offscreenC,
+            offscreenCtx: offscreenC.getContext('2d'),
+            priceLabelEl,
+            timerBoxEl: timerEl,
+            displayTimeframe: 5,
+            displayCandles: displayCandles.slice(),
+            displayClusters: JSON.parse(JSON.stringify(displayClusters)),
+            tpoProfilesCache: null,
+            tpoCacheKey: '',
+            rafRunning: false,
+            needsRedraw: false,
+            lastInteractionTime: 0,
+            rafId: null,
+            showTPO: false,
+            vwapVisible: false,
+        };
+
+        newSeries.setData(panel.displayCandles);
+        setupPanelBuffers(panel);
+        newChart.timeScale().fitContent();
+        newChart.timeScale().subscribeVisibleLogicalRangeChange(() => schedulePanelDraw(panel));
+
+        setupVerticalResizer(resizer, pid);
+        extraPanels.push(panel);
+        schedulePanelDraw(panel);
+        return panel;
+    }
+
+    function removeExtraPanel(pid) {
+        const idx = extraPanels.findIndex(p => p.id === pid);
+        if (idx === -1) return;
+        const panel = extraPanels[idx];
+        if (panel.rafId) cancelAnimationFrame(panel.rafId);
+        // Remove resizer + wrapper from DOM
+        const container = document.getElementById('charts-container');
+        const resizer = container.querySelector(`[data-resizer-id="${pid}"]`);
+        if (resizer) resizer.remove();
+        panel.wrapperEl.remove();
+        extraPanels.splice(idx, 1);
+        scheduleDraw();
+    }
+
+function setupVerticalResizer(resizerEl, panelId) {
+        const container = document.getElementById('charts-container');
+        let dragging = false, startX = 0;
+        let leftEl = null, rightEl = null, leftStart = 0, rightStart = 0;
+
+        resizerEl.addEventListener('mousedown', e => {
+            e.preventDefault();
+            dragging = true;
+            startX = e.clientX;
+            resizerEl.classList.add('resizing');
+            // left sibling = previous panel wrapper; right = this panel wrapper
+            leftEl  = resizerEl.previousElementSibling;
+            rightEl = resizerEl.nextElementSibling;
+            leftStart  = leftEl  ? leftEl.getBoundingClientRect().width  : 0;
+            rightStart = rightEl ? rightEl.getBoundingClientRect().width : 0;
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        });
+
+        const handleMouseMove = e => {
+            if (!dragging) return;
+            const dx = e.clientX - startX;
+            const newLeft  = Math.max(150, leftStart  + dx);
+            const newRight = Math.max(150, rightStart - dx);
+            if (leftEl)  leftEl.style.flex  = `0 0 ${newLeft}px`;
+            if (rightEl) rightEl.style.flex = `0 0 ${newRight}px`;
+        };
+
+        const handleMouseUp = () => {
+            if (!dragging) return;
+            dragging = false;
+            resizerEl.classList.remove('resizing');
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+            
+            // Force browser reflow before reading dimensions
+            requestAnimationFrame(() => {
+                // Save current context if we're on an extra panel
+                const wasOnExtraPanel = extraPanels.some(p => p.id === selectedPanelId);
+                let savedState = null;
+                if (wasOnExtraPanel) {
+                    savedState = _saveP0();
+                }
+
+                // Resize main chart (panel 0)
+                const wrapper0 = document.getElementById('panel-wrapper-0');
+                if (wrapper0) {
+                    const w = wrapper0.clientWidth;
+                    const h = wrapper0.clientHeight;
+                    chart.applyOptions({ width: w, height: h });
+                    setupBuffersForSize();
+                    // Force indicator manager to recalculate layout for panel 0
+                    if (!wasOnExtraPanel) {
+                        indicatorManager.updateLayout();
+                    }
+                }
+                
+                // Resize extra panels
+                extraPanels.forEach(p => {
+                    const tempSaved = _saveP0();
+                    _activatePanel(p);
+                    setupPanelBuffers(p);
+                    p.indicatorManager.updateLayout();
+                    _deactivatePanel(p);
+                    _restoreP0(tempSaved);
+                    schedulePanelDraw(p);
+                });
+                
+                // Restore context if needed
+                if (savedState) {
+                    _restoreP0(savedState);
+                }
+                
+                scheduleDraw();
+            });
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+    }
+
+    let chart;
+    chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
+    localization: {
+        timeFormatter: (timestamp) => {
+            return new Date(timestamp * 1000).toLocaleString('ro-RO', {
+                timeZone: 'Europe/Bucharest',
+                hour: '2-digit', minute: '2-digit',
+                day: '2-digit', month: '2-digit'
+            });
+        }
+    },
         layout: { background: { color: config.bgColor }, textColor: '#8b92a7', fontFamily: 'Inter' },
         grid: { vertLines: { visible: false }, horzLines: { visible: false } },
         rightPriceScale: { borderColor: '#1a1f2e', width: 60, scaleMargins: { top: 0.05, bottom: 0.20 } },
@@ -1514,6 +1909,8 @@
     function scheduleDraw() {
         needsRedraw = true;
         lastInteractionTime = Date.now();
+        // Also schedule extra panels so shared config changes (colors etc.) propagate
+        extraPanels.forEach(p => schedulePanelDraw(p));
         if (!rafRunning) {
             rafRunning = true;
             const loop = () => {
@@ -1940,7 +2337,7 @@
             const resizer = this.element.querySelector('.resizer-handle');
             let dragging = false, startY = 0, startH = 0;
             resizer.addEventListener('mousedown', (e) => { e.stopPropagation(); dragging = true; startY = e.clientY; startH = this.height; document.body.style.cursor = 'ns-resize'; });
-            window.addEventListener('mousemove', (e) => { if (!dragging) return; this.height = Math.max(MIN_PANE_HEIGHT, startH+(startY-e.clientY)); indicatorManager.updateLayout(); });
+            window.addEventListener('mousemove', (e) => { if (!this.dragState) return; this.height = Math.max(MIN_PANE_HEIGHT, startH+(startY-e.clientY)); indicatorManager.updateLayout(); });
             window.addEventListener('mouseup', () => { if (dragging) { dragging = false; document.body.style.cursor = ''; } });
             this.element.querySelector('.pane-header').addEventListener('mousedown', (e) => { if (e.target.classList.contains('pane-close')) return; indicatorManager.startDrag(this.id, e); });
         }
@@ -1966,19 +2363,22 @@
         draw(cssWidth) {
             if (!this.visible || !this.offscreenCtx) return;
             const ctxS = this.offscreenCtx;
-            ctxS.clearRect(0,0,cssWidth,this.height); ctxS.textAlign = 'center';
+            const PRICE_SCALE_WIDTH = 77;
+            const drawWidth = cssWidth - PRICE_SCALE_WIDTH;
+            ctxS.clearRect(0,0,cssWidth,this.height);
             const barSpacing = chart.timeScale().options().barSpacing;
             const visibleCandles = getVisibleCandles(cssWidth);
             let minOI = Infinity, maxOI = -Infinity;
-            visibleCandles.forEach(item => {
-                const c = item.candle;
-                if (c.oiClose && c.oiClose > 0) {
-                    const cHigh = c.oiHigh || Math.max(c.oiOpen,c.oiClose);
-                    const cLow = c.oiLow || Math.min(c.oiOpen,c.oiClose);
-                    if (cHigh > maxOI) maxOI = cHigh;
-                    if (cLow < minOI && cLow > 0) minOI = cLow;
-                }
-            });
+                visibleCandles.forEach(item => {
+                    const { candle, x } = item;
+                    if (x > drawWidth) return;
+                    if (candle.oiClose && candle.oiClose > 0) {
+                        const cHigh = candle.oiHigh || Math.max(candle.oiOpen, candle.oiClose);
+                        const cLow  = candle.oiLow  || Math.min(candle.oiOpen, candle.oiClose);
+                        if (cHigh > maxOI) maxOI = cHigh;
+                        if (cLow < minOI && cLow > 0) minOI = cLow;
+                    }
+                });
             if (maxOI === -Infinity || minOI === Infinity) { minOI = 0; maxOI = 100; }
             if (minOI === maxOI) { minOI = maxOI*0.99; maxOI = maxOI*1.01; }
             const padding = config.indicatorPadding;
@@ -1987,6 +2387,7 @@
             const getOIY = (val) => { if (val<=0) return this.height-padding; return padding+(availableH*(1-(val-minOI)/oiRange)); };
             visibleCandles.forEach(item => {
                 const { candle, x } = item;
+                if (x > drawWidth) return;
                 if (!candle.oiClose || candle.oiClose <= 0) return;
                 const cOpen = candle.oiOpen || candle.oiClose, cClose = candle.oiClose;
                 const cHigh = candle.oiHigh||Math.max(cOpen,cClose), cLow = candle.oiLow||Math.min(cOpen,cClose);
@@ -2007,55 +2408,84 @@
 
     class CVDIndicator extends BaseIndicator {
         constructor() { super('cvd','Cumulative Volume Delta',150); }
-        draw(cssWidth) {
+draw(cssWidth) {
             if (!this.visible || !this.offscreenCtx) return;
             const ctxS = this.offscreenCtx;
+            const PRICE_SCALE_WIDTH = 77;
+            const drawWidth = cssWidth - PRICE_SCALE_WIDTH;
             ctxS.clearRect(0,0,cssWidth,this.height);
-            const cvdData = []; let cumulativeDelta = 0;
+            
+            const cvdData = []; 
+            let cumulativeDelta = 0;
             displayCandles.forEach(candle => {
                 const tsKey = String(Math.floor(candle.time));
                 const buckets = displayClusters[tsKey];
-                if (buckets) { let d=0; Object.values(buckets).forEach(b => d+=(b.buy-b.sell)); cumulativeDelta+=d; }
+                if (buckets) { 
+                    let d=0; 
+                    Object.values(buckets).forEach(b => d+=(b.buy-b.sell)); 
+                    cumulativeDelta+=d; 
+                }
                 cvdData.push({ time: candle.time, cvd: cumulativeDelta });
             });
+            
             if (cvdData.length === 0) return;
             const visibleCandles = getVisibleCandles(cssWidth);
             if (visibleCandles.length === 0) return;
+            
+            // ── First loop: calculate min/max (NO width check) ────────────────
             let minCVD = Infinity, maxCVD = -Infinity;
             visibleCandles.forEach(item => {
                 const cvdPoint = cvdData.find(d => d.time===item.candle.time);
-                if (cvdPoint) { if (cvdPoint.cvd<minCVD) minCVD=cvdPoint.cvd; if (cvdPoint.cvd>maxCVD) maxCVD=cvdPoint.cvd; }
+                if (cvdPoint) { 
+                    if (cvdPoint.cvd<minCVD) minCVD=cvdPoint.cvd; 
+                    if (cvdPoint.cvd>maxCVD) maxCVD=cvdPoint.cvd; 
+                }
             });
+            
             if (minCVD===Infinity||maxCVD===-Infinity) return;
             if (minCVD===maxCVD) { minCVD-=1000000; maxCVD+=1000000; }
-            const padding=config.indicatorPadding, availableH=this.height-(padding*2), cvdRange=maxCVD-minCVD;
+            
+            const padding=config.indicatorPadding;
+            const availableH=this.height-(padding*2);
+            const cvdRange=maxCVD-minCVD;
             const getCVDY = (val) => padding+(availableH*(1-(val-minCVD)/cvdRange));
+            
+            // Zero line
             if (minCVD<=0 && maxCVD>=0) {
                 const zeroY = getCVDY(0);
                 ctxS.strokeStyle='#3a3f4e'; ctxS.lineWidth=1; ctxS.setLineDash([4,4]);
-                ctxS.beginPath(); ctxS.moveTo(0,zeroY); ctxS.lineTo(cssWidth,zeroY); ctxS.stroke(); ctxS.setLineDash([]);
+                ctxS.beginPath(); ctxS.moveTo(0,zeroY); ctxS.lineTo(drawWidth,zeroY); ctxS.stroke(); 
+                ctxS.setLineDash([]);
             }
-            ctxS.beginPath(); let firstPoint=true;
+            
+            // ── Second loop: draw the line (WITH width check) ─────────────────
+            ctxS.beginPath(); 
+            let firstPoint=true;
             visibleCandles.forEach(item => {
                 const cvdPoint = cvdData.find(d => d.time===item.candle.time);
-                if (!cvdPoint) return;
+                if (!cvdPoint || item.x > drawWidth) return; // <-- ADD WIDTH CHECK HERE
                 const y = getCVDY(cvdPoint.cvd);
-                if (firstPoint) { ctxS.moveTo(item.x,y); firstPoint=false; } else ctxS.lineTo(item.x,y);
+                if (firstPoint) { ctxS.moveTo(item.x,y); firstPoint=false; } 
+                else ctxS.lineTo(item.x,y);
             });
+            
             const finalCVD = cvdData[cvdData.length-1]?.cvd||0;
             const lineColor = finalCVD>=0 ? config.upColor : config.downColor;
             ctxS.strokeStyle=lineColor; ctxS.lineWidth=config.cvdLineThickness; ctxS.stroke();
+            
+            // Labels
             ctxS.font=`10px ${config.statsFontFamily}`; ctxS.textAlign='right'; ctxS.fillStyle='#8b92a7';
-            ctxS.fillText(formatUSD(maxCVD),cssWidth-5,getCVDY(maxCVD)+12);
-            ctxS.fillText(formatUSD(minCVD),cssWidth-5,getCVDY(minCVD)-5);
+            ctxS.fillText(formatUSD(maxCVD),drawWidth-5,getCVDY(maxCVD)+12);
+            ctxS.fillText(formatUSD(minCVD),drawWidth-5,getCVDY(minCVD)-5);
+            
             if (finalCVD!==undefined) {
-                const lastX = visibleCandles[visibleCandles.length-1]?.x||cssWidth-80;
+                const lastVisible = visibleCandles[visibleCandles.length-1];
+                const lastX = lastVisible && lastVisible.x < drawWidth ? lastVisible.x : drawWidth-80;
                 ctxS.fillStyle=lineColor; ctxS.font=`bold 11px ${config.statsFontFamily}`;
                 ctxS.textAlign='left'; ctxS.fillText(formatUSD(finalCVD),lastX+10,getCVDY(finalCVD)+4);
             }
         }
     }
-
     class BarStatsIndicator extends BaseIndicator {
         constructor() { super('barstats', 'Bar Statistics', 72); }
 
@@ -2142,6 +2572,97 @@
         }
     }
 
+    class VWAPIndicator extends BaseIndicator {
+        constructor() { super('vwap', 'VWAP', 0); } // Height 0 = overlay on main chart
+        
+        draw(cssWidth) {
+            if (!this.visible) return;
+            // VWAP is drawn as overlay on main chart canvas, not in separate pane
+            // We'll draw it in drawFrames instead
+        }
+    }
+
+    let vwapData = [];
+    let vwapCacheKey = '';
+
+function calculateVWAP() {
+        vwapData = [];
+        const now = new Date();
+        const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
+        const sessionStartTime = Math.floor(todayStart.getTime() / 1000);
+        let cumulativePV = 0, cumulativeVolume = 0;
+        for (let i = 0; i < displayCandles.length; i++) {
+            const candle = displayCandles[i];
+            if (candle.time < sessionStartTime) continue;
+            const barVolume = candle.volume || 0;
+            if (barVolume === 0) continue;
+            const typicalPrice = (candle.high + candle.low + candle.close) / 3;
+            cumulativePV += typicalPrice * barVolume;
+            cumulativeVolume += barVolume;
+            vwapData.push({ time: candle.time, vwap: cumulativeVolume > 0 ? cumulativePV / cumulativeVolume : typicalPrice });
+        }
+    }
+
+    function drawVWAP(cssWidth, candleBottomY) {
+        if (!config.vwapVisible) return;
+        
+        // Cache key: candle count + last candle time + last candle close
+        const lastCandle = displayCandles[displayCandles.length - 1];
+        const cacheKey = `${displayCandles.length}_${lastCandle?.time ?? 0}_${lastCandle?.volume ?? 0}_${lastCandle?.high ?? 0}_${lastCandle?.low ?? 0}`;
+        if (cacheKey !== vwapCacheKey) {
+            calculateVWAP();
+            vwapCacheKey = cacheKey;
+        }
+        
+        if (vwapData.length === 0) return;
+     
+        const timeScale = chart.timeScale();
+        offscreenCtx.save();
+        offscreenCtx.strokeStyle = '#FFFFFF'; // White
+        offscreenCtx.lineWidth = 1; // Thin
+        offscreenCtx.setLineDash([4, 4]); // Dotted
+        offscreenCtx.globalAlpha = 0.7; // Slightly transparent
+        
+        const PRICE_SCALE_WIDTH = 77;
+        const drawWidth = cssWidth - PRICE_SCALE_WIDTH;
+        offscreenCtx.beginPath();
+        let firstPoint = true;
+        
+        vwapData.forEach(point => {
+            const x = timeScale.timeToCoordinate(point.time);
+            if (x === null || x < -100 || x > drawWidth) return;
+            
+            const y = mainSeries.priceToCoordinate(point.vwap);
+            if (y === null || y < 0 || y > candleBottomY) return;
+            
+            if (firstPoint) {
+                offscreenCtx.moveTo(x, y);
+                firstPoint = false;
+            } else {
+                offscreenCtx.lineTo(x, y);
+            }
+        });
+        
+        offscreenCtx.stroke();
+        offscreenCtx.restore();
+        
+        // Label
+        if (vwapData.length > 0) {
+            const lastVwap = vwapData[vwapData.length - 1].vwap;
+            const lastX = timeScale.timeToCoordinate(vwapData[vwapData.length - 1].time);
+            const lastY = mainSeries.priceToCoordinate(lastVwap);
+            
+            if (lastX !== null && lastY !== null && lastY >= 0 && lastY <= candleBottomY) {
+                offscreenCtx.save();
+                offscreenCtx.font = 'bold 10px JetBrains Mono';
+                offscreenCtx.fillStyle = '#FFFFFF';
+                offscreenCtx.textAlign = 'left';
+                offscreenCtx.fillText(`VWAP ${lastVwap.toFixed(2)}`, lastX + 8, lastY + 4);
+                offscreenCtx.restore();
+            }
+        }
+    }
+
     class IndicatorManager {
         constructor() { this.indicators = new Map(); this.order = []; this.container = document.getElementById('indicators-container'); this.dragState = null; this.placeholder = null; }
         addIndicator(indicator) {
@@ -2156,7 +2677,7 @@
         }
         getIndicator(id) { return this.indicators.get(id); }
         updateLayout() {
-            const wrapper = document.getElementById('chart-wrapper');
+            const wrapper = activeWrapperEl || document.getElementById('panel-wrapper-0');
             const totalHeight = window.innerHeight - HEADER_HEIGHT;
             let totalIndicatorHeight = 0;
             this.order.forEach(id => { const ind = this.indicators.get(id); if (ind && ind.visible) totalIndicatorHeight += ind.height; });
@@ -2175,12 +2696,12 @@
             this.dragState = { id, startY: e.clientY, startOrder: [...this.order] };
             indicator.element.classList.add('dragging');
             this.placeholder = document.createElement('div'); this.placeholder.className = 'drag-placeholder'; this.placeholder.style.height = '2px';
-            document.getElementById('chart-wrapper').appendChild(this.placeholder);
+            document.getElementById('panel-wrapper-0').appendChild(this.placeholder);
             document.addEventListener('mousemove', this.handleDragMove); document.addEventListener('mouseup', this.handleDragEnd);
         }
         handleDragMove = (e) => {
             if (!this.dragState) return;
-            const wrapper = document.getElementById('chart-wrapper');
+            const wrapper = document.getElementById('panel-wrapper-0');
             const relativeY = wrapper.getBoundingClientRect().bottom - e.clientY;
             let insertIndex = 0, cumulativeHeight = TIME_AXIS_HEIGHT;
             for (let i=0; i<this.order.length; i++) {
@@ -2212,35 +2733,65 @@
         drawAll(cssWidth) { this.indicators.forEach(ind => { if (ind.visible) { ind.draw(cssWidth); ind.render(); } }); }
     }
 
-    const indicatorManager = new IndicatorManager();
+    let indicatorManager = new IndicatorManager();
     indicatorManager.addIndicator(new OIIndicator());
 
     document.getElementById('toggle-oi').addEventListener('click', function() {
-        const ind = indicatorManager.getIndicator('oi');
-        if (ind && ind.visible) { indicatorManager.removeIndicator('oi'); this.classList.remove('active'); }
-        else { indicatorManager.addIndicator(new OIIndicator()); this.classList.add('active'); }
+        const mgr = selectedPanelId === 0 ? indicatorManager : extraPanels.find(p => p.id === selectedPanelId)?.indicatorManager;
+        if (!mgr) return;
+        const ind = mgr.getIndicator('oi');
+        if (ind && ind.visible) { mgr.removeIndicator('oi'); this.classList.remove('active'); }
+        else { mgr.addIndicator(new OIIndicator()); this.classList.add('active'); }
     });
     document.getElementById('toggle-cvd').addEventListener('click', function() {
-        const ind = indicatorManager.getIndicator('cvd');
-        if (ind && ind.visible) { indicatorManager.removeIndicator('cvd'); this.classList.remove('active'); }
-        else { indicatorManager.addIndicator(new CVDIndicator()); this.classList.add('active'); }
+        const mgr = selectedPanelId === 0 ? indicatorManager : extraPanels.find(p => p.id === selectedPanelId)?.indicatorManager;
+        if (!mgr) return;
+        const ind = mgr.getIndicator('cvd');
+        if (ind && ind.visible) { mgr.removeIndicator('cvd'); this.classList.remove('active'); }
+        else { mgr.addIndicator(new CVDIndicator()); this.classList.add('active'); }
     });
     document.getElementById('toggle-barstats').addEventListener('click', function() {
-        const ind = indicatorManager.getIndicator('barstats');
-        if (ind && ind.visible) { indicatorManager.removeIndicator('barstats'); this.classList.remove('active'); }
-        else { indicatorManager.addIndicator(new BarStatsIndicator()); this.classList.add('active'); }
+        const mgr = selectedPanelId === 0 ? indicatorManager : extraPanels.find(p => p.id === selectedPanelId)?.indicatorManager;
+        if (!mgr) return;
+        const ind = mgr.getIndicator('barstats');
+        if (ind && ind.visible) { mgr.removeIndicator('barstats'); this.classList.remove('active'); }
+        else { mgr.addIndicator(new BarStatsIndicator()); this.classList.add('active'); }
         scheduleDraw();
     });
 
     // ── TPO Header Toggle ──────────────────────────────────────────────────────
     document.getElementById('toggle-tpo').addEventListener('click', function() {
-        config.showTPO = !config.showTPO;
-        this.classList.toggle('active', config.showTPO);
-        // Sync settings panel toggle switch
-        const sw = document.getElementById('toggle-tpo-switch');
-        sw.classList.toggle('active', config.showTPO);
-        tpoCacheKey = ''; // force rebuild on next draw
-        scheduleDraw();
+        if (selectedPanelId === 0) {
+            config.showTPO = !config.showTPO;
+            this.classList.toggle('active', config.showTPO);
+            const sw = document.getElementById('toggle-tpo-switch');
+            if (sw) sw.classList.toggle('active', config.showTPO);
+            tpoCacheKey = '';
+            scheduleDraw();
+        } else {
+            const panel = extraPanels.find(p => p.id === selectedPanelId);
+            if (panel) {
+                panel.showTPO = !panel.showTPO;
+                this.classList.toggle('active', panel.showTPO);
+                panel.tpoCacheKey = '';
+                schedulePanelDraw(panel);
+            }
+        }
+    });
+  // ── VWAP Header Toggle ──────────────────────────────────────────────────────
+    document.getElementById('toggle-vwap').addEventListener('click', function() {
+        if (selectedPanelId === 0) {
+            config.vwapVisible = !config.vwapVisible;
+            this.classList.toggle('active', config.vwapVisible);
+            scheduleDraw();
+        } else {
+            const panel = extraPanels.find(p => p.id === selectedPanelId);
+            if (panel) {
+                panel.vwapVisible = !panel.vwapVisible;
+                this.classList.toggle('active', panel.vwapVisible);
+                schedulePanelDraw(panel);
+            }
+        }
     });
 
     // Drawing helpers
@@ -2271,14 +2822,14 @@
 
     mainSeries = createSeries(config.seriesType);
 
-    const chartOverlayCanvas = document.getElementById('footprint-overlay');
-    const ctxOverlay = chartOverlayCanvas.getContext('2d');
-    const offscreenCanvas = document.createElement('canvas');
-    const offscreenCtx = offscreenCanvas.getContext('2d');
+    let chartOverlayCanvas = document.getElementById('footprint-overlay');
+    let ctxOverlay = chartOverlayCanvas.getContext('2d');
+    let offscreenCanvas = document.createElement('canvas');
+    let offscreenCtx = offscreenCanvas.getContext('2d');
 
     function setupBuffersForSize() {
         const dpr = window.devicePixelRatio||1;
-        const wrapper = document.getElementById('chart-wrapper');
+        const wrapper = document.getElementById('panel-wrapper-0');
         const chartW = wrapper.clientWidth, chartH = wrapper.clientHeight;
         chartOverlayCanvas.width = Math.floor(chartW*dpr); chartOverlayCanvas.height = Math.floor(chartH*dpr);
         chartOverlayCanvas.style.width = chartW+'px'; chartOverlayCanvas.style.height = chartH+'px';
@@ -2293,17 +2844,17 @@
         return Math.round(val).toString();
     }
 
-    function upsertCandle(tsSec,o,h,l,c) {
+    function upsertCandle(tsSec,o,h,l,c,v=0) {
         if (!base5mCandles) base5mCandles=[];
         const key=Math.floor(tsSec); let found=false;
         for (let i=base5mCandles.length-1; i>=0; i--) {
             if (Math.floor(base5mCandles[i].time)===key) {
-                base5mCandles[i].open=o; base5mCandles[i].high=h; base5mCandles[i].low=l; base5mCandles[i].close=c; found=true; break;
+                base5mCandles[i].open=o; base5mCandles[i].high=h; base5mCandles[i].low=l; base5mCandles[i].close=c; base5mCandles[i].volume=v; found=true; break;
             }
         }
         if (!found) {
             const prevOI = base5mCandles.length>0 ? (base5mCandles[base5mCandles.length-1].oiClose||0) : 0;
-            base5mCandles.push({ time:key, open:o, high:h, low:l, close:c, oiOpen:prevOI, oiHigh:prevOI, oiLow:prevOI, oiClose:prevOI });
+            base5mCandles.push({ time:key, open:o, high:h, low:l, close:c, volume:v, oiOpen:prevOI, oiHigh:prevOI, oiLow:prevOI, oiClose:prevOI });
             base5mCandles.sort((a,b)=>a.time-b.time);
         }
     }
@@ -2318,17 +2869,17 @@
     }
 
     function updateCustomPriceLabel() {
-        if (!config.showPriceLabel||!mainSeries||!currentPrice) { document.getElementById('custom-price-label').style.display='none'; return; }
+        if (!config.showPriceLabel||!mainSeries||!currentPrice||!activePriceLabelEl) { if(activePriceLabelEl) activePriceLabelEl.style.display='none'; return; }
         const yCoord=mainSeries.priceToCoordinate(currentPrice);
         if (yCoord===null) { document.getElementById('custom-price-label').style.display='none'; return; }
-        const wrapper=document.getElementById('chart-wrapper');
+        const wrapper=document.getElementById('panel-wrapper-0');
         const marginB=chart.priceScale('right').options().scaleMargins.bottom;
         const candleBottomY=wrapper.clientHeight*(1-marginB);
         if (yCoord<0||yCoord>candleBottomY) { document.getElementById('custom-price-label').style.display='none'; return; }
         const lastCandle=displayCandles[displayCandles.length-1];
         const isUp=lastCandle?(lastCandle.close>=lastCandle.open):true;
         const color=isUp?config.upColor:config.downColor;
-        const labelContainer=document.getElementById('custom-price-label');
+        const labelContainer=activePriceLabelEl;
         labelContainer.style.display='flex'; labelContainer.style.top=(yCoord-13)+'px';
         labelContainer.style.fontFamily=config.statsFontFamily; labelContainer.style.fontSize=config.priceLabelFontSize+'px';
         const priceText=currentPrice.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -2422,13 +2973,46 @@
         }
     }
 
+function syncHeaderButtons() {
+    const isMain = selectedPanelId === 0;
+    const panel  = isMain ? null : extraPanels.find(p => p.id === selectedPanelId);
+    const mgr    = isMain ? indicatorManager : panel?.indicatorManager;
+
+    // OI
+    const oiActive = mgr?.getIndicator('oi')?.visible ?? false;
+    document.getElementById('toggle-oi').classList.toggle('active', oiActive);
+
+    // CVD
+    const cvdActive = mgr?.getIndicator('cvd')?.visible ?? false;
+    document.getElementById('toggle-cvd').classList.toggle('active', cvdActive);
+
+    // Bar Stats
+    const bsActive = mgr?.getIndicator('barstats')?.visible ?? false;
+    document.getElementById('toggle-barstats').classList.toggle('active', bsActive);
+
+    // TPO
+    const tpoActive = isMain ? config.showTPO : (panel?.showTPO ?? false);
+    document.getElementById('toggle-tpo').classList.toggle('active', tpoActive);
+    const tpoSwitch = document.getElementById('toggle-tpo-switch');
+    if (tpoSwitch) tpoSwitch.classList.toggle('active', tpoActive);
+
+    // VWAP
+    const vwapActive = isMain ? config.vwapVisible : (panel?.vwapVisible ?? false);
+    document.getElementById('toggle-vwap').classList.toggle('active', vwapActive);
+}
     // ════════════════════════════════════════════════════════════════════════════
     //  Main Draw Loop
     // ════════════════════════════════════════════════════════════════════════════
     function drawFrames() {
         if (!offscreenCtx) return;
         const cssWidth=chartOverlayCanvas.clientWidth, cssHeight=chartOverlayCanvas.clientHeight;
+        const PRICE_SCALE_WIDTH = 77;
+        const drawWidth = cssWidth - PRICE_SCALE_WIDTH;
         offscreenCtx.clearRect(0,0,cssWidth,cssHeight);
+        offscreenCtx.save();
+        offscreenCtx.beginPath();
+        offscreenCtx.rect(0, 0, drawWidth, cssHeight);
+        offscreenCtx.clip();
         const timeScale=chart.timeScale(), barSpacing=timeScale.options().barSpacing;
         const visibleRange=timeScale.getVisibleLogicalRange();
         if (!visibleRange) { ctxOverlay.clearRect(0,0,cssWidth,cssHeight); ctxOverlay.drawImage(offscreenCanvas,0,0); return; }
@@ -2454,6 +3038,9 @@
 
         // ── TPO profiles drawn FIRST (behind candles) ─────────────────────────
         drawTPO(cssWidth, candleBottomY);
+
+        // ── VWAP (before candles so it's behind them) ─────────────────────────
+        drawVWAP(cssWidth, candleBottomY);
 
         // ── Candles ───────────────────────────────────────────────────────────
         displayCandles.forEach(candle => {
@@ -2635,14 +3222,15 @@
                 }
             });
         }
-
+        offscreenCtx.restore(); // ← add this line
         indicatorManager.drawAll(cssWidth);
 
         // ── Countdown timer ───────────────────────────────────────────────────
         const nowSec=Math.floor(Date.now()/1000), barSeconds=getBarSeconds(config.displayTimeframe);
         const diff=(lastBarTime+barSeconds)-nowSec;
-        const timerBox=document.getElementById('timer-box'), timerText=document.getElementById('timer-text');
-        if (config.showCountdown&&mainSeries&&currentPrice) {
+        const timerBox=activeTimerBox;
+        const timerText=timerBox ? (timerBox.querySelector('#timer-text') || timerBox.querySelector('.timer-text-extra')) : null;
+        if (config.showCountdown&&mainSeries&&currentPrice&&timerBox) {
             const yChart=mainSeries.priceToCoordinate(currentPrice);
             if (yChart!==null&&yChart>=0&&yChart<=candleBottomY) {
                 if (timerBox.classList.contains('hidden')) { timerBox.classList.remove('hidden'); timerBox.style.display='flex'; }
@@ -2653,8 +3241,8 @@
                 timerBox.style.backgroundColor=hexToRgba(bg,config.timerOpacity*0.25); timerBox.style.borderColor=hexToRgba(bg,config.timerOpacity);
                 timerBox.querySelector('span').style.backgroundColor=bg;
                 timerText.textContent=(diff>0)?formatTime(diff):"0:00";
-            } else { if (!timerBox.classList.contains('hidden')) { timerBox.classList.add('hidden'); timerBox.style.display='none'; } }
-        } else { if (!timerBox.classList.contains('hidden')) { timerBox.classList.add('hidden'); timerBox.style.display='none'; } }
+            } else { if (timerBox && !timerBox.classList.contains('hidden')) { timerBox.classList.add('hidden'); timerBox.style.display='none'; } }
+        } else { if (timerBox && !timerBox.classList.contains('hidden')) { timerBox.classList.add('hidden'); timerBox.style.display='none'; } }
 
         updateCustomPriceLabel();
         ctxOverlay.clearRect(0,0,chartOverlayCanvas.width,chartOverlayCanvas.height);
@@ -2682,7 +3270,7 @@
 
     const ctxMenuMain=document.getElementById('ctx-menu-main'), settingsPanel=document.getElementById('settings-panel');
 
-    document.getElementById('chart-wrapper').addEventListener('contextmenu', (e) => {
+    document.getElementById('panel-wrapper-0').addEventListener('contextmenu', (e) => {
         e.preventDefault(); ctxMenuMain.style.left=`${Math.min(e.clientX,window.innerWidth-200)}px`; ctxMenuMain.style.top=`${Math.min(e.clientY,window.innerHeight-100)}px`; ctxMenuMain.classList.remove('hidden');
     });
     document.addEventListener('click', (e) => { if (!e.target.closest('.context-menu')&&!e.target.closest('#settings-panel')&&!e.target.closest('#header-settings-btn')) ctxMenuMain.classList.add('hidden'); });
@@ -2702,7 +3290,11 @@
     document.getElementById('grid-color-input').oninput = (e) => { config.gridColor=e.target.value; scheduleDraw(); };
     document.getElementById('bubble-threshold-input').onchange = (e) => { config.minBubbleVolume=parseFloat(e.target.value); scheduleDraw(); };
 
-    function resizeAll() { setupBuffersForSize(); indicatorManager.updateLayout(); }
+    function resizeAll() {
+        setupBuffersForSize();
+        indicatorManager.updateLayout();
+        extraPanels.forEach(p => { setupPanelBuffers(p); schedulePanelDraw(p); });
+    }
     window.addEventListener('resize', resizeAll);
     chart.timeScale().subscribeVisibleLogicalRangeChange(()=>scheduleDraw());
 
@@ -2714,7 +3306,8 @@
             if (data.result&&data.result.list) {
                 base5mCandles=data.result.list.map(d=>({
                     time:parseInt(d[0])/1000, open:parseFloat(d[1]), high:parseFloat(d[2]),
-                    low:parseFloat(d[3]), close:parseFloat(d[4]), oiOpen:0, oiHigh:0, oiLow:0, oiClose:0
+                    low:parseFloat(d[3]), close:parseFloat(d[4]), volume:parseFloat(d[5]),
+                    oiOpen:0, oiHigh:0, oiLow:0, oiClose:0
                 })).sort((a,b)=>a.time-b.time);
                 displayCandles=base5mCandles.slice();
                 displayClusters=aggregateClusters(base5mClusters,config.displayTimeframe);
@@ -2776,15 +3369,22 @@
                 if (ts>lastBarTime) {
                     const closingOI=base5mCandles[base5mCandles.length-1]?.oiClose||0;
                     base5mClusters[String(ts)]={};lastBarTime=ts;
-                    upsertCandle(ts,parseFloat(k.open),parseFloat(k.high),parseFloat(k.low),parseFloat(k.close));
+                    upsertCandle(ts,parseFloat(k.open),parseFloat(k.high),parseFloat(k.low),parseFloat(k.close),parseFloat(k.volume||0));
                     const newCandle=base5mCandles[base5mCandles.length-1];
                     newCandle.oiOpen=closingOI;newCandle.oiClose=closingOI;newCandle.oiHigh=closingOI;newCandle.oiLow=closingOI;
                     // New bar = new session potential → invalidate TPO cache
                     tpoCacheKey = '';
-                } else { upsertCandle(ts,parseFloat(k.open),parseFloat(k.high),parseFloat(k.low),parseFloat(k.close)); }
+                } else { upsertCandle(ts,parseFloat(k.open),parseFloat(k.high),parseFloat(k.low),parseFloat(k.close),parseFloat(k.volume||0)); }
                 displayCandles=aggregateCandles(base5mCandles,config.displayTimeframe);
                 displayClusters=aggregateClusters(base5mClusters,config.displayTimeframe);
-                mainSeries.update(displayCandles[displayCandles.length-1]); scheduleDraw();
+                mainSeries.update(displayCandles[displayCandles.length-1]);
+                extraPanels.forEach(p => {
+                    p.displayCandles = aggregateCandles(base5mCandles, p.displayTimeframe);
+                    p.displayClusters = aggregateClusters(base5mClusters, p.displayTimeframe);
+                    const last = p.displayCandles[p.displayCandles.length-1];
+                    if (last) p.mainSeries.update(last);
+                });
+                scheduleDraw();
             }
             if (msg.topic&&msg.topic.includes("publicTrade")) {
                 msg.data.forEach(trade=>{
@@ -2797,14 +3397,48 @@
                     if (trade.S==="Buy") base5mClusters[timeKey][bucketKey].buy+=valUsd;
                     else base5mClusters[timeKey][bucketKey].sell+=valUsd;
                     displayClusters=aggregateClusters(base5mClusters,config.displayTimeframe);
+                    extraPanels.forEach(p => {
+                        p.displayClusters = aggregateClusters(base5mClusters, p.displayTimeframe);
+                    });
                     document.getElementById('price').innerText=price.toLocaleString(); scheduleDraw();
                 });
             }
         };
     }
 
+// ── Initialize panel 0 active-context pointers ────────────────────────────
+    activePriceLabelEl = document.getElementById('custom-price-label');
+    activeTimerBox     = document.getElementById('timer-box');
+    activeWrapperEl    = document.getElementById('panel-wrapper-0');
+
     resizeAll();
     init();
+
+    // ── Panel 0 selection handler (must be after DOM is ready) ────────────────
+    if (activeWrapperEl) {
+        activeWrapperEl.addEventListener('click', () => {
+            selectedPanelId = 0;
+            document.querySelectorAll('.chart-panel-wrapper').forEach(w => w.classList.remove('selected'));
+            activeWrapperEl.classList.add('selected');
+            syncHeaderButtons();
+        });
+        activeWrapperEl.classList.add('selected'); // Start with panel 0 selected
+    } else {
+        console.error('panel-wrapper-0 not found! Check your HTML structure.');
+    }
+
+    // ── Add Chart button (must be after DOM elements exist) ───────────────────
+    const addChartBtn = document.getElementById('add-chart-btn');
+    if (addChartBtn) {
+        addChartBtn.addEventListener('click', () => {
+            createExtraPanel();
+            const container = document.getElementById('charts-container');
+            const allWrappers = container.querySelectorAll('.chart-panel-wrapper');
+            allWrappers.forEach(w => w.style.flex = '1');
+            setTimeout(() => resizeAll(), 50);
+        });
+    }
+
 </script>
 </body>
 </html>
