@@ -458,6 +458,13 @@
                     </div>
                     <span>CVD</span>
                 </button>
+                <!-- ★ CHANGE 1: Bar Stats toggle button -->
+                <button id="toggle-barstats" class="indicator-toggle">
+                    <div class="indicator-checkbox">
+                        <svg viewBox="0 0 12 12" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,6 5,9 10,3"></polyline></svg>
+                    </div>
+                    <span>Bar Stats</span>
+                </button>
             </div>
             <div class="h-6 w-px bg-trade-border/50"></div>
             <button id="header-settings-btn" class="p-2 hover:bg-[#1a1f2e] rounded-md text-gray-400 hover:text-white transition-all active:scale-95 group">
@@ -498,7 +505,7 @@
         
         <div class="flex items-center justify-between p-5 border-b border-trade-border/50 bg-gradient-to-r from-blue-600/10 to-transparent">
             <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center">
+                <div class="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-content-center">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                 </div>
                 <h2 class="text-white font-semibold text-base">Chart Settings</h2>
@@ -749,9 +756,7 @@
                 </div>
             </div>
 
-            <!-- ═══════════════════════════════════════════════════════════════════
-                 FOOTPRINT CLUSTERS — includes new clusterVolumeThreshold input
-                 ═══════════════════════════════════════════════════════════════════ -->
+            <!-- Footprint Clusters -->
             <div class="settings-section">
                 <div class="section-header" onclick="toggleSection(this)">
                     <div class="section-title-wrapper">
@@ -772,18 +777,13 @@
                             </div>
                             <span class="setting-description">Cumulative cluster aggregation range</span>
                         </div>
-
                         <div class="setting-divider"></div>
-
-                        <!-- ★ NEW: Low-volume cluster threshold filter -->
                         <div class="setting-item">
                             <label class="setting-label">Low-Volume Cell Threshold (USD)</label>
                             <input type="number" id="cluster-volume-threshold" value="50000" min="0" step="10000" class="w-full px-3 py-2">
                             <span class="setting-description">Cells below this total volume are shown in muted gray. Set to 0 to disable.</span>
                         </div>
-
                         <div class="setting-divider"></div>
-
                         <div class="setting-item">
                             <div class="slider-container">
                                 <div class="slider-header">
@@ -797,9 +797,9 @@
                             <div class="slider-container">
                                 <div class="slider-header">
                                     <label class="setting-label">POC Border Width</label>
-                                    <span id="poc-border-width-val" class="slider-value">1.5px</span>
+                                    <span id="poc-border-width-val" class="slider-value">1px</span>
                                 </div>
-                                <input type="range" id="poc-border-width" min="1.5" max="5" value="1" step="0.5">
+                                <input type="range" id="poc-border-width" min="1" max="5" value="1.5" step="0.5">
                             </div>
                         </div>
                         <div class="setting-item">
@@ -808,7 +808,7 @@
                                     <label class="setting-label">Cell Border Width</label>
                                     <span id="cell-border-width-val" class="slider-value">1px</span>
                                 </div>
-                                <input type="range" id="cell-border-width" min="0" max="3" value="3" step="0.5">
+                                <input type="range" id="cell-border-width" min="0" max="3" value="1" step="0.5">
                             </div>
                         </div>
                     </div>
@@ -989,9 +989,9 @@
                             <div class="slider-container">
                                 <div class="slider-header">
                                     <label class="setting-label">Draw Frame Delay</label>
-                                    <span id="draw-delay-val" class="slider-value">100ms</span>
+                                    <span id="draw-delay-val" class="slider-value">50ms</span>
                                 </div>
-                                <input type="range" id="draw-delay" min="50" max="500" value="100" step="50">
+                                <input type="range" id="draw-delay" min="50" max="500" value="50" step="50">
                             </div>
                             <span class="setting-description">Lower = more responsive, higher = better performance</span>
                         </div>
@@ -1035,7 +1035,6 @@
     const MIN_PANE_HEIGHT = 50;
     const BASE_TIMEFRAME = 5;
 
-    // ★ CHANGE 1: added clusterVolumeThreshold to config (default 0 = disabled)
     let config = {
         gridSpacing: 1000, gridColor: '#636363', gridOpacity: 1.0, gridLineWidth: 1,
         baseTickSize: 2.5, minCellHeight: 15, upColor: '#608feb', downColor: '#ff4242',
@@ -1047,13 +1046,13 @@
         accentColor: '#3b82f6', absorptionColor: '#FFD700',
         statsFontFamily: "'JetBrains Mono', monospace", statsFontSize: 11,
         statsFontWeight: '600', cellFontSize: 11, cellFontWeight: '400', barSpacing: 50,
-        clusterBgOpacity: 0, pocBorderWidth: 1.5, cellBorderWidth: 3,
+        clusterBgOpacity: 0, pocBorderWidth: 1.5, cellBorderWidth: 1,
         bubbleInnerSize: 5, bubbleOuterSize: 10, bubblePulseSpeed: 1500,
         absorptionDotSize: 4, absorptionGlow: 10, absorptionThreshold: 100000,
         priceLabelFontSize: 10, timerFontSize: 11, timerOpacity: 0.9,
         defaultIndicatorHeight: 150, oiCandleWidth: 0.5, cvdLineThickness: 2,
         indicatorPadding: 10, indicatorBgOpacity: 0.95, drawDelay: 100, interactionHold: 180,
-        clusterVolumeThreshold: 50000   // ★ NEW — 0 means disabled
+        clusterVolumeThreshold: 50000
     };
 
     let base5mClusters = {};
@@ -1210,13 +1209,13 @@
             bgColor: '#0a0e1a', panelColor: '#0f1419', accentColor: '#3b82f6',
             absorptionColor: '#FFD700', statsFontFamily: "'JetBrains Mono', monospace",
             statsFontSize: 11, statsFontWeight: '600', cellFontSize: 11, cellFontWeight: '400',
-            barSpacing: 50, clusterBgOpacity: 0.85, pocBorderWidth: 1, cellBorderWidth: 1,
+            barSpacing: 50, clusterBgOpacity: 0, pocBorderWidth: 1.5, cellBorderWidth: 1,
             bubbleInnerSize: 5, bubbleOuterSize: 10, bubblePulseSpeed: 1500,
             absorptionDotSize: 4, absorptionGlow: 10, absorptionThreshold: 100000,
             priceLabelFontSize: 10, timerFontSize: 11, timerOpacity: 0.9,
             defaultIndicatorHeight: 150, oiCandleWidth: 0.5, cvdLineThickness: 2,
             indicatorPadding: 10, indicatorBgOpacity: 0.95, drawDelay: 100, interactionHold: 180,
-            clusterVolumeThreshold: 50000  // ★ reset new field
+            clusterVolumeThreshold: 50000
         };
         document.getElementById('series-type-select').value = 'candle';
         document.getElementById('bar-spacing-input').value = 50;
@@ -1238,10 +1237,10 @@
         document.getElementById('grid-line-width').value = 1; document.getElementById('grid-line-width-val').textContent = '1px';
         document.getElementById('base-tick-input').value = 2.5; document.getElementById('min-cell-height-input').value = 15;
         document.getElementById('cumulative-mode-select').value = 'all';
-        document.getElementById('cluster-volume-threshold').value = 50000;  // ★ reset new field UI
+        document.getElementById('cluster-volume-threshold').value = 50000;
         document.getElementById('cluster-bg-opacity').value = 0; document.getElementById('cluster-bg-opacity-val').textContent = '0%';
         document.getElementById('poc-border-width').value = 1.5; document.getElementById('poc-border-width-val').textContent = '1.5px';
-        document.getElementById('cell-border-width').value = 3; document.getElementById('cell-border-width-val').textContent = '3px';
+        document.getElementById('cell-border-width').value = 1; document.getElementById('cell-border-width-val').textContent = '1px';
         document.getElementById('bubble-threshold-input').value = 500000;
         document.getElementById('bubble-inner-size').value = 5; document.getElementById('bubble-outer-size').value = 10;
         document.getElementById('bubble-pulse-speed').value = 1500; document.getElementById('bubble-pulse-speed-val').textContent = '1.5s';
@@ -1257,7 +1256,7 @@
         document.getElementById('oi-candle-width').value = 50; document.getElementById('oi-candle-width-val').textContent = '50%';
         document.getElementById('cvd-line-thickness').value = 2; document.getElementById('cvd-line-thickness-val').textContent = '2px';
         document.getElementById('indicator-padding').value = 10; document.getElementById('indicator-bg-opacity').value = 95;
-        document.getElementById('draw-delay').value = 100; document.getElementById('draw-delay-val').textContent = '100ms';
+        document.getElementById('draw-delay').value = 50; document.getElementById('draw-delay-val').textContent = '50ms';
         document.getElementById('interaction-hold').value = 180; document.getElementById('interaction-hold-val').textContent = '180ms';
         updateCandleAppearance();
         chart.applyOptions({ layout: { background: { color: config.bgColor } }, timeScale: { barSpacing: config.barSpacing } });
@@ -1266,7 +1265,7 @@
         applyTimeframeChange(5);
     }
 
-    // ─── Settings event listeners ───────────────────────────────────────────────
+    // Settings event listeners
     document.getElementById('bar-spacing-input').addEventListener('input', (e) => { config.barSpacing = parseInt(e.target.value); chart.timeScale().applyOptions({ barSpacing: config.barSpacing }); scheduleDraw(); });
     document.getElementById('candle-width-input').addEventListener('input', (e) => { config.candleWidthPercent = parseInt(e.target.value)/100; scheduleDraw(); });
     document.getElementById('cluster-width-input').addEventListener('input', (e) => { config.clusterWidthPercent = parseInt(e.target.value)/100; scheduleDraw(); });
@@ -1289,7 +1288,6 @@
     document.getElementById('cluster-bg-opacity').addEventListener('input', (e) => { config.clusterBgOpacity = parseInt(e.target.value)/100; document.getElementById('cluster-bg-opacity-val').textContent = e.target.value+'%'; scheduleDraw(); });
     document.getElementById('poc-border-width').addEventListener('input', (e) => { config.pocBorderWidth = parseFloat(e.target.value); document.getElementById('poc-border-width-val').textContent = config.pocBorderWidth+'px'; scheduleDraw(); });
     document.getElementById('cell-border-width').addEventListener('input', (e) => { config.cellBorderWidth = parseFloat(e.target.value); document.getElementById('cell-border-width-val').textContent = config.cellBorderWidth+'px'; scheduleDraw(); });
-    // ★ CHANGE 2: event listener for the new threshold input
     document.getElementById('cluster-volume-threshold').addEventListener('input', (e) => { config.clusterVolumeThreshold = parseFloat(e.target.value) || 0; scheduleDraw(); });
     document.getElementById('bubble-inner-size').addEventListener('input', (e) => { config.bubbleInnerSize = parseInt(e.target.value); scheduleDraw(); });
     document.getElementById('bubble-outer-size').addEventListener('input', (e) => { config.bubbleOuterSize = parseInt(e.target.value); scheduleDraw(); });
@@ -1308,7 +1306,7 @@
     document.getElementById('draw-delay').addEventListener('input', (e) => { config.drawDelay = parseInt(e.target.value); document.getElementById('draw-delay-val').textContent = config.drawDelay+'ms'; });
     document.getElementById('interaction-hold').addEventListener('input', (e) => { config.interactionHold = parseInt(e.target.value); document.getElementById('interaction-hold-val').textContent = config.interactionHold+'ms'; });
 
-    // ─── Core draw loop ─────────────────────────────────────────────────────────
+    // Core draw loop
     let rafId = null, rafRunning = false, needsRedraw = false, lastInteractionTime = 0;
 
     function scheduleDraw() {
@@ -1341,7 +1339,7 @@
         return visibleCandles;
     }
 
-    // ─── Indicator system ────────────────────────────────────────────────────────
+    // Indicator system
     class BaseIndicator {
         constructor(id, name, defaultHeight = config.defaultIndicatorHeight) {
             this.id = id; this.name = name; this.height = defaultHeight;
@@ -1487,6 +1485,111 @@
         }
     }
 
+    // ── CHANGE 2: BarStatsIndicator (Full Height / Overlay Text) ────────────────
+    class BarStatsIndicator extends BaseIndicator {
+        constructor() { super('barstats', 'Bar Statistics', 72); }
+
+        draw(cssWidth) {
+            if (!this.visible || !this.offscreenCtx) return;
+            const ctxS = this.offscreenCtx;
+
+            // 1. Define Price Scale Width
+            const PRICE_SCALE_WIDTH = 80;
+            const drawWidth = cssWidth - PRICE_SCALE_WIDTH;
+
+            // Clear the entire canvas
+            ctxS.clearRect(0, 0, cssWidth, this.height);
+
+            const visibleCandles = getVisibleCandles(cssWidth);
+            if (visibleCandles.length === 0) return;
+
+            const barSpacing = chart.timeScale().options().barSpacing;
+            const cellWidth = Math.max(barSpacing * 0.92, 6);
+
+            // Gather stats
+            const stats = visibleCandles.map(({ candle, x }) => {
+                const tsKey = String(Math.floor(candle.time));
+                const buckets = displayClusters[tsKey];
+                let buy = 0, sell = 0;
+                if (buckets) Object.values(buckets).forEach(d => { buy += d.buy; sell += d.sell; });
+                return { x, totalVol: buy + sell, delta: buy - sell };
+            });
+
+            const maxVol = Math.max(...stats.map(s => s.totalVol), 1);
+            const maxDelta = Math.max(...stats.map(s => Math.abs(s.delta)), 1);
+
+            // ── UPDATED: Remove header spacing ──
+            const HEADER_H = 0; 
+            const ROW_H = this.height / 2; // Rows now split the full height
+
+            // ── Background ───────────────────────────
+            ctxS.fillStyle = config.bgColor;
+            ctxS.fillRect(0, 0, drawWidth, this.height);
+
+            // Variable to track where the bars end (for the line)
+            let lineEndX = 0;
+
+            // ── Per-candle columns ───────────────────
+            const fontSize = Math.max(8, Math.min(config.cellFontSize, Math.floor(cellWidth * 0.32)));
+
+            stats.forEach(({ x, totalVol, delta }) => {
+                // Skip drawing if under the price scale
+                if (x > drawWidth) return;
+
+                // Update the rightmost position for the middle line
+                const currentRightEdge = x + cellWidth / 2;
+                lineEndX = Math.min(currentRightEdge, drawWidth);
+
+                const volRatio = totalVol / maxVol;
+                const deltaRatio = Math.abs(delta) / maxDelta;
+                const isDeltaPos = delta >= 0;
+                const colLeft = x - cellWidth / 2;
+
+                // Volume row (Starts at top: 0)
+                const volAlpha = 0.08 + volRatio * 0.65;
+                ctxS.fillStyle = hexToRgba(config.upColor, volAlpha);
+                ctxS.fillRect(colLeft, 0, cellWidth, ROW_H);
+
+                // Delta row (Starts at middle: ROW_H)
+                const deltaAlpha = 0.08 + deltaRatio * 0.78;
+                ctxS.fillStyle = hexToRgba(isDeltaPos ? config.upColor : config.downColor, deltaAlpha);
+                ctxS.fillRect(colLeft, ROW_H, cellWidth, ROW_H);
+
+                // Vertical Cell Separator
+                ctxS.strokeStyle = 'rgba(26,31,46,0.35)';
+                ctxS.lineWidth = 0.5;
+                ctxS.beginPath();
+                ctxS.moveTo(colLeft, 0);
+                ctxS.lineTo(colLeft, this.height);
+                ctxS.stroke();
+
+                // Text (Centered in each half)
+                if (cellWidth >= 28) {
+                    ctxS.textAlign = 'center';
+                    ctxS.textBaseline = 'middle';
+                    ctxS.font = `${config.cellFontWeight} ${fontSize}px ${config.statsFontFamily}`;
+                    ctxS.fillStyle = 'rgba(232,234,237,0.92)';
+                    // Top Row Text
+                    ctxS.fillText(formatUSD(totalVol), x, ROW_H / 2);
+                    // Bottom Row Text
+                    ctxS.fillText(formatUSD(delta), x, ROW_H * 1.5);
+                }
+            });
+
+            // ── Middle Divider Line ───────────────────────
+            if (lineEndX > 0) {
+                ctxS.strokeStyle = 'rgba(26,31,46,0.7)';
+                ctxS.lineWidth = 1;
+                ctxS.beginPath();
+                ctxS.moveTo(0, ROW_H);
+                ctxS.lineTo(lineEndX, ROW_H); // Stops exactly at the last bar
+                ctxS.stroke();
+            }
+        }
+    }
+
+    // ── END BarStatsIndicator ───────────────────────────────────────────────────
+
     class IndicatorManager {
         constructor() { this.indicators = new Map(); this.order = []; this.container = document.getElementById('indicators-container'); this.dragState = null; this.placeholder = null; }
         addIndicator(indicator) {
@@ -1570,8 +1673,15 @@
         if (ind && ind.visible) { indicatorManager.removeIndicator('cvd'); this.classList.remove('active'); }
         else { indicatorManager.addIndicator(new CVDIndicator()); this.classList.add('active'); }
     });
+    // ── CHANGE 3: Bar Stats toggle listener ──────────────────────────────────────
+    document.getElementById('toggle-barstats').addEventListener('click', function() {
+        const ind = indicatorManager.getIndicator('barstats');
+        if (ind && ind.visible) { indicatorManager.removeIndicator('barstats'); this.classList.remove('active'); }
+        else { indicatorManager.addIndicator(new BarStatsIndicator()); this.classList.add('active'); }
+        scheduleDraw();
+    });
 
-    // ─── Drawing helpers ─────────────────────────────────────────────────────────
+    // Drawing helpers
     function hexToRgba(hex, alpha) {
         const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
         return `rgba(${r},${g},${b},${alpha})`;
@@ -1662,7 +1772,6 @@
         labelContainer.innerHTML=`<div class="price-label-box" style="border-color:${color};color:${color};">${priceText}</div><div class="price-label-arrow" style="border-width:6px 0 6px 8px;border-color:transparent transparent transparent ${color};"></div>`;
     }
 
-    // Cumulative cluster — UNCHANGED, no threshold applied here
     function drawCumulativeCluster(cssWidth, cssHeight, candleBottomY) {
         const timeScale=chart.timeScale(); const barSpacing=timeScale.options().barSpacing;
         const visibleRange=timeScale.getVisibleLogicalRange(); if (!visibleRange) return;
@@ -1803,7 +1912,7 @@
             }
         });
 
-        // ─── Per-candle footprint clusters ──────────────────────────────────────
+        // Per-candle footprint clusters
         for (let ti=0; ti<timestamps.length; ti++) {
             const timestamp=timestamps[ti], ts=parseInt(timestamp);
             const x=timeScale.timeToCoordinate(ts);
@@ -1852,19 +1961,16 @@
                 const heightCell=Math.abs(cellYBottom-cellYTop), drawY=Math.min(cellYTop,cellYBottom);
                 const delta=data.buy-data.sell, totalVolume=data.buy+data.sell;
 
-                // ★ CHANGE 3: threshold check — only for per-candle clusters, cumulative is untouched
                 let fillColor;
                 if (config.clusterVolumeThreshold > 0 && Math.abs(delta) < config.clusterVolumeThreshold) {
-                    // Low-volume cell: override to muted gray at full opacity
                     fillColor = '#485060';
                     offscreenCtx.fillStyle = fillColor;
                 } else {
-                    // Normal coloring
                     const isBullish = delta >= 0;
                     const cellColor = isBullish ? config.upColor : config.downColor;
                     const cellOpacity = calculateCellOpacity(totalVolume);
                     offscreenCtx.fillStyle = hexToRgba(cellColor, cellOpacity);
-                    fillColor = null; // used below for text color decision
+                    fillColor = null;
                 }
                 offscreenCtx.fillRect(boxX,drawY,boxWidth,heightCell);
 
@@ -1941,18 +2047,25 @@
                         offscreenCtx.shadowBlur=0; offscreenCtx.strokeStyle="#FFFFFF"; offscreenCtx.lineWidth=1; offscreenCtx.stroke(); offscreenCtx.restore();
                     }
                 }
-                const statsY=isBullishCandle?mainSeries.priceToCoordinate(candle.high)-45:mainSeries.priceToCoordinate(candle.low)+40;
-                if (statsY<0||statsY>candleBottomY) return;
-                const deltaColor=delta>=0?config.upColor:config.downColor;
-                const barCenterX=(x-(totalWidth/2))+(totalWidth/2);
-                offscreenCtx.font=`${config.statsFontWeight} ${config.statsFontSize}px ${config.statsFontFamily}`;
-                offscreenCtx.fillStyle='#a6afd3'; offscreenCtx.textAlign='center';
-                offscreenCtx.fillText(`V:${formatUSD(totalVol)}`,barCenterX,statsY-8);
-                const deltaValue=formatUSD(delta), dW=offscreenCtx.measureText('D:').width, dvW=offscreenCtx.measureText(deltaValue).width;
-                offscreenCtx.textAlign='left';
-                offscreenCtx.fillStyle='#a6afd3'; offscreenCtx.fillText('D:',barCenterX-(dW+dvW)/2,statsY+8);
-                offscreenCtx.fillStyle=deltaColor; offscreenCtx.fillText(deltaValue,barCenterX-(dW+dvW)/2+dW,statsY+8);
-                offscreenCtx.textAlign='center';
+
+                // ── CHANGE 4: hide V/D text stats above candles when Bar Stats pane is active ──
+                const _barStatsActive = indicatorManager.getIndicator('barstats')?.visible;
+                if (!_barStatsActive) {
+                    const statsY=isBullishCandle?mainSeries.priceToCoordinate(candle.high)-45:mainSeries.priceToCoordinate(candle.low)+40;
+                    if (statsY>=0&&statsY<=candleBottomY) {
+                        const deltaColor=delta>=0?config.upColor:config.downColor;
+                        const barCenterX=(x-(totalWidth/2))+(totalWidth/2);
+                        offscreenCtx.font=`${config.statsFontWeight} ${config.statsFontSize}px ${config.statsFontFamily}`;
+                        offscreenCtx.fillStyle='#a6afd3'; offscreenCtx.textAlign='center';
+                        offscreenCtx.fillText(`V:${formatUSD(totalVol)}`,barCenterX,statsY-8);
+                        const deltaValue=formatUSD(delta), dW=offscreenCtx.measureText('D:').width, dvW=offscreenCtx.measureText(deltaValue).width;
+                        offscreenCtx.textAlign='left';
+                        offscreenCtx.fillStyle='#a6afd3'; offscreenCtx.fillText('D:',barCenterX-(dW+dvW)/2,statsY+8);
+                        offscreenCtx.fillStyle=deltaColor; offscreenCtx.fillText(deltaValue,barCenterX-(dW+dvW)/2+dW,statsY+8);
+                        offscreenCtx.textAlign='center';
+                    }
+                }
+                // ── END CHANGE 4 ──
             });
         }
 
@@ -2125,4 +2238,3 @@
 </script>
 </body>
 </html>
-
