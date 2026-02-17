@@ -788,18 +788,18 @@
                             <div class="slider-container">
                                 <div class="slider-header">
                                     <label class="setting-label">Cluster BG Opacity</label>
-                                    <span id="cluster-bg-opacity-val" class="slider-value">85%</span>
+                                    <span id="cluster-bg-opacity-val" class="slider-value">0%</span>
                                 </div>
-                                <input type="range" id="cluster-bg-opacity" min="0" max="100" value="85" step="5">
+                                <input type="range" id="cluster-bg-opacity" min="0" max="100" value="0" step="5">
                             </div>
                         </div>
                         <div class="setting-item">
                             <div class="slider-container">
                                 <div class="slider-header">
                                     <label class="setting-label">POC Border Width</label>
-                                    <span id="poc-border-width-val" class="slider-value">1px</span>
+                                    <span id="poc-border-width-val" class="slider-value">1.5px</span>
                                 </div>
-                                <input type="range" id="poc-border-width" min="1" max="5" value="1" step="0.5">
+                                <input type="range" id="poc-border-width" min="1.5" max="5" value="1" step="0.5">
                             </div>
                         </div>
                         <div class="setting-item">
@@ -808,7 +808,7 @@
                                     <label class="setting-label">Cell Border Width</label>
                                     <span id="cell-border-width-val" class="slider-value">1px</span>
                                 </div>
-                                <input type="range" id="cell-border-width" min="0" max="3" value="1" step="0.5">
+                                <input type="range" id="cell-border-width" min="0" max="3" value="3" step="0.5">
                             </div>
                         </div>
                     </div>
@@ -1047,7 +1047,7 @@
         accentColor: '#3b82f6', absorptionColor: '#FFD700',
         statsFontFamily: "'JetBrains Mono', monospace", statsFontSize: 11,
         statsFontWeight: '600', cellFontSize: 11, cellFontWeight: '400', barSpacing: 50,
-        clusterBgOpacity: 0.85, pocBorderWidth: 1, cellBorderWidth: 1,
+        clusterBgOpacity: 0, pocBorderWidth: 1.5, cellBorderWidth: 3,
         bubbleInnerSize: 5, bubbleOuterSize: 10, bubblePulseSpeed: 1500,
         absorptionDotSize: 4, absorptionGlow: 10, absorptionThreshold: 100000,
         priceLabelFontSize: 10, timerFontSize: 11, timerOpacity: 0.9,
@@ -1239,9 +1239,9 @@
         document.getElementById('base-tick-input').value = 2.5; document.getElementById('min-cell-height-input').value = 15;
         document.getElementById('cumulative-mode-select').value = 'all';
         document.getElementById('cluster-volume-threshold').value = 50000;  // ★ reset new field UI
-        document.getElementById('cluster-bg-opacity').value = 85; document.getElementById('cluster-bg-opacity-val').textContent = '85%';
-        document.getElementById('poc-border-width').value = 1; document.getElementById('poc-border-width-val').textContent = '1px';
-        document.getElementById('cell-border-width').value = 1; document.getElementById('cell-border-width-val').textContent = '1px';
+        document.getElementById('cluster-bg-opacity').value = 0; document.getElementById('cluster-bg-opacity-val').textContent = '0%';
+        document.getElementById('poc-border-width').value = 1.5; document.getElementById('poc-border-width-val').textContent = '1.5px';
+        document.getElementById('cell-border-width').value = 3; document.getElementById('cell-border-width-val').textContent = '3px';
         document.getElementById('bubble-threshold-input').value = 500000;
         document.getElementById('bubble-inner-size').value = 5; document.getElementById('bubble-outer-size').value = 10;
         document.getElementById('bubble-pulse-speed').value = 1500; document.getElementById('bubble-pulse-speed-val').textContent = '1.5s';
@@ -2125,3 +2125,4 @@
 </script>
 </body>
 </html>
+
