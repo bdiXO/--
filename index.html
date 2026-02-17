@@ -399,6 +399,15 @@
         }
         .reset-button:hover { background: rgba(255, 66, 66, 0.2); border-color: #ff4242; transform: translateY(-1px); box-shadow: 0 4px 8px rgba(255, 66, 66, 0.2); }
         .reset-button:active { transform: translateY(0); }
+
+        /* ── TPO Legend badge ── */
+        .tpo-legend {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-family: 'JetBrains Mono', monospace; font-size: 10px;
+            padding: 3px 8px; border-radius: 3px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .tpo-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
     </style>
 </head>
 <body class="font-sans text-trade-text antialiased h-screen flex flex-col">
@@ -458,12 +467,18 @@
                     </div>
                     <span>CVD</span>
                 </button>
-                <!-- ★ CHANGE 1: Bar Stats toggle button -->
                 <button id="toggle-barstats" class="indicator-toggle">
                     <div class="indicator-checkbox">
                         <svg viewBox="0 0 12 12" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,6 5,9 10,3"></polyline></svg>
                     </div>
                     <span>Bar Stats</span>
+                </button>
+                <!-- ★ TPO Toggle Button -->
+                <button id="toggle-tpo" class="indicator-toggle">
+                    <div class="indicator-checkbox">
+                        <svg viewBox="0 0 12 12" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,6 5,9 10,3"></polyline></svg>
+                    </div>
+                    <span>TPO</span>
                 </button>
             </div>
             <div class="h-6 w-px bg-trade-border/50"></div>
@@ -974,6 +989,124 @@
                 </div>
             </div>
 
+            <!-- ★ TPO / Market Profile Settings Section -->
+            <div class="settings-section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <div class="section-title-wrapper">
+                        <div class="section-icon">
+                            <!-- Profile / bar chart icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="3" width="4" height="18" rx="1"/>
+                                <rect x="8" y="6" width="7" height="15" rx="1"/>
+                                <rect x="17" y="9" width="5" height="12" rx="1"/>
+                            </svg>
+                        </div>
+                        <span class="section-title">TPO / Market Profile</span>
+                    </div>
+                    <svg class="section-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="section-content">
+                    <div class="section-body">
+                        <!-- Enable toggle -->
+                        <div class="setting-row">
+                            <div class="setting-item">
+                                <label class="setting-label">Enable TPO</label>
+                                <div class="toggle-switch" id="toggle-tpo-switch" onclick="toggleSwitch(this)"></div>
+                            </div>
+                            <div class="setting-item">
+                                <label class="setting-label">Session (UTC)</label>
+                                <div class="select-wrapper">
+                                    <select id="tpo-session-select" class="w-full px-3 py-2">
+                                        <option value="daily" selected>Daily (24h)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="setting-divider"></div>
+
+                        <!-- Tick size & block width -->
+                        <div class="setting-row">
+                            <div class="setting-item">
+                                <label class="setting-label">Tick Size ($)</label>
+                                <input type="number" id="tpo-tick-size" value="50" min="10" max="2000" step="10" class="w-full px-3 py-2">
+                                <span class="setting-description">Vertical price resolution of each row</span>
+                            </div>
+                            <div class="setting-item">
+                                <label class="setting-label">Block Width (px)</label>
+                                <input type="number" id="tpo-block-width" value="8" min="3" max="24" step="1" class="w-full px-3 py-2">
+                                <span class="setting-description">Width of each individual TPO block</span>
+                            </div>
+                        </div>
+
+                        <!-- Opacity sliders -->
+                        <div class="setting-item">
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label class="setting-label">VA Block Opacity</label>
+                                    <span id="tpo-opacity-va-val" class="slider-value">65%</span>
+                                </div>
+                                <input type="range" id="tpo-opacity-va" min="10" max="100" value="65" step="5">
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label class="setting-label">Non-VA Block Opacity</label>
+                                    <span id="tpo-opacity-non-va-val" class="slider-value">30%</span>
+                                </div>
+                                <input type="range" id="tpo-opacity-non-va" min="5" max="80" value="30" step="5">
+                            </div>
+                        </div>
+
+                        <div class="setting-divider"></div>
+
+                        <!-- Color pickers -->
+                        <div class="setting-row">
+                            <div class="setting-item">
+                                <label class="setting-label">Single Print Color</label>
+                                <div class="color-picker-wrapper"><input type="color" id="tpo-color-single" value="#ff6ec7"></div>
+                            </div>
+                            <div class="setting-item">
+                                <label class="setting-label">VA Fill Color</label>
+                                <div class="color-picker-wrapper"><input type="color" id="tpo-color-va" value="#3b82f6"></div>
+                            </div>
+                        </div>
+                        <div class="setting-row">
+                            <div class="setting-item">
+                                <label class="setting-label">Non-VA Fill Color</label>
+                                <div class="color-picker-wrapper"><input type="color" id="tpo-color-non-va" value="#4a5568"></div>
+                            </div>
+                            <div class="setting-item">
+                                <label class="setting-label">POC Border Color</label>
+                                <div class="color-picker-wrapper"><input type="color" id="tpo-color-poc" value="#f0b90b"></div>
+                            </div>
+                        </div>
+
+                        <div class="setting-divider"></div>
+
+                        <!-- Legend -->
+                        <div class="setting-item full-width">
+                            <label class="setting-label">Color Legend</label>
+                            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">
+                                <span class="tpo-legend" style="color:#3b82f6;">
+                                    <span class="tpo-swatch" style="background:#3b82f6;opacity:0.65;"></span>Value Area (70%)
+                                </span>
+                                <span class="tpo-legend" style="color:#7a8599;">
+                                    <span class="tpo-swatch" style="background:#4a5568;opacity:0.5;"></span>Non-VA
+                                </span>
+                                <span class="tpo-legend" style="color:#ff6ec7;">
+                                    <span class="tpo-swatch" style="background:#ff6ec7;"></span>Single Print
+                                </span>
+                                <span class="tpo-legend" style="color:#f0b90b;">
+                                    <span class="tpo-swatch" style="background:transparent;border:1.5px solid #f0b90b;"></span>POC Row
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Advanced -->
             <div class="settings-section">
                 <div class="section-header" onclick="toggleSection(this)">
@@ -1052,7 +1185,17 @@
         priceLabelFontSize: 10, timerFontSize: 11, timerOpacity: 0.9,
         defaultIndicatorHeight: 150, oiCandleWidth: 0.5, cvdLineThickness: 2,
         indicatorPadding: 10, indicatorBgOpacity: 0.95, drawDelay: 100, interactionHold: 180,
-        clusterVolumeThreshold: 50000
+        clusterVolumeThreshold: 50000,
+        // ── TPO / Market Profile ──────────────────────────────────────
+        showTPO: false,
+        tpoTickSize: 50,
+        tpoBlockWidth: 8,
+        tpoOpacityVA: 0.65,
+        tpoOpacityNonVA: 0.30,
+        tpoColorSingle: '#ff6ec7',
+        tpoColorVA: '#3b82f6',
+        tpoColorNonVA: '#4a5568',
+        tpoColorPOC: '#ffffff',
     };
 
     let base5mClusters = {};
@@ -1063,6 +1206,10 @@
     let currentPrice = 0;
     let mainSeries;
     let ws = null;
+
+    // ── TPO Cache ────────────────────────────────────────────────────────────────
+    let tpoProfilesCache = null;
+    let tpoCacheKey = '';
 
     const chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
         layout: { background: { color: config.bgColor }, textColor: '#8b92a7', fontFamily: 'Inter' },
@@ -1158,6 +1305,8 @@
         displayCandles = aggregateCandles(base5mCandles, newTFMinutes);
         displayClusters = aggregateClusters(base5mClusters, newTFMinutes);
         mainSeries.setData(displayCandles);
+        // Invalidate TPO cache on timeframe change
+        tpoCacheKey = '';
         document.querySelectorAll('.timeframe-btn').forEach(btn => btn.classList.remove('active'));
         const tfMap = { 1:1, 3:3, 5:5, 15:15, 30:30, 60:60, 240:240, 1440:'D' };
         const btnValue = tfMap[newTFMinutes];
@@ -1195,6 +1344,16 @@
             config.showCrosshair = element.classList.contains('active');
             chart.applyOptions({ crosshair: { vertLine: { visible: config.showCrosshair }, horzLine: { visible: config.showCrosshair } } });
         }
+        // ── TPO Settings Panel toggle switch ──
+        else if (switchId === 'toggle-tpo-switch') {
+            config.showTPO = element.classList.contains('active');
+            // Sync header button state
+            const headerBtn = document.getElementById('toggle-tpo');
+            if (config.showTPO) headerBtn.classList.add('active');
+            else headerBtn.classList.remove('active');
+            tpoCacheKey = ''; // invalidate cache
+            scheduleDraw();
+        }
     }
 
     function resetToDefaults() {
@@ -1215,8 +1374,14 @@
             priceLabelFontSize: 10, timerFontSize: 11, timerOpacity: 0.9,
             defaultIndicatorHeight: 150, oiCandleWidth: 0.5, cvdLineThickness: 2,
             indicatorPadding: 10, indicatorBgOpacity: 0.95, drawDelay: 100, interactionHold: 180,
-            clusterVolumeThreshold: 50000
+            clusterVolumeThreshold: 50000,
+            showTPO: false, tpoTickSize: 50, tpoBlockWidth: 8,
+            tpoOpacityVA: 0.65, tpoOpacityNonVA: 0.30,
+            tpoColorSingle: '#ff6ec7', tpoColorVA: '#3b82f6',
+            tpoColorNonVA: '#4a5568', tpoColorPOC: '#ffffff',
         };
+        tpoCacheKey = '';
+        // Reset UI controls (existing ones)
         document.getElementById('series-type-select').value = 'candle';
         document.getElementById('bar-spacing-input').value = 50;
         document.getElementById('candle-opacity').value = 100; document.getElementById('opacity-val').textContent = '100%';
@@ -1258,6 +1423,17 @@
         document.getElementById('indicator-padding').value = 10; document.getElementById('indicator-bg-opacity').value = 95;
         document.getElementById('draw-delay').value = 50; document.getElementById('draw-delay-val').textContent = '50ms';
         document.getElementById('interaction-hold').value = 180; document.getElementById('interaction-hold-val').textContent = '180ms';
+        // Reset TPO UI controls
+        document.getElementById('toggle-tpo-switch').classList.remove('active');
+        document.getElementById('toggle-tpo').classList.remove('active');
+        document.getElementById('tpo-tick-size').value = 50;
+        document.getElementById('tpo-block-width').value = 8;
+        document.getElementById('tpo-opacity-va').value = 65; document.getElementById('tpo-opacity-va-val').textContent = '65%';
+        document.getElementById('tpo-opacity-non-va').value = 30; document.getElementById('tpo-opacity-non-va-val').textContent = '30%';
+        document.getElementById('tpo-color-single').value = '#ff6ec7';
+        document.getElementById('tpo-color-va').value = '#3b82f6';
+        document.getElementById('tpo-color-non-va').value = '#4a5568';
+        document.getElementById('tpo-color-poc').value = '#f0b90b';
         updateCandleAppearance();
         chart.applyOptions({ layout: { background: { color: config.bgColor } }, timeScale: { barSpacing: config.barSpacing } });
         mainSeries.applyOptions({ priceLineVisible: config.showPriceLine });
@@ -1306,6 +1482,32 @@
     document.getElementById('draw-delay').addEventListener('input', (e) => { config.drawDelay = parseInt(e.target.value); document.getElementById('draw-delay-val').textContent = config.drawDelay+'ms'; });
     document.getElementById('interaction-hold').addEventListener('input', (e) => { config.interactionHold = parseInt(e.target.value); document.getElementById('interaction-hold-val').textContent = config.interactionHold+'ms'; });
 
+    // ── TPO Settings Event Listeners ─────────────────────────────────────────────
+    document.getElementById('tpo-tick-size').addEventListener('change', (e) => {
+        config.tpoTickSize = Math.max(10, parseInt(e.target.value) || 100);
+        e.target.value = config.tpoTickSize;
+        tpoCacheKey = ''; // force rebuild
+        scheduleDraw();
+    });
+    document.getElementById('tpo-block-width').addEventListener('input', (e) => {
+        config.tpoBlockWidth = Math.max(3, parseInt(e.target.value) || 8);
+        scheduleDraw();
+    });
+    document.getElementById('tpo-opacity-va').addEventListener('input', (e) => {
+        config.tpoOpacityVA = parseInt(e.target.value) / 100;
+        document.getElementById('tpo-opacity-va-val').textContent = e.target.value + '%';
+        scheduleDraw();
+    });
+    document.getElementById('tpo-opacity-non-va').addEventListener('input', (e) => {
+        config.tpoOpacityNonVA = parseInt(e.target.value) / 100;
+        document.getElementById('tpo-opacity-non-va-val').textContent = e.target.value + '%';
+        scheduleDraw();
+    });
+    document.getElementById('tpo-color-single').addEventListener('change', (e) => { config.tpoColorSingle = e.target.value; scheduleDraw(); });
+    document.getElementById('tpo-color-va').addEventListener('change', (e) => { config.tpoColorVA = e.target.value; scheduleDraw(); });
+    document.getElementById('tpo-color-non-va').addEventListener('change', (e) => { config.tpoColorNonVA = e.target.value; scheduleDraw(); });
+    document.getElementById('tpo-color-poc').addEventListener('change', (e) => { config.tpoColorPOC = e.target.value; scheduleDraw(); });
+
     // Core draw loop
     let rafId = null, rafRunning = false, needsRedraw = false, lastInteractionTime = 0;
 
@@ -1339,7 +1541,376 @@
         return visibleCandles;
     }
 
-    // Indicator system
+    // ════════════════════════════════════════════════════════════════════════════
+    //  TPO / Market Profile Engine
+    // ════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * buildTPOProfiles()
+     * Processes displayCandles (base-5m granularity) to construct a full
+     * Market Profile (TPO) for every UTC day present in the dataset.
+     *
+     * Returns an array of profile objects, one per session day, sorted oldest-first.
+     */
+    function buildTPOProfiles() {
+        if (!displayCandles || displayCandles.length === 0) return [];
+
+        const tickSize = Math.max(1, config.tpoTickSize); // guard against 0
+
+        // ── 1. Group candles by UTC calendar day ───────────────────────────────
+        const dayGroups = {};
+        for (let i = 0; i < displayCandles.length; i++) {
+            const c = displayCandles[i];
+            const dayStart = Math.floor(c.time / 86400) * 86400; // 00:00 UTC
+            if (!dayGroups[dayStart]) dayGroups[dayStart] = [];
+            dayGroups[dayStart].push(c);
+        }
+
+        const profiles = [];
+        const PERIOD_SECONDS = 1800; // 30-minute TPO periods
+
+        const sortedDays = Object.keys(dayGroups).map(Number).sort((a, b) => a - b);
+
+        sortedDays.forEach(dayStart => {
+            const candles = dayGroups[dayStart];
+            if (!candles || candles.length === 0) return;
+
+            // ── 2. Assign each candle to its 30-minute period ──────────────────
+            const periodGroups = {}; // periodIndex -> [candles]
+            candles.forEach(c => {
+                const offset = c.time - dayStart;
+                const periodIdx = Math.floor(offset / PERIOD_SECONDS);
+                if (!periodGroups[periodIdx]) periodGroups[periodIdx] = [];
+                periodGroups[periodIdx].push(c);
+            });
+
+            // ── 3. Build rowMap: priceRowKey (integer) -> TPO block count ──────
+            //    Constraint: each row receives AT MOST 1 block per period.
+            const rowMap = {}; // { priceRowInt: count }
+
+            Object.values(periodGroups).forEach(pCandles => {
+                // Determine the period's absolute High and Low
+                let pH = -Infinity, pL = Infinity;
+                pCandles.forEach(c => {
+                    if (c.high > pH) pH = c.high;
+                    if (c.low  < pL) pL = c.low;
+                });
+
+                // Floor both to the nearest tick boundary
+                const rowLow  = Math.floor(pL / tickSize) * tickSize;
+                const rowHigh = Math.floor(pH / tickSize) * tickSize;
+
+                // Use a Set to enforce "one block per period per row" (idempotency)
+                const hitThisPeriod = new Set();
+                for (let p = rowLow; p <= rowHigh + tickSize * 0.001; p += tickSize) {
+                    const key = Math.round(p); // integer key avoids float drift
+                    if (!hitThisPeriod.has(key)) {
+                        hitThisPeriod.add(key);
+                        rowMap[key] = (rowMap[key] || 0) + 1;
+                    }
+                }
+            });
+
+            const rowKeys = Object.keys(rowMap);
+            if (rowKeys.length === 0) return;
+
+            // ── 4. Compute total TPO count ─────────────────────────────────────
+            let totalTPO = 0;
+            rowKeys.forEach(k => { totalTPO += rowMap[k]; });
+
+            // ── 5. Find POC (maximum blocks in any single row) ─────────────────
+            let pocPrice = null, pocCount = 0;
+            rowKeys.forEach(k => {
+                if (rowMap[k] > pocCount) {
+                    pocCount = rowMap[k];
+                    pocPrice = parseFloat(k);
+                }
+            });
+
+            // ── 6. Value Area calculation (70% of totalTPO) ───────────────────
+            //    Classic algorithm: start at POC, expand the higher of
+            //    {1 row up vs 1 row down} until ≥70% is accumulated.
+            const sortedPrices = rowKeys.map(Number).sort((a, b) => a - b);
+            const pocIdx = sortedPrices.findIndex(p => Math.abs(p - pocPrice) < 0.5);
+
+            const vaTarget = totalTPO * 0.70;
+            let vaCount = pocCount;
+            let vaLow = pocPrice, vaHigh = pocPrice;
+            let upIdx = pocIdx + 1, downIdx = pocIdx - 1;
+
+            while (vaCount < vaTarget) {
+                const hasUp   = upIdx   <  sortedPrices.length;
+                const hasDown = downIdx >= 0;
+                if (!hasUp && !hasDown) break;
+
+                const upAdd   = hasUp   ? rowMap[sortedPrices[upIdx]]   : 0;
+                const downAdd = hasDown ? rowMap[sortedPrices[downIdx]] : 0;
+
+                // Tie-break: expand upward first (standard convention)
+                if (hasUp && upAdd >= downAdd) {
+                    vaCount += upAdd;
+                    vaHigh = sortedPrices[upIdx];
+                    upIdx++;
+                } else if (hasDown) {
+                    vaCount += downAdd;
+                    vaLow = sortedPrices[downIdx];
+                    downIdx--;
+                } else {
+                    vaCount += upAdd;
+                    vaHigh = sortedPrices[upIdx];
+                    upIdx++;
+                }
+            }
+
+            // ── 7. Identify single prints (count === 1) ───────────────────────
+            const singlePrints = new Set();
+            rowKeys.forEach(k => {
+                if (rowMap[k] === 1) singlePrints.add(parseFloat(k));
+            });
+
+            // ── 8. Session extremes + max blocks (for potential width scaling) ─
+            const maxBlocks = Math.max(...Object.values(rowMap));
+            const sessionHigh = Math.max(...candles.map(c => c.high));
+            const sessionLow  = Math.min(...candles.map(c => c.low));
+
+// ── 9. First candle time (used for X-anchor) ──────────────────────
+        const firstCandleTime = candles[0].time;
+
+        // ── 10. Extreme rows: top/bottom consecutive rows with ≤ 2 blocks ──
+        const topExtremes = new Set();
+        const bottomExtremes = new Set();
+        for (let i = sortedPrices.length - 1; i >= 0; i--) {
+            if (rowMap[sortedPrices[i]] === 2) topExtremes.add(sortedPrices[i]);
+            else break;
+        }
+        for (let i = 0; i < sortedPrices.length; i++) {
+            if (rowMap[sortedPrices[i]] === 2) bottomExtremes.add(sortedPrices[i]);
+            else break;
+        }
+            profiles.push({
+                dayStart,
+                firstCandleTime,
+                rowMap,        // { priceRowInt: tpoCount }
+                sortedPrices,  // sorted numeric array of rowMap keys
+                pocPrice,
+                pocCount,
+                vaLow,
+                vaHigh,
+                totalTPO,
+                singlePrints,
+                maxBlocks,
+                sessionHigh,
+                sessionLow,
+                tickSize, // snapshot of tickSize used (in case user changes it)
+                topExtremes,
+                bottomExtremes,
+                sessionEndTime: candles[candles.length - 1].time,   
+            });
+        });
+
+        return profiles;
+    }
+
+    /**
+     * drawTPO(cssWidth, candleBottomY)
+     * Renders all cached TPO profiles onto the offscreenCtx.
+     * Must be called from within drawFrames() AFTER the main canvas is cleared.
+     */
+    function drawTPO(cssWidth, candleBottomY) {
+        if (!config.showTPO) return;
+
+        // ── Cache invalidation ─────────────────────────────────────────────────
+        // Rebuild only when candle data or tick size changes.
+        const lastC = displayCandles[displayCandles.length - 1];
+        const newCacheKey = `${displayCandles.length}_${lastC?.time ?? 0}_${Math.round(lastC?.high ?? 0)}_${Math.round(lastC?.low ?? 0)}_${config.tpoTickSize}`;
+        if (newCacheKey !== tpoCacheKey || !tpoProfilesCache) {
+            tpoProfilesCache = buildTPOProfiles();
+            tpoCacheKey = newCacheKey;
+        }
+
+        if (!tpoProfilesCache || tpoProfilesCache.length === 0) return;
+
+        const timeScale  = chart.timeScale();
+        const blockW     = Math.max(2, config.tpoBlockWidth);
+
+        tpoProfilesCache.forEach(profile => {
+            // ── Determine X anchor (left edge of session) ──────────────────────
+            const anchorX = timeScale.timeToCoordinate(profile.firstCandleTime);
+            if (anchorX === null) return;
+
+            // Rough frustum cull: skip if entire profile is off-screen
+            // (max profile width = maxBlocks * blockW)
+            const profileMaxWidth = profile.maxBlocks * blockW;
+            if (anchorX + profileMaxWidth < -50 || anchorX > cssWidth + 50) return;
+
+            const { rowMap, sortedPrices, pocPrice, vaLow, vaHigh, singlePrints, tickSize } = profile;
+
+            // ── Draw each price row ────────────────────────────────────────────
+            sortedPrices.forEach(price => {
+                const count = rowMap[price];
+
+                // ── Y coordinates for this row ─────────────────────────────────
+                // A row spans [price, price + tickSize]
+                const yTop    = mainSeries.priceToCoordinate(price + tickSize);
+                const yBottom = mainSeries.priceToCoordinate(price);
+                if (yTop === null || yBottom === null) return;
+
+                const rowY = Math.min(yTop, yBottom);
+                const rowH = Math.max(1, Math.abs(yBottom - yTop) - 1);
+
+                // Skip rows fully outside the price-chart area
+                if (rowY > candleBottomY || rowY + rowH < 0) return;
+
+            // ── Classify row type ──────────────────────────────────────────
+                const isSingle  = singlePrints.has(price);
+                const isInVA    = price >= vaLow && price <= vaHigh;
+                const isPOC     = Math.abs(price - pocPrice) < 0.5;
+
+                let fillColor, fillAlpha;
+                if (isSingle) {
+                    fillColor = config.tpoColorSingle;
+                    fillAlpha = Math.min(1, config.tpoOpacityVA + 0.20); // singles/extremes always vivid
+                } else if (isInVA) {
+                    fillColor = config.tpoColorVA;
+                    fillAlpha = config.tpoOpacityVA;
+                } else {
+                    fillColor = config.tpoColorNonVA;
+                    fillAlpha = config.tpoOpacityNonVA;
+                }
+
+                // ── Draw individual TPO blocks for this row ────────────────────
+                // Each block is one 30-min period "letter" represented as a rect.
+                const totalRowWidth = count * blockW;
+
+                // Clip to canvas width (don't draw past price scale)
+                const drawableBlocks = Math.min(count, Math.ceil((cssWidth - anchorX) / blockW));
+
+                for (let b = 0; b < drawableBlocks; b++) {
+                    const bx = anchorX + b * blockW;
+                    if (bx > cssWidth - 2) break;
+                    const bw = Math.min(blockW - 1, cssWidth - bx - 1); // 1px gap between blocks
+                    offscreenCtx.fillStyle = hexToRgba(fillColor, fillAlpha);
+                    offscreenCtx.fillRect(bx, rowY, bw, rowH);
+                }
+
+                // ── POC gold border drawn around the full row extent ───────────
+                if (isPOC && count > 0) {
+                    offscreenCtx.save();
+                    offscreenCtx.strokeStyle  = config.tpoColorPOC;
+                    offscreenCtx.lineWidth    = 1.5;
+                    offscreenCtx.shadowColor  = config.tpoColorPOC;
+                    offscreenCtx.shadowBlur   = 4;
+                    const clippedW = Math.min(totalRowWidth, cssWidth - anchorX - 2);
+                    offscreenCtx.strokeRect(anchorX, rowY, clippedW, rowH);
+                    offscreenCtx.restore();
+                }
+            });
+
+            // ── Session boundary separator (thin vertical line at anchor) ──────
+            offscreenCtx.save();
+            offscreenCtx.strokeStyle = 'rgba(255,255,255,0.06)';
+            offscreenCtx.lineWidth   = 1;
+            offscreenCtx.setLineDash([3, 5]);
+            offscreenCtx.beginPath();
+            offscreenCtx.moveTo(anchorX, 0);
+            offscreenCtx.lineTo(anchorX, candleBottomY);
+            offscreenCtx.stroke();
+            offscreenCtx.setLineDash([]);
+            offscreenCtx.restore();
+
+// ── VA High / VA Low reference labels ─────────────────────────────
+            const vaHighY = mainSeries.priceToCoordinate(vaHigh + tickSize);
+            const vaLowY  = mainSeries.priceToCoordinate(vaLow);
+            const labelX  = anchorX + profile.maxBlocks * blockW + 4;
+            if (labelX < cssWidth - 10) {
+                offscreenCtx.save();
+                offscreenCtx.font      = `600 9px 'JetBrains Mono', monospace`;
+                offscreenCtx.fillStyle = hexToRgba(config.tpoColorVA, 0.75);
+                offscreenCtx.textAlign = 'left';
+                if (vaHighY !== null && vaHighY > 0 && vaHighY < candleBottomY) {
+                    offscreenCtx.fillText('', labelX, vaHighY - 2);
+                }
+                if (vaLowY !== null && vaLowY > 0 && vaLowY < candleBottomY) {
+                    offscreenCtx.fillText('', labelX, vaLowY + 10);
+                }
+                const pocY = mainSeries.priceToCoordinate(pocPrice + tickSize / 2);
+                if (pocY !== null && pocY > 0 && pocY < candleBottomY) {
+                    offscreenCtx.fillStyle = hexToRgba(config.tpoColorPOC, 0.90);
+                    offscreenCtx.fillText('', labelX, pocY + 4);
+                }
+                offscreenCtx.restore();
+            }
+
+            // ── Dotted lines for unresolved extreme rows ───────────────────────
+            // "Taken out" = any candle AFTER this session has traded through the row.
+            // We scan displayCandles for candles with time > last candle of this session.
+            const sessionEndTime = profile.sessionEndTime;
+
+            // Pre-compute post-session high/low from all subsequent candles
+            let postSessionHigh = -Infinity;
+            let postSessionLow  =  Infinity;
+            for (let ci = displayCandles.length - 1; ci >= 0; ci--) {
+                const c = displayCandles[ci];
+                if (c.time <= sessionEndTime) break;
+                if (c.high > postSessionHigh) postSessionHigh = c.high;
+                if (c.low  < postSessionLow)  postSessionLow  = c.low;
+            }
+            // Also include the live tick (current price) for the active session
+            if (postSessionHigh === -Infinity) postSessionHigh = currentPrice;
+            if (postSessionLow  ===  Infinity) postSessionLow  = currentPrice;
+
+            const lastCandleInData = displayCandles[displayCandles.length - 1];
+            const currentCandleX = lastCandleInData
+                ? (timeScale.timeToCoordinate(lastCandleInData.time) ?? cssWidth - 80)
+                : cssWidth - 80;
+            const extremeLineEndX   = Math.min(currentCandleX + 20, cssWidth - 80);
+            const extremeLineStartX = anchorX + profile.maxBlocks * blockW;
+
+            if (extremeLineStartX < extremeLineEndX) {
+                // Top extremes: hide if any post-session candle high reached the row
+                profile.topExtremes.forEach(price => {
+                    // Row spans [price, price + tickSize]. Taken out if high >= price.
+                    if (postSessionHigh >= price) return;
+                    const rowMidY = mainSeries.priceToCoordinate(price + tickSize * 0.5);
+                    if (rowMidY === null || rowMidY < 0 || rowMidY > candleBottomY) return;
+                    offscreenCtx.save();
+                    offscreenCtx.strokeStyle = config.tpoColorSingle;
+                    offscreenCtx.lineWidth   = 1.2;
+                    offscreenCtx.globalAlpha = 0.70;
+                    offscreenCtx.setLineDash([4, 5]);
+                    offscreenCtx.beginPath();
+                    offscreenCtx.moveTo(extremeLineStartX, rowMidY);
+                    offscreenCtx.lineTo(extremeLineEndX,   rowMidY);
+                    offscreenCtx.stroke();
+                    offscreenCtx.setLineDash([]);
+                    offscreenCtx.restore();
+                });
+
+                // Bottom extremes: hide if any post-session candle low reached the row
+                profile.bottomExtremes.forEach(price => {
+                    // Row spans [price, price + tickSize]. Taken out if low <= price + tickSize.
+                    if (postSessionLow <= price + tickSize) return;
+                    const rowMidY = mainSeries.priceToCoordinate(price + tickSize * 0.5);
+                    if (rowMidY === null || rowMidY < 0 || rowMidY > candleBottomY) return;
+                    offscreenCtx.save();
+                    offscreenCtx.strokeStyle = config.tpoColorSingle;
+                    offscreenCtx.lineWidth   = 1.2;
+                    offscreenCtx.globalAlpha = 0.70;
+                    offscreenCtx.setLineDash([4, 5]);
+                    offscreenCtx.beginPath();
+                    offscreenCtx.moveTo(extremeLineStartX, rowMidY);
+                    offscreenCtx.lineTo(extremeLineEndX,   rowMidY);
+                    offscreenCtx.stroke();
+                    offscreenCtx.setLineDash([]);
+                    offscreenCtx.restore();
+});
+            }
+        }); // <--- ADD THIS (Closes tpoProfilesCache.forEach)
+    } // <--- ADD THIS (Closes drawTPO function)
+    // ════════════════════════════════════════════════════════════════════════════
+    //  Indicator System
+    // ════════════════════════════════════════════════════════════════════════════
+
     class BaseIndicator {
         constructor(id, name, defaultHeight = config.defaultIndicatorHeight) {
             this.id = id; this.name = name; this.height = defaultHeight;
@@ -1485,7 +2056,6 @@
         }
     }
 
-    // ── CHANGE 2: BarStatsIndicator (Full Height / Overlay Text) ────────────────
     class BarStatsIndicator extends BaseIndicator {
         constructor() { super('barstats', 'Bar Statistics', 72); }
 
@@ -1493,11 +2063,9 @@
             if (!this.visible || !this.offscreenCtx) return;
             const ctxS = this.offscreenCtx;
 
-            // 1. Define Price Scale Width
             const PRICE_SCALE_WIDTH = 80;
             const drawWidth = cssWidth - PRICE_SCALE_WIDTH;
 
-            // Clear the entire canvas
             ctxS.clearRect(0, 0, cssWidth, this.height);
 
             const visibleCandles = getVisibleCandles(cssWidth);
@@ -1506,7 +2074,6 @@
             const barSpacing = chart.timeScale().options().barSpacing;
             const cellWidth = Math.max(barSpacing * 0.92, 6);
 
-            // Gather stats
             const stats = visibleCandles.map(({ candle, x }) => {
                 const tsKey = String(Math.floor(candle.time));
                 const buckets = displayClusters[tsKey];
@@ -1518,25 +2085,19 @@
             const maxVol = Math.max(...stats.map(s => s.totalVol), 1);
             const maxDelta = Math.max(...stats.map(s => Math.abs(s.delta)), 1);
 
-            // ── UPDATED: Remove header spacing ──
-            const HEADER_H = 0; 
-            const ROW_H = this.height / 2; // Rows now split the full height
+            const HEADER_H = 0;
+            const ROW_H = this.height / 2;
 
-            // ── Background ───────────────────────────
             ctxS.fillStyle = config.bgColor;
             ctxS.fillRect(0, 0, drawWidth, this.height);
 
-            // Variable to track where the bars end (for the line)
             let lineEndX = 0;
 
-            // ── Per-candle columns ───────────────────
             const fontSize = Math.max(8, Math.min(config.cellFontSize, Math.floor(cellWidth * 0.32)));
 
             stats.forEach(({ x, totalVol, delta }) => {
-                // Skip drawing if under the price scale
                 if (x > drawWidth) return;
 
-                // Update the rightmost position for the middle line
                 const currentRightEdge = x + cellWidth / 2;
                 lineEndX = Math.min(currentRightEdge, drawWidth);
 
@@ -1545,17 +2106,14 @@
                 const isDeltaPos = delta >= 0;
                 const colLeft = x - cellWidth / 2;
 
-                // Volume row (Starts at top: 0)
                 const volAlpha = 0.08 + volRatio * 0.65;
                 ctxS.fillStyle = hexToRgba(config.upColor, volAlpha);
                 ctxS.fillRect(colLeft, 0, cellWidth, ROW_H);
 
-                // Delta row (Starts at middle: ROW_H)
                 const deltaAlpha = 0.08 + deltaRatio * 0.78;
                 ctxS.fillStyle = hexToRgba(isDeltaPos ? config.upColor : config.downColor, deltaAlpha);
                 ctxS.fillRect(colLeft, ROW_H, cellWidth, ROW_H);
 
-                // Vertical Cell Separator
                 ctxS.strokeStyle = 'rgba(26,31,46,0.35)';
                 ctxS.lineWidth = 0.5;
                 ctxS.beginPath();
@@ -1563,32 +2121,26 @@
                 ctxS.lineTo(colLeft, this.height);
                 ctxS.stroke();
 
-                // Text (Centered in each half)
                 if (cellWidth >= 28) {
                     ctxS.textAlign = 'center';
                     ctxS.textBaseline = 'middle';
                     ctxS.font = `${config.cellFontWeight} ${fontSize}px ${config.statsFontFamily}`;
                     ctxS.fillStyle = 'rgba(232,234,237,0.92)';
-                    // Top Row Text
                     ctxS.fillText(formatUSD(totalVol), x, ROW_H / 2);
-                    // Bottom Row Text
                     ctxS.fillText(formatUSD(delta), x, ROW_H * 1.5);
                 }
             });
 
-            // ── Middle Divider Line ───────────────────────
             if (lineEndX > 0) {
                 ctxS.strokeStyle = 'rgba(26,31,46,0.7)';
                 ctxS.lineWidth = 1;
                 ctxS.beginPath();
                 ctxS.moveTo(0, ROW_H);
-                ctxS.lineTo(lineEndX, ROW_H); // Stops exactly at the last bar
+                ctxS.lineTo(lineEndX, ROW_H);
                 ctxS.stroke();
             }
         }
     }
-
-    // ── END BarStatsIndicator ───────────────────────────────────────────────────
 
     class IndicatorManager {
         constructor() { this.indicators = new Map(); this.order = []; this.container = document.getElementById('indicators-container'); this.dragState = null; this.placeholder = null; }
@@ -1673,7 +2225,6 @@
         if (ind && ind.visible) { indicatorManager.removeIndicator('cvd'); this.classList.remove('active'); }
         else { indicatorManager.addIndicator(new CVDIndicator()); this.classList.add('active'); }
     });
-    // ── CHANGE 3: Bar Stats toggle listener ──────────────────────────────────────
     document.getElementById('toggle-barstats').addEventListener('click', function() {
         const ind = indicatorManager.getIndicator('barstats');
         if (ind && ind.visible) { indicatorManager.removeIndicator('barstats'); this.classList.remove('active'); }
@@ -1681,8 +2232,20 @@
         scheduleDraw();
     });
 
+    // ── TPO Header Toggle ──────────────────────────────────────────────────────
+    document.getElementById('toggle-tpo').addEventListener('click', function() {
+        config.showTPO = !config.showTPO;
+        this.classList.toggle('active', config.showTPO);
+        // Sync settings panel toggle switch
+        const sw = document.getElementById('toggle-tpo-switch');
+        sw.classList.toggle('active', config.showTPO);
+        tpoCacheKey = ''; // force rebuild on next draw
+        scheduleDraw();
+    });
+
     // Drawing helpers
     function hexToRgba(hex, alpha) {
+        if (!hex || hex.length < 7) return `rgba(100,100,100,${alpha})`;
         const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
         return `rgba(${r},${g},${b},${alpha})`;
     }
@@ -1859,6 +2422,9 @@
         }
     }
 
+    // ════════════════════════════════════════════════════════════════════════════
+    //  Main Draw Loop
+    // ════════════════════════════════════════════════════════════════════════════
     function drawFrames() {
         if (!offscreenCtx) return;
         const cssWidth=chartOverlayCanvas.clientWidth, cssHeight=chartOverlayCanvas.clientHeight;
@@ -1874,7 +2440,7 @@
         const totalWidth=barSpacing*0.92, candleWidth=totalWidth*config.candleWidthPercent, clusterWidth=totalWidth*config.clusterWidthPercent;
         const timestamps=Object.keys(displayClusters);
 
-        // Grid lines
+        // ── Grid lines ────────────────────────────────────────────────────────
         offscreenCtx.lineWidth=config.gridLineWidth; offscreenCtx.strokeStyle=hexToRgba(config.gridColor,config.gridOpacity);
         offscreenCtx.beginPath();
         const approxRange=60000;
@@ -1886,7 +2452,10 @@
         }
         offscreenCtx.stroke();
 
-        // Candles
+        // ── TPO profiles drawn FIRST (behind candles) ─────────────────────────
+        drawTPO(cssWidth, candleBottomY);
+
+        // ── Candles ───────────────────────────────────────────────────────────
         displayCandles.forEach(candle => {
             const x=timeScale.timeToCoordinate(candle.time);
             if (x===null||x<-100||x>cssWidth+100) return;
@@ -1912,7 +2481,7 @@
             }
         });
 
-        // Per-candle footprint clusters
+        // ── Per-candle footprint clusters ─────────────────────────────────────
         for (let ti=0; ti<timestamps.length; ti++) {
             const timestamp=timestamps[ti], ts=parseInt(timestamp);
             const x=timeScale.timeToCoordinate(ts);
@@ -1988,7 +2557,7 @@
 
         drawCumulativeCluster(cssWidth,cssHeight,candleBottomY);
 
-        // Bubble indicators
+        // ── Bubble indicators ─────────────────────────────────────────────────
         if (displayCandles&&config.minBubbleVolume>0) {
             const currentTime=Date.now();
             const pulsePhase=(currentTime%config.bubblePulseSpeed)/config.bubblePulseSpeed;
@@ -2017,7 +2586,7 @@
             });
         }
 
-        // Per-candle stats + absorption dots
+        // ── Per-candle stats + absorption dots ───────────────────────────────
         if (displayCandles) {
             offscreenCtx.textAlign="center"; offscreenCtx.textBaseline="middle";
             displayCandles.forEach(candle => {
@@ -2048,7 +2617,6 @@
                     }
                 }
 
-                // ── CHANGE 4: hide V/D text stats above candles when Bar Stats pane is active ──
                 const _barStatsActive = indicatorManager.getIndicator('barstats')?.visible;
                 if (!_barStatsActive) {
                     const statsY=isBullishCandle?mainSeries.priceToCoordinate(candle.high)-45:mainSeries.priceToCoordinate(candle.low)+40;
@@ -2065,13 +2633,12 @@
                         offscreenCtx.textAlign='center';
                     }
                 }
-                // ── END CHANGE 4 ──
             });
         }
 
         indicatorManager.drawAll(cssWidth);
 
-        // Countdown timer
+        // ── Countdown timer ───────────────────────────────────────────────────
         const nowSec=Math.floor(Date.now()/1000), barSeconds=getBarSeconds(config.displayTimeframe);
         const diff=(lastBarTime+barSeconds)-nowSec;
         const timerBox=document.getElementById('timer-box'), timerText=document.getElementById('timer-text');
@@ -2154,6 +2721,7 @@
                 mainSeries.setData(displayCandles);
                 lastBarTime=base5mCandles[base5mCandles.length-1].time;
                 currentPrice=base5mCandles[base5mCandles.length-1].close;
+                tpoCacheKey = ''; // ensure fresh build after data load
                 await fetchOpenInterest();
                 chart.timeScale().fitContent();
             }
@@ -2211,6 +2779,8 @@
                     upsertCandle(ts,parseFloat(k.open),parseFloat(k.high),parseFloat(k.low),parseFloat(k.close));
                     const newCandle=base5mCandles[base5mCandles.length-1];
                     newCandle.oiOpen=closingOI;newCandle.oiClose=closingOI;newCandle.oiHigh=closingOI;newCandle.oiLow=closingOI;
+                    // New bar = new session potential → invalidate TPO cache
+                    tpoCacheKey = '';
                 } else { upsertCandle(ts,parseFloat(k.open),parseFloat(k.high),parseFloat(k.low),parseFloat(k.close)); }
                 displayCandles=aggregateCandles(base5mCandles,config.displayTimeframe);
                 displayClusters=aggregateClusters(base5mClusters,config.displayTimeframe);
