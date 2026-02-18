@@ -82,18 +82,17 @@
             z-index: 20;
         }
         
-        .indicator-pane { 
-            position: absolute; 
-            left: 0; 
-            right: 77px;
-            background: rgba(10, 14, 26, 0.95);
-            border-top: 1px solid #1a1f2e; 
-            z-index: 30;
-            backdrop-filter: blur(4px);
-            transition: bottom 0.2s ease;
-            pointer-events: none;
-        }
-
+    .indicator-pane { 
+    position: absolute; 
+    left: 0; 
+    right: 54;
+    background: rgba(10, 14, 26, 0.95);
+    border-top: 1px solid #1a1f2e; 
+    z-index: 30;
+    backdrop-filter: blur(4px);
+    transition: bottom 0.2s ease;
+    pointer-events: none;
+    }
         .indicator-pane.dragging {
             z-index: 100;
             box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
@@ -240,16 +239,15 @@
         }
 
         .price-label-box {
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%);
-            border: 1.5px solid;
             border-radius: 4px;
-            padding: 4px 10px;
+            padding: 5px 10px;
             font-weight: 600;
-            font-size: 10px;
-            letter-spacing: 0.02em;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(8px);
-            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            min-width: 68px;
+            gap: 2px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
         }
 
         .price-label-box::before {
@@ -261,7 +259,7 @@
             pointer-events: none;
         }
 
-        .price-label-arrow { width: 0; height: 0; border-style: solid; }
+            .price-label-arrow {display: none !important;}
 
         .indicator-toggle {
             display: flex;
@@ -568,11 +566,15 @@
             <canvas id="footprint-overlay" style="position:absolute;top:0;left:0;pointer-events:none;z-index:20;"></canvas>
             <div id="custom-price-label" style="position:absolute;right:0;z-index:40;pointer-events:none;display:flex;align-items:center;gap:1px;"></div>
             <div id="indicators-container"></div>
-            <div id="timer-box" class="hidden absolute right-[10px] bg-black/90 border border-trade-border/50 backdrop-blur text-white px-1 py-1 font-mono text-[11px] font-semibold z-[60] tabular-nums flex items-center gap-1.5 pointer-events-none shadow-lg rounded" style="min-width:60px;">
-                <span class="w-1.5 h-1.5 rounded-full bg-white/90 animate-pulse"></span>
-                <span id="timer-text">00:00</span>
-            </div>
-        </div>
+<div id="timer-box"
+     class="hidden absolute
+            right-[22px] top-1/2
+            translate-x-1/2 -translate-y-1/2
+            z-[60] pointer-events-none
+            font-mono text-[16px] font-semibold
+            tabular-nums text-white opacity-80 tracking-wide">
+    <span id="timer-text">00:00</span>
+</div>
     </div>
 
 <!-- Indicator Settings Context Menu -->
@@ -630,73 +632,80 @@
         </div>
         <div class="flex-1 overflow-y-auto custom-scroll">
             
-            <!-- Chart Appearance -->
-            <div class="settings-section expanded">
-                <div class="section-header" onclick="toggleSection(this)">
-                    <div class="section-title-wrapper">
-                        <div class="section-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg></div>
-                        <span class="section-title">Chart Appearance</span>
+<!-- Chart Appearance -->
+<div class="settings-section">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-title-wrapper">
+            <div class="section-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg></div>
+            <span class="section-title">Chart Appearance</span>
+        </div>
+        <svg class="section-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    </div>
+    <div class="section-content">
+        <div class="section-body">
+            <div class="setting-row">
+                <div class="setting-item">
+                    <label class="setting-label">Chart Type</label>
+                    <div class="select-wrapper">
+                        <select id="series-type-select" class="w-full px-3 py-2">
+                            <option value="candle" selected>Candles</option>
+                            <option value="bar">Bars</option>
+                        </select>
                     </div>
-                    <svg class="section-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </div>
-                <div class="section-content">
-                    <div class="section-body">
-                        <div class="setting-row">
-                            <div class="setting-item">
-                                <label class="setting-label">Chart Type</label>
-                                <div class="select-wrapper">
-                                    <select id="series-type-select" class="w-full px-3 py-2">
-                                        <option value="candle" selected>Candles</option>
-                                        <option value="bar">Bars</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="setting-item">
-                                <label class="setting-label">Bar Spacing</label>
-                                <input type="number" id="bar-spacing-input" value="50" min="10" max="200" step="5" class="w-full px-3 py-2">
-                            </div>
-                        </div>
-                        <div class="setting-item">
-                            <div class="slider-container">
-                                <div class="slider-header">
-                                    <label class="setting-label">Candle Opacity</label>
-                                    <span id="opacity-val" class="slider-value">100%</span>
-                                </div>
-                                <input type="range" id="candle-opacity" min="0" max="100" value="100" step="5">
-                            </div>
-                        </div>
-                        <div class="setting-divider"></div>
-                        <div class="setting-row">
-                            <div class="setting-item">
-                                <label class="setting-label">Candle Width %</label>
-                                <input type="number" id="candle-width-input" value="20" min="5" max="80" step="5" class="w-full px-3 py-2">
-                            </div>
-                            <div class="setting-item">
-                                <label class="setting-label">Cluster Width %</label>
-                                <input type="number" id="cluster-width-input" value="80" min="20" max="95" step="5" class="w-full px-3 py-2">
-                            </div>
-                        </div>
-                        <div class="setting-item">
-                            <div class="slider-container">
-                                <div class="slider-header">
-                                    <label class="setting-label">Wick Thickness</label>
-                                    <span id="wick-thickness-val" class="slider-value">1px</span>
-                                </div>
-                                <input type="range" id="wick-thickness" min="1" max="5" value="1" step="0.5">
-                            </div>
-                        </div>
-                        <div class="setting-item">
-                            <div class="slider-container">
-                                <div class="slider-header">
-                                    <label class="setting-label">Border Thickness</label>
-                                    <span id="border-thickness-val" class="slider-value">1px</span>
-                                </div>
-                                <input type="range" id="border-thickness" min="0" max="5" value="1" step="0.5">
-                            </div>
-                        </div>
-                    </div>
+                <div class="setting-item">
+                    <label class="setting-label">Bar Spacing</label>
+                    <input type="number" id="bar-spacing-input" value="50" min="10" max="200" step="5" class="w-full px-3 py-2">
                 </div>
             </div>
+            <div class="setting-item">
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <label class="setting-label">Candle Opacity</label>
+                        <span id="opacity-val" class="slider-value">100%</span>
+                    </div>
+                    <input type="range" id="candle-opacity" min="0" max="100" value="100" step="5">
+                </div>
+            </div>
+            <div class="setting-divider"></div>
+            <div class="setting-row">
+                <div class="setting-item">
+                    <label class="setting-label">Candle Width %</label>
+                    <input type="number" id="candle-width-input" value="20" min="5" max="80" step="5" class="w-full px-3 py-2">
+                </div>
+                <div class="setting-item">
+                    <label class="setting-label">Cluster Width %</label>
+                    <input type="number" id="cluster-width-input" value="80" min="20" max="95" step="5" class="w-full px-3 py-2">
+                </div>
+            </div>
+            <div class="setting-item">
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <label class="setting-label">Wick Thickness</label>
+                        <span id="wick-thickness-val" class="slider-value">1px</span>
+                    </div>
+                    <input type="range" id="wick-thickness" min="1" max="5" value="1" step="0.5">
+                </div>
+            </div>
+            <div class="setting-item">
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <label class="setting-label">Border Thickness</label>
+                        <span id="border-thickness-val" class="slider-value">1px</span>
+                    </div>
+                    <input type="range" id="border-thickness" min="0" max="5" value="1" step="0.5">
+                </div>
+            </div>
+            <div class="setting-divider"></div>
+            <div class="setting-row">
+                <div class="setting-item">
+                    <label class="setting-label">Price Scale Font</label>
+                    <input type="number" id="price-scale-font-input" value="10" min="8" max="16" step="1" class="w-full px-3 py-2">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
             <!-- Colors -->
             <div class="settings-section">
@@ -781,16 +790,16 @@
                                     <label class="setting-label">Stats Font Size</label>
                                     <span id="stats-font-size-val" class="slider-value">Auto</span>
                                 </div>
-                                <input type="range" id="stats-font-size" min="7" max="16" value="11" step="1">
+                                <input type="range" id="stats-font-size" min="7" max="16" value="9" step="1">
                             </div>
                         </div>
                         <div class="setting-item">
                             <label class="setting-label">Stats Font Weight</label>
                             <div class="select-wrapper">
                                 <select id="stats-font-weight" class="w-full px-3 py-2">
-                                    <option value="400">Regular (400)</option>
+                                    <option value="400" selected>Regular (400)</option>
                                     <option value="500">Medium (500)</option>
-                                    <option value="600" selected>Semi-Bold (600)</option>
+                                    <option value="600">Semi-Bold (600)</option>
                                     <option value="700">Bold (700)</option>
                                 </select>
                             </div>
@@ -802,7 +811,7 @@
                                     <label class="setting-label">Cell Font Size</label>
                                     <span id="cell-font-size-val" class="slider-value">11px</span>
                                 </div>
-                                <input type="range" id="cell-font-size" min="8" max="16" value="11" step="1">
+                                <input type="range" id="cell-font-size" min="8" max="16" value="9" step="1">
                             </div>
                         </div>
                         <div class="setting-item">
@@ -998,7 +1007,7 @@
                         <div class="setting-row">
                             <div class="setting-item">
                                 <label class="setting-label">Price Line</label>
-                                <div class="toggle-switch" id="toggle-price-line-switch" onclick="toggleSwitch(this)"></div>
+                                <div class="toggle-switch active" id="toggle-price-line-switch" onclick="toggleSwitch(this)"></div>
                             </div>
                             <div class="setting-item">
                                 <label class="setting-label">Price Label</label>
@@ -1161,15 +1170,16 @@
         candleWidthPercent: 0.20, clusterWidthPercent: 0.80, cumulativeMode: 'all',
         wickThickness: 1, borderThickness: 1, bgColor: '#0a0e1a', panelColor: '#0f1419',
         accentColor: '#3b82f6', absorptionColor: '#FFD700',
-        statsFontFamily: "'JetBrains Mono', monospace", statsFontSize: 11,
-        statsFontWeight: '600', cellFontSize: 11, cellFontWeight: '400', barSpacing: 50,
+        statsFontFamily: "'JetBrains Mono', monospace", statsFontSize: 9,
+        statsFontWeight: '400', cellFontSize: 9, cellFontWeight: '400', barSpacing: 50,
         clusterBgOpacity: 0, pocBorderWidth: 1.5, cellBorderWidth: 1,
         bubbleInnerSize: 5, bubbleOuterSize: 10, bubblePulseSpeed: 1500,
         absorptionDotSize: 4, absorptionGlow: 10, absorptionThreshold: 1000000,
         priceLabelFontSize: 9, timerFontSize: 8, timerOpacity: 0.9,
         defaultIndicatorHeight: 150, oiCandleWidth: 0.5, cvdLineThickness: 1,
         indicatorPadding: 10, indicatorBgOpacity: 0.95, drawDelay: 100, interactionHold: 180,
-        clusterVolumeThreshold: 25000, showDailyLevels: false, hideFootprints: false,
+        clusterVolumeThreshold: 25000, showDailyLevels: false, hideFootprints: false ,priceScaleWidth: 44,
+        priceScaleFontSize: 10,
         //vwap
         vwapVisible: false,
         // ── TPO / Market Profile ──────────────────────────────────────
@@ -1212,6 +1222,7 @@
     let currentPrice = 0;
     let mainSeries;
     let ws = null;
+    let measuredPriceScaleWidth = 54;
 
 // ── TPO Cache ────────────────────────────────────────────────────────────────
     let tpoProfilesCache = null;
@@ -1438,18 +1449,29 @@ function _restoreP0(s) {
 
         // ── LW Chart ─────────────────────────────────────────────────────────
         const newChart = LightweightCharts.createChart(chartContEl, {
-            layout: { background: { color: config.bgColor }, textColor: '#8b92a7', fontFamily: 'Inter' },
+     localization: {
+        timeFormatter: (timestamp) => {
+            return new Date(timestamp * 1000).toLocaleString('ro-RO', {
+                timeZone: 'Europe/Bucharest',
+                hour: '2-digit', minute: '2-digit',
+            });
+        }
+    },
+            layout: { background: { color: config.bgColor }, textColor: '#8b92a7', fontFamily: 'Inter', fontSize: config.priceScaleFontSize },
             grid: { vertLines: { visible: false }, horzLines: { visible: false } },
-            rightPriceScale: { borderColor: '#1a1f2e', width: 60, scaleMargins: { top: 0.05, bottom: 0.20 } },
+            rightPriceScale: { borderColor: '#1a1f2e', scaleMargins: { top: 0.05, bottom: 0.20 } },
             crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
             timeScale: { borderColor: '#1a1f2e', timeVisible: true, barSpacing: config.barSpacing, rightOffset: 5 }
         });
         const newSeries = newChart.addCandlestickSeries({
             upColor:'rgba(0,0,0,0)', downColor:'rgba(0,0,0,0)', borderVisible:false,
             wickUpColor:'rgba(0,0,0,0)', wickDownColor:'rgba(0,0,0,0)',
-            priceLineVisible:false, lastValueVisible:false
+            priceLineVisible: config.showPriceLine,
+            priceLineColor: config.upColor,
+            priceLineWidth: 1,
+            priceLineStyle: 2,
+            lastValueVisible:false
         });
-
         const offscreenC = document.createElement('canvas');
 
         // ── Create indicators container for this panel ──────────────────────
@@ -1492,7 +1514,7 @@ function _restoreP0(s) {
         newSeries.setData(panel.displayCandles);
         setupPanelBuffers(panel);
         newChart.timeScale().fitContent();
-        newChart.timeScale().subscribeVisibleLogicalRangeChange(() => schedulePanelDraw(panel));
+        newChart.timeScale().subscribeVisibleLogicalRangeChange(() => { if (typeof schedulePanelDraw === 'function') schedulePanelDraw(panel); });
 
         setupVerticalResizer(resizer, pid);
         extraPanels.push(panel);
@@ -1640,6 +1662,47 @@ function setupVerticalResizer(resizerEl, panelId) {
         window.addEventListener('mouseup', handleMouseUp);
     }
 
+ // ── Draw loop (must be defined before chart + indicators) ──────────
+let rafId = null, rafRunning = false, needsRedraw = false, lastInteractionTime = 0;
+let clustersDirty = false;
+
+function updatePaneRight() {
+    const chartEl = document.getElementById('chart-container');
+    let right = 54;
+    if (chartEl) {
+        const lastTd = chartEl.querySelector('tr td:last-child');
+        if (lastTd) {
+            const w = Math.round(lastTd.getBoundingClientRect().width);
+            if (w > 10) right = w;
+        }
+    }
+    measuredPriceScaleWidth = right;
+    document.querySelectorAll('.indicator-pane').forEach(el => {
+        el.style.right = right + 'px';
+    });
+    const ph = document.querySelector('.drag-placeholder');
+    if (ph) ph.style.right = right + 'px';
+}
+
+function scheduleDraw() {
+    needsRedraw = true;
+    lastInteractionTime = Date.now();
+    extraPanels.forEach(p => schedulePanelDraw(p));
+    if (!rafRunning) {
+        rafRunning = true;
+        const loop = () => {
+            const now = Date.now();
+            if (now - lastInteractionTime < config.interactionHold) {
+                drawFrames(); rafId = requestAnimationFrame(loop);
+            } else {
+                if (needsRedraw) { needsRedraw = false; drawFrames(); rafId = requestAnimationFrame(loop); }
+                else { rafRunning = false; rafId = null; }
+            }
+        };
+        rafId = requestAnimationFrame(loop);
+    }
+}
+
     let chart;
     chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
     localization: {
@@ -1651,9 +1714,9 @@ function setupVerticalResizer(resizerEl, panelId) {
             });
         }
     },
-        layout: { background: { color: config.bgColor }, textColor: '#8b92a7', fontFamily: 'Inter' },
+        layout: { background: { color: config.bgColor }, textColor: '#8b92a7', fontFamily: 'Inter', fontSize: config.priceScaleFontSize },
         grid: { vertLines: { visible: false }, horzLines: { visible: false } },
-        rightPriceScale: { borderColor: '#1a1f2e', width: 60, scaleMargins: { top: 0.05, bottom: 0.20 } },
+        rightPriceScale: { borderColor: '#1a1f2e', scaleMargins: { top: 0.05, bottom: 0.20 } },
         crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
         timeScale: { borderColor: '#1a1f2e', timeVisible: true, barSpacing: config.barSpacing, rightOffset: 5, visible: true }
     });
@@ -1818,6 +1881,7 @@ function setupVerticalResizer(resizerEl, panelId) {
             tpoOpacityVA: 0.65, tpoOpacityNonVA: 0.70,
             tpoColorSingle: '#ff6ec7', tpoColorVA: '#3b82f6',
             tpoColorNonVA: '#ffffff', tpoColorPOC: '#ffffff',
+            priceScaleWidth: 44, priceScaleFontSize: 10,
         };
         tpoCacheKey = '';
         // Reset UI controls (existing ones)
@@ -1832,9 +1896,9 @@ function setupVerticalResizer(resizerEl, panelId) {
         document.getElementById('bg-color-input').value = '#0a0e1a'; document.getElementById('panel-color-input').value = '#0f1419';
         document.getElementById('accent-color-input').value = '#3b82f6'; document.getElementById('absorption-color-input').value = '#FFD700';
         document.getElementById('stats-font-family').value = "'JetBrains Mono', monospace";
-        document.getElementById('stats-font-size').value = 11; document.getElementById('stats-font-size-val').textContent = '11px';
-        document.getElementById('stats-font-weight').value = '600';
-        document.getElementById('cell-font-size').value = 11; document.getElementById('cell-font-size-val').textContent = '11px';
+        document.getElementById('stats-font-size').value = 9; document.getElementById('stats-font-size-val').textContent = '9px';
+        document.getElementById('stats-font-weight').value = '400';
+        document.getElementById('cell-font-size').value = 9; document.getElementById('cell-font-size-val').textContent = '9px';
         document.getElementById('cell-font-weight').value = '400';
         document.getElementById('grid-spacing-input').value = 1000;
         document.getElementById('grid-opacity').value = 100; document.getElementById('grid-opacity-val').textContent = '100%';
@@ -1862,14 +1926,14 @@ function setupVerticalResizer(resizerEl, panelId) {
         document.getElementById('indicator-padding').value = 10; document.getElementById('indicator-bg-opacity').value = 95;
         document.getElementById('draw-delay').value = 50; document.getElementById('draw-delay-val').textContent = '50ms';
         document.getElementById('interaction-hold').value = 180; document.getElementById('interaction-hold-val').textContent = '180ms';
-        updateCandleAppearance();
-        chart.applyOptions({ layout: { background: { color: config.bgColor } }, timeScale: { barSpacing: config.barSpacing } });
+        pdateCandleAppearance();
+        document.getElementById('price-scale-width-input').value = 44;
+        document.getElementById('price-scale-font-input').value = 10;
+        chart.applyOptions({ rightPriceScale: { width: 44 }, layout: { background: { color: config.bgColor }, fontSize: 10 }, timeScale: { barSpacing: config.barSpacing } });
         mainSeries.applyOptions({ priceLineVisible: config.showPriceLine });
         chart.applyOptions({ crosshair: { vertLine: { visible: config.showCrosshair }, horzLine: { visible: config.showCrosshair } } });
-        applyTimeframeChange(5);
-        saveSettings();
-    }
-
+        applyTimeframeChange(5); 
+    }       
     // Settings event listeners
     document.getElementById('bar-spacing-input').addEventListener('input', (e) => { config.barSpacing = parseInt(e.target.value); chart.timeScale().applyOptions({ barSpacing: config.barSpacing }); scheduleDraw(); });
     document.getElementById('candle-width-input').addEventListener('input', (e) => { config.candleWidthPercent = parseInt(e.target.value)/100; scheduleDraw(); });
@@ -1910,29 +1974,12 @@ function setupVerticalResizer(resizerEl, panelId) {
     document.getElementById('indicator-bg-opacity').addEventListener('input', (e) => { config.indicatorBgOpacity = parseInt(e.target.value)/100; scheduleDraw(); });
     document.getElementById('draw-delay').addEventListener('input', (e) => { config.drawDelay = parseInt(e.target.value); document.getElementById('draw-delay-val').textContent = config.drawDelay+'ms'; });
     document.getElementById('interaction-hold').addEventListener('input', (e) => { config.interactionHold = parseInt(e.target.value); document.getElementById('interaction-hold-val').textContent = config.interactionHold+'ms'; });
-
-    // Core draw loop
-    let rafId = null, rafRunning = false, needsRedraw = false, lastInteractionTime = 0;
-    let clustersDirty = false; // ← add this line right here
-    function scheduleDraw() {
-        needsRedraw = true;
-        lastInteractionTime = Date.now();
-        // Also schedule extra panels so shared config changes (colors etc.) propagate
-        extraPanels.forEach(p => schedulePanelDraw(p));
-        if (!rafRunning) {
-            rafRunning = true;
-            const loop = () => {
-                const now = Date.now();
-                if (now - lastInteractionTime < config.interactionHold) {
-                    drawFrames(); rafId = requestAnimationFrame(loop);
-                } else {
-                    if (needsRedraw) { needsRedraw = false; drawFrames(); rafId = requestAnimationFrame(loop); }
-                    else { rafRunning = false; rafId = null; }
-                }
-            };
-            rafId = requestAnimationFrame(loop);
-        }
-    }
+    document.getElementById('price-scale-font-input').addEventListener('input', (e) => {
+    config.priceScaleFontSize = parseInt(e.target.value);
+    chart.applyOptions({ layout: { fontSize: config.priceScaleFontSize } });
+    extraPanels.forEach(p => p.chart.applyOptions({ layout: { fontSize: config.priceScaleFontSize } }));
+    scheduleDraw();
+});
 
     function getVisibleCandles(cssWidth) {
         const visibleCandles = [];
@@ -2373,7 +2420,7 @@ class OIIndicator extends BaseIndicator {
         draw(cssWidth) {
             if (!this.visible || !this.offscreenCtx) return;
             const ctxS = this.offscreenCtx;
-            const PRICE_SCALE_WIDTH = 77;
+            const PRICE_SCALE_WIDTH = measuredPriceScaleWidth;
             const drawWidth = cssWidth - PRICE_SCALE_WIDTH;
             ctxS.clearRect(0, 0, cssWidth, this.height);
             const barSpacing = chart.timeScale().options().barSpacing;
@@ -2441,7 +2488,7 @@ class CVDIndicator extends BaseIndicator {
         draw(cssWidth) {
             if (!this.visible || !this.offscreenCtx) return;
             const ctxS = this.offscreenCtx;
-            const PRICE_SCALE_WIDTH = 77;
+            const PRICE_SCALE_WIDTH = measuredPriceScaleWidth;
             const drawWidth = cssWidth - PRICE_SCALE_WIDTH;
             ctxS.clearRect(0,0,cssWidth,this.height);
             
@@ -2527,10 +2574,15 @@ class CVDIndicator extends BaseIndicator {
             if (!this.visible || !this.offscreenCtx) return;
             const ctxS = this.offscreenCtx;
 
-            const PRICE_SCALE_WIDTH = 80;
+            const PRICE_SCALE_WIDTH = measuredPriceScaleWidth;
             const drawWidth = cssWidth - PRICE_SCALE_WIDTH;
 
             ctxS.clearRect(0, 0, cssWidth, this.height);
+            ctxS.save();
+            ctxS.beginPath();
+            ctxS.rect(0, 0, drawWidth, this.height);
+            ctxS.clip();
+
 
             const visibleCandles = getVisibleCandles(cssWidth);
             if (visibleCandles.length === 0) return;
@@ -2602,10 +2654,10 @@ class CVDIndicator extends BaseIndicator {
                 ctxS.moveTo(0, ROW_H);
                 ctxS.lineTo(lineEndX, ROW_H);
                 ctxS.stroke();
-            }
+        }
+    ctxS.restore();
         }
     }
-
     class VWAPIndicator extends BaseIndicator {
         constructor() { super('vwap', 'VWAP', 0); } // Height 0 = overlay on main chart
         
@@ -2646,7 +2698,7 @@ function calculateVWAP() {
     if (vwapData.length === 0) return;
 
     const timeScale        = chart.timeScale();
-    const PRICE_SCALE_WIDTH = 77;
+    const PRICE_SCALE_WIDTH = measuredPriceScaleWidth;
     const drawWidth        = cssWidth - PRICE_SCALE_WIDTH;
 
     offscreenCtx.save();
@@ -2717,7 +2769,9 @@ function calculateVWAP() {
                 indicator.element.style.bottom = currentBottom+'px'; indicator.element.style.height = indicator.height+'px';
                 indicator.setupBuffers(wrapper.clientWidth, indicator.height); currentBottom += indicator.height;
             });
-            chart.applyOptions({ width: wrapper.clientWidth, height: totalHeight }); scheduleDraw();
+        chart.applyOptions({ width: wrapper.clientWidth, height: totalHeight });
+        updatePaneRight();
+        if (typeof scheduleDraw === 'function') scheduleDraw();
         }
         startDrag(id, e) {
             const indicator = this.indicators.get(id); if (!indicator) return;
@@ -3225,8 +3279,16 @@ document.getElementById('ind-ctx-close').addEventListener('click', hideIndicator
         labelContainer.style.display='flex'; labelContainer.style.top=(yCoord-13)+'px';
         labelContainer.style.fontFamily=config.statsFontFamily; labelContainer.style.fontSize=config.priceLabelFontSize+'px';
         const priceText=currentPrice.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-        labelContainer.innerHTML=`<div class="price-label-box" style="border-color:${color};color:${color};font-size:${config.priceLabelFontSize}px;padding:2px 6px;">${priceText}</div><div class="price-label-arrow" style="border-width:5px 0 5px 7px;border-color:transparent transparent transparent ${color};"></div>`;
-    }
+        const nowSec = Math.floor(Date.now()/1000);
+        const barSeconds = getBarSeconds(config.displayTimeframe);
+        const diff = (lastBarTime + barSeconds) - nowSec;
+        const timerStr = (diff > 0) ? formatTime(diff) : "0:00";
+        const solidBg = hexToRgba(color, 0.85);
+        labelContainer.innerHTML = `<div class="price-label-box" style="background:${solidBg};color:#ffffff;font-size:${config.priceLabelFontSize}px;align-items:center;">
+            <span style="font-weight:700;letter-spacing:0.01em;line-height:1.2;">${priceText}</span>
+            ${config.showCountdown ? `<span style="font-size:${config.timerFontSize}px;opacity:0.88;line-height:1.2;text-align:center;width:100%;">${timerStr}</span>` : ''}
+        </div>`;
+    }   // ← ADD THIS closing brace for updateCustomPriceLabel
 
     function drawCumulativeCluster(cssWidth, cssHeight, candleBottomY) {
         const timeScale=chart.timeScale(); const barSpacing=timeScale.options().barSpacing;
@@ -3350,7 +3412,7 @@ function syncHeaderButtons() {
 function drawDailyLevels(cssWidth, candleBottomY) {
     if (!config.showDailyLevels || !displayCandles || displayCandles.length === 0) return;
 
-    const PRICE_SCALE_WIDTH = 77;
+    const PRICE_SCALE_WIDTH = measuredPriceScaleWidth;
     const drawWidth = cssWidth - PRICE_SCALE_WIDTH;
     const timeScale = chart.timeScale();
 
@@ -3455,7 +3517,7 @@ function drawDailyLevels(cssWidth, candleBottomY) {
         }
         if (!offscreenCtx) return;
         const cssWidth = chartOverlayCanvas.clientWidth, cssHeight = chartOverlayCanvas.clientHeight;
-        const PRICE_SCALE_WIDTH = 77;
+        const PRICE_SCALE_WIDTH = measuredPriceScaleWidth;
         const drawWidth = cssWidth - PRICE_SCALE_WIDTH;
         offscreenCtx.clearRect(0,0,cssWidth,cssHeight);
         offscreenCtx.save();
@@ -3676,32 +3738,20 @@ function drawDailyLevels(cssWidth, candleBottomY) {
         offscreenCtx.restore(); // ← add this line
         indicatorManager.drawAll(cssWidth);
 
-        // ── Countdown timer ───────────────────────────────────────────────────
-        const nowSec=Math.floor(Date.now()/1000), barSeconds=getBarSeconds(config.displayTimeframe);
-        const diff=(lastBarTime+barSeconds)-nowSec;
-        const timerBox=activeTimerBox;
-        const timerText=timerBox ? (timerBox.querySelector('#timer-text') || timerBox.querySelector('.timer-text-extra')) : null;
-        if (config.showCountdown&&mainSeries&&currentPrice&&timerBox) {
-            const yChart=mainSeries.priceToCoordinate(currentPrice);
-            if (yChart!==null&&yChart>=0&&yChart<=candleBottomY) {
-                if (timerBox.classList.contains('hidden')) { timerBox.classList.remove('hidden'); timerBox.style.display='flex'; }
-                timerBox.style.top=(yChart+HEADER_HEIGHT-14)+'px';
-                timerBox.style.fontSize=config.timerFontSize+'px'; timerBox.style.fontFamily=config.statsFontFamily;
-                const lastC=displayCandles[displayCandles.length-1], isUp=lastC?(lastC.close>=lastC.open):true;
-                const bg=isUp?config.upColor:config.downColor;
-                timerBox.style.backgroundColor=hexToRgba(bg,config.timerOpacity*0.25); timerBox.style.borderColor=hexToRgba(bg,config.timerOpacity);
-                timerBox.querySelector('span').style.backgroundColor=bg;
-                timerText.textContent=(diff>0)?formatTime(diff):"0:00";
-            } else { if (timerBox && !timerBox.classList.contains('hidden')) { timerBox.classList.add('hidden'); timerBox.style.display='none'; } }
-        } else { if (timerBox && !timerBox.classList.contains('hidden')) { timerBox.classList.add('hidden'); timerBox.style.display='none'; } }
+// ── Countdown timer (now embedded in price label) ─────────────────────
+        const timerBox = activeTimerBox;
+        if (timerBox && !timerBox.classList.contains('hidden')) {
+            timerBox.classList.add('hidden');
+            timerBox.style.display = 'none';
+        }
 
         updateCustomPriceLabel();
-        ctxOverlay.clearRect(0,0,chartOverlayCanvas.width,chartOverlayCanvas.height);
-        ctxOverlay.drawImage(offscreenCanvas,0,0);
-        needsRedraw=false;
+        updatePaneRight();
 
-} // ← closes drawFrames()
-
+        // Blit offscreen buffer to visible overlay
+        ctxOverlay.clearRect(0, 0, chartOverlayCanvas.width, chartOverlayCanvas.height);
+        ctxOverlay.drawImage(offscreenCanvas, 0, 0);
+    }
     function formatTime(seconds) {
         if (seconds>=3600) { const h=Math.floor(seconds/3600), m=Math.floor((seconds%3600)/60); return `${h}:${m.toString().padStart(2,'0')}`; }
         const m=Math.floor(seconds/60), s=seconds%60; return `${m}:${s.toString().padStart(2,'0')}`;
@@ -3784,7 +3834,7 @@ function drawDailyLevels(cssWidth, candleBottomY) {
         extraPanels.forEach(p => { setupPanelBuffers(p); schedulePanelDraw(p); });
     }
     window.addEventListener('resize', resizeAll);
-    chart.timeScale().subscribeVisibleLogicalRangeChange(()=>scheduleDraw());
+    chart.timeScale().subscribeVisibleLogicalRangeChange(() => { if (typeof scheduleDraw === 'function') scheduleDraw(); });
 
     // ════════════════════════════════════════════════════════════════════════
     //  Layout Manager
@@ -4142,28 +4192,44 @@ function startWebSockets() {
                 });
                 scheduleDraw();
             }
-            if (msg.topic&&msg.topic.includes("publicTrade")) {
+if (msg.topic&&msg.topic.includes("publicTrade")) {
                 msg.data.forEach(trade => {
-                    const price=parseFloat(trade.p); currentPrice=price;
-                    const valUsd=parseFloat(trade.v);
-                    const bucket=Math.floor(price/config.baseTickSize)*config.baseTickSize;
-                    const timeKey=String(lastBarTime), bucketKey=String(bucket);
-                    if (!base5mClusters[timeKey]) base5mClusters[timeKey]={};
-                    if (!base5mClusters[timeKey][bucketKey]) base5mClusters[timeKey][bucketKey]={buy:0,sell:0};
-                    if (trade.S==="Buy") base5mClusters[timeKey][bucketKey].buy+=valUsd;
-                    else base5mClusters[timeKey][bucketKey].sell+=valUsd;
+                    const price = parseFloat(trade.p); currentPrice = price;
+                    const valUsd = parseFloat(trade.v);
+                    const bucket = Math.floor(price / config.baseTickSize) * config.baseTickSize;
+                    const timeKey = String(lastBarTime), bucketKey = String(bucket);
+                    if (!base5mClusters[timeKey]) base5mClusters[timeKey] = {};
+                    if (!base5mClusters[timeKey][bucketKey]) base5mClusters[timeKey][bucketKey] = { buy: 0, sell: 0 };
+                    if (trade.S === "Buy") base5mClusters[timeKey][bucketKey].buy += valUsd;
+                    else base5mClusters[timeKey][bucketKey].sell += valUsd;
                     clustersDirty = true;
-                    document.getElementById('price').innerText=price.toLocaleString(); scheduleDraw();
+
+                    const lastBase = base5mCandles[base5mCandles.length - 1];
+                    if (lastBase) {
+                        lastBase.close = price;
+                        if (price > lastBase.high) lastBase.high = price;
+                        if (price < lastBase.low) lastBase.low = price;
+                        const lastDisplay = displayCandles[displayCandles.length - 1];
+                        if (lastDisplay) {
+                            lastDisplay.close = price;
+                            if (price > lastDisplay.high) lastDisplay.high = price;
+                            if (price < lastDisplay.low) lastDisplay.low = price;
+                            mainSeries.update(lastDisplay);
+                        }
+                    }
+
+                    document.getElementById('price').innerText = price.toLocaleString();
+                    scheduleDraw();
                 });
             }
-        };
-    }
-
+        };  
+    }       
 // ── Initialize panel 0 active-context pointers ────────────────────────────
     activePriceLabelEl = document.getElementById('custom-price-label');
     activeTimerBox     = document.getElementById('timer-box');
     activeWrapperEl    = document.getElementById('panel-wrapper-0');
 
+    updatePaneRight();
     resizeAll();
     init();
 
