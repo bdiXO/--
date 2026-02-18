@@ -1204,9 +1204,9 @@
         barStatsDownColor: '#ff4242',
         // VWAP
         vwapColor: '#ffffff',
-        vwapLineStyle: 'dotted',  // 'solid' | 'dashed' | 'dotted'
-        vwapShowLabel: true,
-        vwapShowPrice: true,
+        vwapLineStyle: 'solid',  // 'solid' | 'dashed' | 'dotted'
+        vwapShowLabel: false,
+        vwapShowPrice: false,
         // Key Levels
         levelsColor: '#ff8c00',
         levelsLineStyle: 'dashed',  // 'solid' | 'dashed' | 'dotted'
@@ -1759,6 +1759,7 @@ function scheduleDraw() {
                 time: alignedTime, open: first.open,
                 high: Math.max(...chunk.map(c=>c.high)), low: Math.min(...chunk.map(c=>c.low)),
                 close: last.close, oiOpen: first.oiOpen,
+                volume: chunk.reduce((sum, c) => sum + (c.volume || 0), 0),
                 oiHigh: Math.max(...chunk.map(c=>c.oiHigh||0)),
                 oiLow: Math.min(...chunk.map(c=>c.oiLow||Infinity)),
                 oiClose: last.oiClose
