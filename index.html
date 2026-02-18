@@ -519,6 +519,13 @@
                     </div>
                     <span>VWAP</span>
                 </button>
+                <button id="toggle-dailylevels" class="indicator-toggle">
+                <!-- ★ key levels Toggle Button -->
+                <div class="indicator-checkbox">
+                    <svg viewBox="0 0 12 12" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,6 5,9 10,3"></polyline></svg>
+                </div>
+                <span>Levels</span>
+            </button>
             </div>
             <div class="h-6 w-px bg-trade-border/50"></div>
             <button id="add-chart-btn" class="px-3 py-1.5 text-[11px] font-mono font-semibold bg-transparent border border-trade-border hover:border-blue-500 text-gray-400 hover:text-blue-400 rounded-md transition-all active:scale-95" title="Add chart panel">+ Chart</button>
@@ -1200,6 +1207,11 @@
             <span class="font-medium">Reset View</span><span class="text-gray-500 text-xs group-hover:text-blue-400">R</span>
         </div>
         <div class="h-px bg-trade-border mx-2 my-1"></div>
+        <div class="menu-item px-4 py-2.5 hover:bg-blue-600/10 hover:text-blue-400 cursor-pointer flex justify-between items-center text-gray-300 transition-colors group" id="ctx-hide-footprints">
+            <span class="font-medium">Hide Footprints</span>
+            <span id="ctx-hide-footprints-indicator" class="text-[10px] text-gray-500 group-hover:text-blue-400">○</span>
+        </div>
+        <div class="h-px bg-trade-border mx-2 my-1"></div>
         <div class="menu-item px-4 py-2.5 hover:bg-blue-600/10 hover:text-blue-400 cursor-pointer flex justify-between items-center text-gray-300 transition-colors group" id="ctx-settings-trigger">
             <span class="font-medium">Settings</span><span class="text-gray-500 text-[10px] group-hover:text-blue-400">▶</span>
         </div>
@@ -1228,7 +1240,7 @@
         priceLabelFontSize: 10, timerFontSize: 11, timerOpacity: 0.9,
         defaultIndicatorHeight: 150, oiCandleWidth: 0.5, cvdLineThickness: 2,
         indicatorPadding: 10, indicatorBgOpacity: 0.95, drawDelay: 100, interactionHold: 180,
-        clusterVolumeThreshold: 50000,
+        clusterVolumeThreshold: 50000, showDailyLevels: false, hideFootprints: false,
         //vwap
         vwapVisible: false,
         // ── TPO / Market Profile ──────────────────────────────────────
@@ -1283,7 +1295,7 @@
                  offscreenCanvas, offscreenCtx, displayCandles, displayClusters,
                  tpoProfilesCache, tpoCacheKey, indicatorManager: indicatorManager,
                  activePriceLabelEl, activeTimerBox, activeWrapperEl, showTPO: config.showTPO,
-                 vwapVisible: config.vwapVisible };
+                 vwapVisible: config.vwapVisible, showDailyLevels: config.showDailyLevels, hideFootprints: config.hideFootprints, };
     }
     function _restoreP0(s) {
         chart = s.chart; mainSeries = s.mainSeries;
@@ -1297,6 +1309,8 @@
         activeWrapperEl = s.activeWrapperEl;
         config.showTPO = s.showTPO;
         config.vwapVisible = s.vwapVisible;
+        config.showDailyLevels = s.showDailyLevels;
+        config.hideFootprints = s.hideFootprints;
     }
     function _activatePanel(panel) {
         chart = panel.chart; mainSeries = panel.mainSeries;
@@ -1310,12 +1324,16 @@
         activeWrapperEl = panel.wrapperEl;
         config.showTPO = panel.showTPO;
         config.vwapVisible = panel.vwapVisible;
+        config.showDailyLevels = panel.showDailyLevels;
+        config.hideFootprints = panel.hideFootprints;
     }
     function _deactivatePanel(panel) {
         panel.tpoProfilesCache = tpoProfilesCache;
         panel.tpoCacheKey = tpoCacheKey;
         panel.showTPO = config.showTPO;
         panel.vwapVisible = config.vwapVisible;
+        panel.showDailyLevels = config.showDailyLevels;
+        panel.hideFootprints = config.hideFootprints;
     }
 
     function schedulePanelDraw(panel) {
@@ -1424,6 +1442,22 @@
             syncHeaderButtons();
         });
 
+        wrapperEl.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            // Select this panel first so ctx menu actions apply to it
+            selectedPanelId = pid;
+            document.querySelectorAll('.chart-panel-wrapper').forEach(w => w.classList.remove('selected'));
+            wrapperEl.classList.add('selected');
+            syncHeaderButtons();
+            // Position and show the menu
+            ctxMenuMain.style.left = `${Math.min(e.clientX, window.innerWidth - 200)}px`;
+            ctxMenuMain.style.top  = `${Math.min(e.clientY, window.innerHeight - 100)}px`;
+            ctxMenuMain.classList.remove('hidden');
+            // Sync the footprints dot to this panel's state
+            const active = extraPanels.find(p => p.id === pid)?.hideFootprints ?? false;
+            document.getElementById('ctx-hide-footprints-indicator').textContent = active ? '●' : '○';
+            document.getElementById('ctx-hide-footprints-indicator').style.color = active ? '#3b82f6' : '';
+        });
 
         // ── Close button ─────────────────────────────────────────────────────
         const closeBtn = document.createElement('div');
@@ -1488,6 +1522,8 @@
             rafId: null,
             showTPO: false,
             vwapVisible: false,
+            showDailyLevels: false,
+            hideFootprints: false,
         };
 
         newSeries.setData(panel.displayCandles);
@@ -1501,18 +1537,63 @@
         return panel;
     }
 
-    function removeExtraPanel(pid) {
+function removeExtraPanel(pid) {
         const idx = extraPanels.findIndex(p => p.id === pid);
         if (idx === -1) return;
         const panel = extraPanels[idx];
         if (panel.rafId) cancelAnimationFrame(panel.rafId);
-        // Remove resizer + wrapper from DOM
         const container = document.getElementById('charts-container');
         const resizer = container.querySelector(`[data-resizer-id="${pid}"]`);
         if (resizer) resizer.remove();
         panel.wrapperEl.remove();
         extraPanels.splice(idx, 1);
-        scheduleDraw();
+
+        // Count remaining panels (main + extras)
+        const remainingCount = 1 + extraPanels.length;
+        // Calculate each panel's share from the container total width
+        const containerW = container.clientWidth;
+        const resizerCount = extraPanels.length; // one resizer between each pair
+        const resizerTotalW = resizerCount * 5;
+        const panelW = Math.floor((containerW - resizerTotalW) / remainingCount);
+        const panelH = container.clientHeight;
+
+        // Force explicit pixel widths so no panel keeps a stale locked size
+        const wrapper0 = document.getElementById('panel-wrapper-0');
+        wrapper0.style.flex = `0 0 ${panelW}px`;
+        extraPanels.forEach(p => {
+            p.wrapperEl.style.flex = `0 0 ${panelW}px`;
+        });
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                // Now resize all charts to their new explicit widths
+                chart.applyOptions({ width: panelW, height: panelH });
+                setupBuffersForSize();
+                indicatorManager.updateLayout();
+
+                extraPanels.forEach(p => {
+                    p.chart.applyOptions({ width: panelW, height: panelH });
+                    const dpr = window.devicePixelRatio || 1;
+                    p.overlayCanvas.width  = Math.floor(panelW * dpr);
+                    p.overlayCanvas.height = Math.floor(panelH * dpr);
+                    p.overlayCanvas.style.width  = panelW + 'px';
+                    p.overlayCanvas.style.height = panelH + 'px';
+                    p.offscreenCanvas.width  = p.overlayCanvas.width;
+                    p.offscreenCanvas.height = p.overlayCanvas.height;
+                    p.offscreenCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                    p.indicatorManager.updateLayout();
+                    schedulePanelDraw(p);
+                });
+
+                // After charts are sized, switch back to flex:1 for natural resizing
+                wrapper0.style.flex = '1';
+                extraPanels.forEach(p => {
+                    p.wrapperEl.style.flex = '1';
+                });
+
+                scheduleDraw();
+            });
+        });
     }
 
 function setupVerticalResizer(resizerEl, panelId) {
@@ -2759,6 +2840,20 @@ function calculateVWAP() {
         scheduleDraw();
     });
 
+    document.getElementById('toggle-dailylevels').addEventListener('click', function() {
+    if (selectedPanelId === 0) {
+        config.showDailyLevels = !config.showDailyLevels;
+        this.classList.toggle('active', config.showDailyLevels);
+        scheduleDraw();
+    } else {
+        const panel = extraPanels.find(p => p.id === selectedPanelId);
+        if (panel) {
+            panel.showDailyLevels = !panel.showDailyLevels;
+            this.classList.toggle('active', panel.showDailyLevels);
+            schedulePanelDraw(panel);
+        }
+    }
+});
     // ── TPO Header Toggle ──────────────────────────────────────────────────────
     document.getElementById('toggle-tpo').addEventListener('click', function() {
         if (selectedPanelId === 0) {
@@ -2999,6 +3094,94 @@ function syncHeaderButtons() {
     // VWAP
     const vwapActive = isMain ? config.vwapVisible : (panel?.vwapVisible ?? false);
     document.getElementById('toggle-vwap').classList.toggle('active', vwapActive);
+
+    // Key Levels
+    const levelsActive = isMain ? config.showDailyLevels : (panel?.showDailyLevels ?? false);
+    document.getElementById('toggle-dailylevels').classList.toggle('active', levelsActive);
+}
+
+function drawDailyLevels(cssWidth, candleBottomY) {
+    if (!config.showDailyLevels || !displayCandles || displayCandles.length === 0) return;
+
+    const PRICE_SCALE_WIDTH = 77;
+    const drawWidth = cssWidth - PRICE_SCALE_WIDTH;
+    const timeScale = chart.timeScale();
+
+    // UTC midnight boundaries
+    const now = new Date();
+    const todayStart     = Math.floor(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).getTime() / 1000);
+    const yesterdayStart = todayStart - 86400;
+
+    // Accumulate levels
+    let dOpen = null, dHigh = -Infinity, dLow = Infinity;
+    let pdHigh = -Infinity, pdLow = Infinity;
+
+    for (const c of displayCandles) {
+        if (c.time >= todayStart) {
+            if (dOpen === null) dOpen = c.open;
+            if (c.high > dHigh) dHigh = c.high;
+            if (c.low  < dLow)  dLow  = c.low;
+        } else if (c.time >= yesterdayStart) {
+            if (c.high > pdHigh) pdHigh = c.high;
+            if (c.low  < pdLow)  pdLow  = c.low;
+        }
+    }
+
+    const dEQ  = (dHigh  > -Infinity && dLow  < Infinity) ? (dHigh  + dLow)  / 2 : null;
+    const pdEQ = (pdHigh > -Infinity && pdLow < Infinity) ? (pdHigh + pdLow) / 2 : null;
+
+    // X anchor: left edge of today's first candle (for current-day lines)
+    const todayFirstCandle = displayCandles.find(c => c.time >= todayStart);
+    const todayX = todayFirstCandle
+        ? (timeScale.timeToCoordinate(todayFirstCandle.time) ?? 0)
+        : 0;
+
+    // X anchor for previous-day lines: start of yesterday's first candle
+    const pdFirstCandle = displayCandles.find(c => c.time >= yesterdayStart && c.time < todayStart);
+    const pdX = pdFirstCandle
+        ? (timeScale.timeToCoordinate(pdFirstCandle.time) ?? 0)
+        : 0;
+
+    const levels = [
+        { value: dOpen,                                  label: 'dOpen',  startX: todayX },
+        { value: dHigh  > -Infinity ? dHigh  : null,    label: 'dHigh',  startX: todayX },
+        { value: dLow   < Infinity  ? dLow   : null,    label: 'dLow',   startX: todayX },
+        { value: dEQ,                                    label: 'dEQ',    startX: todayX },
+        { value: pdHigh > -Infinity ? pdHigh : null,     label: 'pdHigh', startX: pdX    },
+        { value: pdLow  < Infinity  ? pdLow  : null,     label: 'pdLow',  startX: pdX    },
+        { value: pdEQ,                                   label: 'pdEQ',   startX: pdX    },
+    ];
+
+    offscreenCtx.save();
+    offscreenCtx.lineWidth = 1;
+    offscreenCtx.setLineDash([4, 6]);
+    offscreenCtx.font = `600 9px 'JetBrains Mono', monospace`;
+
+    levels.forEach(({ value, label, startX }) => {
+        if (value === null || value === undefined) return;
+        const y = mainSeries.priceToCoordinate(value);
+        if (y === null || y < 0 || y > candleBottomY) return;
+
+        const lineStart = Math.max(0, startX);
+        if (lineStart >= drawWidth) return;
+
+        // Line
+        offscreenCtx.strokeStyle = 'rgba(255, 140, 0, 0.75)';
+        offscreenCtx.beginPath();
+        offscreenCtx.moveTo(lineStart, y);
+        offscreenCtx.lineTo(drawWidth, y);
+        offscreenCtx.stroke();
+
+        // Label (solid, no dash)
+        offscreenCtx.setLineDash([]);
+        offscreenCtx.fillStyle = 'rgba(255, 140, 0, 0.90)';
+        offscreenCtx.textAlign = 'right';
+        offscreenCtx.textBaseline = 'bottom';
+        offscreenCtx.fillText(label, drawWidth - 4, y - 2);
+        offscreenCtx.setLineDash([4, 6]);
+    });
+
+    offscreenCtx.restore();
 }
     // ════════════════════════════════════════════════════════════════════════════
     //  Main Draw Loop
@@ -3042,6 +3225,9 @@ function syncHeaderButtons() {
         // ── VWAP (before candles so it's behind them) ─────────────────────────
         drawVWAP(cssWidth, candleBottomY);
 
+        // ── key levels (before candles so it's behind them) ─────────────────────────
+        drawDailyLevels(cssWidth, candleBottomY);  // ← add this line
+
         // ── Candles ───────────────────────────────────────────────────────────
         displayCandles.forEach(candle => {
             const x=timeScale.timeToCoordinate(candle.time);
@@ -3068,76 +3254,75 @@ function syncHeaderButtons() {
             }
         });
 
-        // ── Per-candle footprint clusters ─────────────────────────────────────
-        for (let ti=0; ti<timestamps.length; ti++) {
-            const timestamp=timestamps[ti], ts=parseInt(timestamp);
-            const x=timeScale.timeToCoordinate(ts);
-            if (x===null||x<-100||x>cssWidth+100) continue;
-            const rawClusters=displayClusters[timestamp];
-            if (!rawClusters||Object.keys(rawClusters).length===0) continue;
+// ── Per-candle footprint clusters ─────────────────────────────────────
+        if (!config.hideFootprints) {
+            for (let ti=0; ti<timestamps.length; ti++) {
+                const timestamp=timestamps[ti], ts=parseInt(timestamp);
+                const x=timeScale.timeToCoordinate(ts);
+                if (x===null||x<-100||x>cssWidth+100) continue;
+                const rawClusters=displayClusters[timestamp];
+                if (!rawClusters||Object.keys(rawClusters).length===0) continue;
 
-            let aggregatedData={};
-            Object.keys(rawClusters).forEach(priceKey => {
-                const price=parseFloat(priceKey), data=rawClusters[priceKey];
-                const aggPrice=Math.floor(price/renderTickSize)*renderTickSize;
-                if (!aggregatedData[aggPrice]) aggregatedData[aggPrice]={buy:0,sell:0};
-                aggregatedData[aggPrice].buy+=data.buy; aggregatedData[aggPrice].sell+=data.sell;
-            });
+                let aggregatedData={};
+                Object.keys(rawClusters).forEach(priceKey => {
+                    const price=parseFloat(priceKey), data=rawClusters[priceKey];
+                    const aggPrice=Math.floor(price/renderTickSize)*renderTickSize;
+                    if (!aggregatedData[aggPrice]) aggregatedData[aggPrice]={buy:0,sell:0};
+                    aggregatedData[aggPrice].buy+=data.buy; aggregatedData[aggPrice].sell+=data.sell;
+                });
 
-            let pocBucketKey=null, pocTotal=-Infinity;
-            const aggKeys=Object.keys(aggregatedData);
-            aggKeys.forEach(pk => { const t=aggregatedData[pk].buy+aggregatedData[pk].sell; if(t>pocTotal){pocTotal=t;pocBucketKey=pk;} });
+                let pocBucketKey=null, pocTotal=-Infinity;
+                const aggKeys=Object.keys(aggregatedData);
+                aggKeys.forEach(pk => { const t=aggregatedData[pk].buy+aggregatedData[pk].sell; if(t>pocTotal){pocTotal=t;pocBucketKey=pk;} });
 
-            let minPrice=Infinity, maxPrice=-Infinity;
-            aggKeys.forEach(pk => { const p=parseFloat(pk); if(p<minPrice)minPrice=p; if(p>maxPrice)maxPrice=p; });
+                let minPrice=Infinity, maxPrice=-Infinity;
+                aggKeys.forEach(pk => { const p=parseFloat(pk); if(p<minPrice)minPrice=p; if(p>maxPrice)maxPrice=p; });
 
-            const yTop=mainSeries.priceToCoordinate(maxPrice+renderTickSize), yBottom=mainSeries.priceToCoordinate(minPrice);
-            if (yTop===null||yBottom===null) continue;
-            const clippedYTop=Math.max(0,Math.min(yTop,candleBottomY)), clippedYBottom=Math.max(0,Math.min(yBottom,candleBottomY));
-            if (clippedYTop>=candleBottomY) continue;
+                const yTop=mainSeries.priceToCoordinate(maxPrice+renderTickSize), yBottom=mainSeries.priceToCoordinate(minPrice);
+                if (yTop===null||yBottom===null) continue;
+                const clippedYTop=Math.max(0,Math.min(yTop,candleBottomY)), clippedYBottom=Math.max(0,Math.min(yBottom,candleBottomY));
+                if (clippedYTop>=candleBottomY) continue;
 
-            const clusterBoxH=Math.abs(clippedYBottom-clippedYTop), clusterBoxY2=Math.min(clippedYTop,clippedYBottom);
-            const startX=x-(totalWidth/2), boxX=startX+candleWidth, boxWidth=clusterWidth;
+                const clusterBoxH=Math.abs(clippedYBottom-clippedYTop), clusterBoxY2=Math.min(clippedYTop,clippedYBottom);
+                const startX=x-(totalWidth/2), boxX=startX+candleWidth, boxWidth=clusterWidth;
 
-            offscreenCtx.fillStyle=hexToRgba(config.panelColor,config.clusterBgOpacity);
-            offscreenCtx.fillRect(boxX,clusterBoxY2,boxWidth,clusterBoxH);
-            offscreenCtx.strokeStyle='#1a1f2e'; offscreenCtx.lineWidth=config.cellBorderWidth;
-            offscreenCtx.strokeRect(boxX,clusterBoxY2,boxWidth,clusterBoxH);
-            offscreenCtx.font=`${config.cellFontWeight} ${config.cellFontSize}px ${config.statsFontFamily}`;
-            offscreenCtx.textAlign="center"; offscreenCtx.textBaseline="middle";
+                offscreenCtx.fillStyle=hexToRgba(config.panelColor,config.clusterBgOpacity);
+                offscreenCtx.fillRect(boxX,clusterBoxY2,boxWidth,clusterBoxH);
+                offscreenCtx.strokeStyle='#1a1f2e'; offscreenCtx.lineWidth=config.cellBorderWidth;
+                offscreenCtx.strokeRect(boxX,clusterBoxY2,boxWidth,clusterBoxH);
+                offscreenCtx.font=`${config.cellFontWeight} ${config.cellFontSize}px ${config.statsFontFamily}`;
+                offscreenCtx.textAlign="center"; offscreenCtx.textBaseline="middle";
 
-            for (let pkIdx=0; pkIdx<aggKeys.length; pkIdx++) {
-                const priceKey=aggKeys[pkIdx], priceFloor=parseFloat(priceKey), data=aggregatedData[priceKey];
-                let cellYTop=mainSeries.priceToCoordinate(priceFloor+renderTickSize);
-                let cellYBottom=mainSeries.priceToCoordinate(priceFloor);
-                if (cellYTop===null||cellYBottom===null) continue;
-                cellYTop=Math.max(0,Math.min(cellYTop,candleBottomY)); cellYBottom=Math.max(0,Math.min(cellYBottom,candleBottomY));
-                if (cellYTop>=candleBottomY) continue;
+                for (let pkIdx=0; pkIdx<aggKeys.length; pkIdx++) {
+                    const priceKey=aggKeys[pkIdx], priceFloor=parseFloat(priceKey), data=aggregatedData[priceKey];
+                    let cellYTop=mainSeries.priceToCoordinate(priceFloor+renderTickSize);
+                    let cellYBottom=mainSeries.priceToCoordinate(priceFloor);
+                    if (cellYTop===null||cellYBottom===null) continue;
+                    cellYTop=Math.max(0,Math.min(cellYTop,candleBottomY)); cellYBottom=Math.max(0,Math.min(cellYBottom,candleBottomY));
+                    if (cellYTop>=candleBottomY) continue;
 
-                const heightCell=Math.abs(cellYBottom-cellYTop), drawY=Math.min(cellYTop,cellYBottom);
-                const delta=data.buy-data.sell, totalVolume=data.buy+data.sell;
+                    const heightCell=Math.abs(cellYBottom-cellYTop), drawY=Math.min(cellYTop,cellYBottom);
+                    const delta=data.buy-data.sell, totalVolume=data.buy+data.sell;
 
-                let fillColor;
-                if (config.clusterVolumeThreshold > 0 && Math.abs(delta) < config.clusterVolumeThreshold) {
-                    fillColor = '#485060';
-                    offscreenCtx.fillStyle = fillColor;
-                } else {
-                    const isBullish = delta >= 0;
-                    const cellColor = isBullish ? config.upColor : config.downColor;
-                    const cellOpacity = calculateCellOpacity(totalVolume);
-                    offscreenCtx.fillStyle = hexToRgba(cellColor, cellOpacity);
-                    fillColor = null;
-                }
-                offscreenCtx.fillRect(boxX,drawY,boxWidth,heightCell);
+                    if (config.clusterVolumeThreshold > 0 && Math.abs(delta) < config.clusterVolumeThreshold) {
+                        offscreenCtx.fillStyle = '#485060';
+                    } else {
+                        const isBullish = delta >= 0;
+                        const cellColor = isBullish ? config.upColor : config.downColor;
+                        const cellOpacity = calculateCellOpacity(totalVolume);
+                        offscreenCtx.fillStyle = hexToRgba(cellColor, cellOpacity);
+                    }
+                    offscreenCtx.fillRect(boxX,drawY,boxWidth,heightCell);
 
-                if (String(priceKey)===String(pocBucketKey)) {
-                    offscreenCtx.strokeStyle=config.pocColor; offscreenCtx.lineWidth=config.pocBorderWidth;
-                    offscreenCtx.strokeRect(boxX,drawY,boxWidth,heightCell);
-                }
+                    if (String(priceKey)===String(pocBucketKey)) {
+                        offscreenCtx.strokeStyle=config.pocColor; offscreenCtx.lineWidth=config.pocBorderWidth;
+                        offscreenCtx.strokeRect(boxX,drawY,boxWidth,heightCell);
+                    }
 
-                if (heightCell>14) {
-                    offscreenCtx.fillStyle='#ffffff';
-                    offscreenCtx.fillText(formatUSD(delta),boxX+(boxWidth/2),drawY+(heightCell/2));
+                    if (heightCell>14) {
+                        offscreenCtx.fillStyle='#ffffff';
+                        offscreenCtx.fillText(formatUSD(delta),boxX+(boxWidth/2),drawY+(heightCell/2));
+                    }
                 }
             }
         }
@@ -3205,7 +3390,7 @@ function syncHeaderButtons() {
                 }
 
                 const _barStatsActive = indicatorManager.getIndicator('barstats')?.visible;
-                if (!_barStatsActive) {
+                if (!_barStatsActive && !config.hideFootprints) {
                     const statsY=isBullishCandle?mainSeries.priceToCoordinate(candle.high)-45:mainSeries.priceToCoordinate(candle.low)+40;
                     if (statsY>=0&&statsY<=candleBottomY) {
                         const deltaColor=delta>=0?config.upColor:config.downColor;
@@ -3248,7 +3433,8 @@ function syncHeaderButtons() {
         ctxOverlay.clearRect(0,0,chartOverlayCanvas.width,chartOverlayCanvas.height);
         ctxOverlay.drawImage(offscreenCanvas,0,0);
         needsRedraw=false;
-    }
+
+} // ← closes drawFrames()
 
     function formatTime(seconds) {
         if (seconds>=3600) { const h=Math.floor(seconds/3600), m=Math.floor((seconds%3600)/60); return `${h}:${m.toString().padStart(2,'0')}`; }
@@ -3271,16 +3457,53 @@ function syncHeaderButtons() {
     const ctxMenuMain=document.getElementById('ctx-menu-main'), settingsPanel=document.getElementById('settings-panel');
 
     document.getElementById('panel-wrapper-0').addEventListener('contextmenu', (e) => {
-        e.preventDefault(); ctxMenuMain.style.left=`${Math.min(e.clientX,window.innerWidth-200)}px`; ctxMenuMain.style.top=`${Math.min(e.clientY,window.innerHeight-100)}px`; ctxMenuMain.classList.remove('hidden');
+        e.preventDefault();
+        ctxMenuMain.style.left=`${Math.min(e.clientX,window.innerWidth-200)}px`;
+        ctxMenuMain.style.top=`${Math.min(e.clientY,window.innerHeight-100)}px`;
+        ctxMenuMain.classList.remove('hidden');
+        // Sync dot to current panel state
+        const active = selectedPanelId === 0
+            ? config.hideFootprints
+            : (extraPanels.find(p => p.id === selectedPanelId)?.hideFootprints ?? false);
+        document.getElementById('ctx-hide-footprints-indicator').textContent = active ? '●' : '○';
+        document.getElementById('ctx-hide-footprints-indicator').style.color = active ? '#3b82f6' : '';
     });
     document.addEventListener('click', (e) => { if (!e.target.closest('.context-menu')&&!e.target.closest('#settings-panel')&&!e.target.closest('#header-settings-btn')) ctxMenuMain.classList.add('hidden'); });
-    document.getElementById('ctx-reset').onclick = () => { chart.timeScale().scrollToRealTime(); chart.priceScale('right').applyOptions({autoScale:true}); };
+    document.getElementById('ctx-reset').onclick = () => {
+        if (selectedPanelId === 0) {
+            chart.timeScale().scrollToRealTime();
+            chart.priceScale('right').applyOptions({ autoScale: true });
+        } else {
+            const panel = extraPanels.find(p => p.id === selectedPanelId);
+            if (panel) {
+                panel.chart.timeScale().scrollToRealTime();
+                panel.chart.priceScale('right').applyOptions({ autoScale: true });
+            }
+        }
+        ctxMenuMain.classList.add('hidden');
+    };
 
     const toggleSettings=()=>{ settingsPanel.classList.toggle('-translate-x-full'); settingsPanel.classList.toggle('translate-x-0'); };
     document.getElementById('header-settings-btn').onclick = toggleSettings;
     document.getElementById('close-settings').onclick = toggleSettings;
     document.getElementById('ctx-settings-trigger').onclick = toggleSettings;
 
+    document.getElementById('ctx-hide-footprints').onclick = () => {
+    if (selectedPanelId === 0) {
+        config.hideFootprints = !config.hideFootprints;
+    } else {
+        const panel = extraPanels.find(p => p.id === selectedPanelId);
+        if (panel) panel.hideFootprints = !panel.hideFootprints;
+    }
+    // Update indicator dot
+    const active = selectedPanelId === 0
+        ? config.hideFootprints
+        : (extraPanels.find(p => p.id === selectedPanelId)?.hideFootprints ?? false);
+    document.getElementById('ctx-hide-footprints-indicator').textContent = active ? '●' : '○';
+    document.getElementById('ctx-hide-footprints-indicator').style.color = active ? '#3b82f6' : '';
+    ctxMenuMain.classList.add('hidden');
+    scheduleDraw();
+};
     document.getElementById('cumulative-mode-select').onchange = (e) => { config.cumulativeMode=e.target.value; scheduleDraw(); };
     document.getElementById('series-type-select').onchange = (e) => { config.seriesType=e.target.value; mainSeries=createSeries(config.seriesType); mainSeries.setData(displayCandles); updateCandleAppearance(); scheduleDraw(); };
     document.getElementById('up-candle-color').onchange = (e) => { config.upColor=e.target.value; updateCandleAppearance(); scheduleDraw(); };
