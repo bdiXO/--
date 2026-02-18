@@ -38,6 +38,16 @@
         }
     </script>
     <style>
+
+         #layouts-dropdown.open {
+            display: block !important;
+            opacity: 1;
+            transform: scaleY(1);
+        }
+        #layouts-dropdown {
+            transform-origin: top;
+        }
+
         body { 
             background-color: #0a0e1a; 
             overflow: hidden; 
@@ -438,6 +448,7 @@
 
         .chart-panel-wrapper.selected {
     box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.4);
+    
 }
 
     </style>
@@ -528,6 +539,21 @@
             </button>
             </div>
             <div class="h-6 w-px bg-trade-border/50"></div>
+            <div class="relative" id="layouts-wrapper">
+                <button id="layouts-btn" class="px-3 py-1.5 text-[11px] font-mono font-semibold bg-transparent border border-trade-border hover:border-blue-500 text-gray-400 hover:text-blue-400 rounded-md transition-all active:scale-95" title="Manage layouts">Layouts</button>
+                <div id="layouts-dropdown" class="hidden absolute right-0 top-[calc(100%+6px)] w-56 bg-[#12161f] border border-trade-border rounded-lg shadow-2xl py-1.5 z-[5000] backdrop-blur-sm
+                    origin-top scale-y-95 opacity-0 transition-all duration-200">
+                    <div class="px-4 py-2 text-[11px] font-mono font-semibold text-gray-400 uppercase tracking-wider">Layouts</div>
+                    <div class="menu-item px-4 py-2.5 hover:bg-blue-600/10 hover:text-blue-400 cursor-pointer flex items-center gap-2 text-gray-300 transition-colors" id="save-layout-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                        <span class="font-medium text-[11px]">Save Current Layout</span>
+                    </div>
+                    <div class="h-px bg-trade-border mx-2 my-1"></div>
+                    <div id="saved-layouts-list" class="max-h-48 overflow-y-auto custom-scroll">
+                        <div class="px-4 py-2 text-[10px] text-gray-600 font-mono italic">No saved layouts yet</div>
+                    </div>
+                </div>
+            </div>
             <button id="add-chart-btn" class="px-3 py-1.5 text-[11px] font-mono font-semibold bg-transparent border border-trade-border hover:border-blue-500 text-gray-400 hover:text-blue-400 rounded-md transition-all active:scale-95" title="Add chart panel">+ Chart</button>
             <div class="h-6 w-px bg-trade-border/50"></div>
             <button id="header-settings-btn" class="p-2 hover:bg-[#1a1f2e] rounded-md text-gray-400 hover:text-white transition-all active:scale-95 group">
@@ -549,6 +575,29 @@
         </div>
     </div>
 
+<!-- Indicator Settings Context Menu -->
+<div id="indicator-ctx-menu"
+     style="display:none;position:fixed;z-index:10000;width:252px;
+            background:linear-gradient(135deg,#0d1117 0%,#0f1419 100%);
+            border:1px solid #1a1f2e;border-radius:10px;
+            box-shadow:0 12px 40px rgba(0,0,0,0.65);overflow:hidden;
+            font-family:'JetBrains Mono',monospace;">
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                padding:9px 14px 9px 14px;border-bottom:1px solid #1a1f2e;
+                background:linear-gradient(90deg,rgba(59,130,246,0.09) 0%,transparent 100%);">
+        <span id="ind-ctx-title"
+              style="font-size:11px;font-weight:600;color:#e8eaed;
+                     text-transform:uppercase;letter-spacing:0.06em;"></span>
+        <button id="ind-ctx-close"
+                style="background:none;border:none;color:#5a6178;cursor:pointer;
+                       font-size:13px;padding:1px 4px;border-radius:3px;line-height:1;
+                       transition:color 0.15s;"
+                onmouseover="this.style.color='#ff4242'"
+                onmouseout="this.style.color='#5a6178'">✕</button>
+    </div>
+    <div id="ind-ctx-body" style="padding:10px 14px;display:grid;gap:8px;"></div>
+
+</div>
     <!-- Custom Timeframe Modal -->
     <div id="custom-tf-modal" class="modal-overlay">
         <div class="modal-content">
@@ -579,7 +628,6 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
         </div>
-
         <div class="flex-1 overflow-y-auto custom-scroll">
             
             <!-- Chart Appearance -->
@@ -845,7 +893,7 @@
                         <div class="setting-divider"></div>
                         <div class="setting-item">
                             <label class="setting-label">Low-Volume Cell Threshold (USD)</label>
-                            <input type="number" id="cluster-volume-threshold" value="50000" min="0" step="10000" class="w-full px-3 py-2">
+                            <input type="number" id="cluster-volume-threshold" value="25000" min="0" step="10000" class="w-full px-3 py-2">
                             <span class="setting-description">Cells below this total volume are shown in muted gray. Set to 0 to disable.</span>
                         </div>
                         <div class="setting-divider"></div>
@@ -929,7 +977,7 @@
                         </div>
                         <div class="setting-item">
                             <label class="setting-label">Absorption Threshold (USD)</label>
-                            <input type="number" id="absorption-threshold" value="100000" step="10000" min="0" max="1000000" class="w-full px-3 py-2">
+                            <input type="number" id="absorption-threshold" value="1000000" step="10000" min="0" max="10000000" class="w-full px-3 py-2">
                             <span class="setting-description">Minimum delta for absorption detection</span>
                         </div>
                     </div>
@@ -970,11 +1018,11 @@
                         <div class="setting-divider"></div>
                         <div class="setting-item">
                             <label class="setting-label">Price Label Font Size</label>
-                            <input type="number" id="price-label-font-size" value="10" min="8" max="16" step="1" class="w-full px-3 py-2">
+                            <input type="number" id="price-label-font-size" value="9" min="5" max="20" step="1" class="w-full px-3 py-2">
                         </div>
                         <div class="setting-item">
                             <label class="setting-label">Timer Font Size</label>
-                            <input type="number" id="timer-font-size" value="11" min="8" max="16" step="1" class="w-full px-3 py-2">
+                            <input type="number" id="timer-font-size" value="8" min="5" max="20" step="1" class="w-full px-3 py-2">
                         </div>
                         <div class="setting-divider"></div>
                         <div class="setting-item">
@@ -1022,7 +1070,7 @@
                                     <label class="setting-label">CVD Line Thickness</label>
                                     <span id="cvd-line-thickness-val" class="slider-value">2px</span>
                                 </div>
-                                <input type="range" id="cvd-line-thickness" min="1" max="5" value="2" step="0.5">
+                                <input type="range" id="cvd-line-thickness" min="1" max="5" value="1" step="0.5">
                             </div>
                         </div>
                         <div class="setting-row">
@@ -1038,125 +1086,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- ★ TPO / Market Profile Settings Section -->
-            <div class="settings-section">
-                <div class="section-header" onclick="toggleSection(this)">
-                    <div class="section-title-wrapper">
-                        <div class="section-icon">
-                            <!-- Profile / bar chart icon -->
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="2" y="3" width="4" height="18" rx="1"/>
-                                <rect x="8" y="6" width="7" height="15" rx="1"/>
-                                <rect x="17" y="9" width="5" height="12" rx="1"/>
-                            </svg>
-                        </div>
-                        <span class="section-title">TPO / Market Profile</span>
-                    </div>
-                    <svg class="section-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </div>
-                <div class="section-content">
-                    <div class="section-body">
-                        <!-- Enable toggle -->
-                        <div class="setting-row">
-                            <div class="setting-item">
-                                <label class="setting-label">Enable TPO</label>
-                                <div class="toggle-switch" id="toggle-tpo-switch" onclick="toggleSwitch(this)"></div>
-                            </div>
-                            <div class="setting-item">
-                                <label class="setting-label">Session (UTC)</label>
-                                <div class="select-wrapper">
-                                    <select id="tpo-session-select" class="w-full px-3 py-2">
-                                        <option value="daily" selected>Daily (24h)</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="setting-divider"></div>
-
-                        <!-- Tick size & block width -->
-                        <div class="setting-row">
-                            <div class="setting-item">
-                                <label class="setting-label">Tick Size ($)</label>
-                                <input type="number" id="tpo-tick-size" value="50" min="10" max="2000" step="10" class="w-full px-3 py-2">
-                                <span class="setting-description">Vertical price resolution of each row</span>
-                            </div>
-                            <div class="setting-item">
-                                <label class="setting-label">Block Width (px)</label>
-                                <input type="number" id="tpo-block-width" value="8" min="3" max="24" step="1" class="w-full px-3 py-2">
-                                <span class="setting-description">Width of each individual TPO block</span>
-                            </div>
-                        </div>
-
-                        <!-- Opacity sliders -->
-                        <div class="setting-item">
-                            <div class="slider-container">
-                                <div class="slider-header">
-                                    <label class="setting-label">VA Block Opacity</label>
-                                    <span id="tpo-opacity-va-val" class="slider-value">65%</span>
-                                </div>
-                                <input type="range" id="tpo-opacity-va" min="10" max="100" value="65" step="5">
-                            </div>
-                        </div>
-                        <div class="setting-item">
-                            <div class="slider-container">
-                                <div class="slider-header">
-                                    <label class="setting-label">Non-VA Block Opacity</label>
-                                    <span id="tpo-opacity-non-va-val" class="slider-value">30%</span>
-                                </div>
-                                <input type="range" id="tpo-opacity-non-va" min="5" max="80" value="30" step="5">
-                            </div>
-                        </div>
-
-                        <div class="setting-divider"></div>
-
-                        <!-- Color pickers -->
-                        <div class="setting-row">
-                            <div class="setting-item">
-                                <label class="setting-label">Single Print Color</label>
-                                <div class="color-picker-wrapper"><input type="color" id="tpo-color-single" value="#ff6ec7"></div>
-                            </div>
-                            <div class="setting-item">
-                                <label class="setting-label">VA Fill Color</label>
-                                <div class="color-picker-wrapper"><input type="color" id="tpo-color-va" value="#3b82f6"></div>
-                            </div>
-                        </div>
-                        <div class="setting-row">
-                            <div class="setting-item">
-                                <label class="setting-label">Non-VA Fill Color</label>
-                                <div class="color-picker-wrapper"><input type="color" id="tpo-color-non-va" value="#4a5568"></div>
-                            </div>
-                            <div class="setting-item">
-                                <label class="setting-label">POC Border Color</label>
-                                <div class="color-picker-wrapper"><input type="color" id="tpo-color-poc" value="#f0b90b"></div>
-                            </div>
-                        </div>
-
-                        <div class="setting-divider"></div>
-
-                        <!-- Legend -->
-                        <div class="setting-item full-width">
-                            <label class="setting-label">Color Legend</label>
-                            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">
-                                <span class="tpo-legend" style="color:#3b82f6;">
-                                    <span class="tpo-swatch" style="background:#3b82f6;opacity:0.65;"></span>Value Area (70%)
-                                </span>
-                                <span class="tpo-legend" style="color:#7a8599;">
-                                    <span class="tpo-swatch" style="background:#4a5568;opacity:0.5;"></span>Non-VA
-                                </span>
-                                <span class="tpo-legend" style="color:#ff6ec7;">
-                                    <span class="tpo-swatch" style="background:#ff6ec7;"></span>Single Print
-                                </span>
-                                <span class="tpo-legend" style="color:#f0b90b;">
-                                    <span class="tpo-swatch" style="background:transparent;border:1.5px solid #f0b90b;"></span>POC Row
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Advanced -->
             <div class="settings-section">
                 <div class="section-header" onclick="toggleSection(this)">
@@ -1227,7 +1156,7 @@
         gridSpacing: 1000, gridColor: '#636363', gridOpacity: 1.0, gridLineWidth: 1,
         baseTickSize: 2.5, minCellHeight: 15, upColor: '#608feb', downColor: '#ff4242',
         candleOpacity: 1.0, seriesType: 'candle', minBubbleVolume: 500000,
-        showPriceLine: false, showPriceLabel: true, showCountdown: true, showCrosshair: true,
+        showPriceLine: true, showPriceLabel: true, showCountdown: true, showCrosshair: true,
         pocColor: '#f0b90b', currentTimeframe: 5, displayTimeframe: 5,
         candleWidthPercent: 0.20, clusterWidthPercent: 0.80, cumulativeMode: 'all',
         wickThickness: 1, borderThickness: 1, bgColor: '#0a0e1a', panelColor: '#0f1419',
@@ -1236,11 +1165,11 @@
         statsFontWeight: '600', cellFontSize: 11, cellFontWeight: '400', barSpacing: 50,
         clusterBgOpacity: 0, pocBorderWidth: 1.5, cellBorderWidth: 1,
         bubbleInnerSize: 5, bubbleOuterSize: 10, bubblePulseSpeed: 1500,
-        absorptionDotSize: 4, absorptionGlow: 10, absorptionThreshold: 100000,
-        priceLabelFontSize: 10, timerFontSize: 11, timerOpacity: 0.9,
-        defaultIndicatorHeight: 150, oiCandleWidth: 0.5, cvdLineThickness: 2,
+        absorptionDotSize: 4, absorptionGlow: 10, absorptionThreshold: 1000000,
+        priceLabelFontSize: 9, timerFontSize: 8, timerOpacity: 0.9,
+        defaultIndicatorHeight: 150, oiCandleWidth: 0.5, cvdLineThickness: 1,
         indicatorPadding: 10, indicatorBgOpacity: 0.95, drawDelay: 100, interactionHold: 180,
-        clusterVolumeThreshold: 50000, showDailyLevels: false, hideFootprints: false,
+        clusterVolumeThreshold: 25000, showDailyLevels: false, hideFootprints: false,
         //vwap
         vwapVisible: false,
         // ── TPO / Market Profile ──────────────────────────────────────
@@ -1248,11 +1177,31 @@
         tpoTickSize: 50,
         tpoBlockWidth: 8,
         tpoOpacityVA: 0.65,
-        tpoOpacityNonVA: 0.30,
+        tpoOpacityNonVA: 0.70,
         tpoColorSingle: '#ff6ec7',
         tpoColorVA: '#3b82f6',
-        tpoColorNonVA: '#4a5568',
+        tpoColorNonVA: '#ffffff',
         tpoColorPOC: '#ffffff',
+        // OI
+        oiUpColor: '#608feb',
+        oiDownColor: '#ff4242',
+        oiOpacity: 1.0,
+        oiBorderColor: '#ffffff',
+        // CVD
+        cvdLineColor: 'auto',   // 'auto' = follows up/down color, or any hex like '#3b82f6'
+        // Bar Stats
+        barStatsUpColor: '#608feb',
+        barStatsDownColor: '#ff4242',
+        // VWAP
+        vwapColor: '#ffffff',
+        vwapLineStyle: 'dotted',  // 'solid' | 'dashed' | 'dotted'
+        vwapShowLabel: true,
+        vwapShowPrice: true,
+        // Key Levels
+        levelsColor: '#ff8c00',
+        levelsLineStyle: 'dashed',  // 'solid' | 'dashed' | 'dotted'
+        levelsEnabled: { dOpen: true, dHigh: true, dLow: true, dEQ: true, pdHigh: true, pdLow: true, pdEQ: true },
+
     };
 
     let base5mClusters = {};
@@ -1290,28 +1239,37 @@
     let extraPanelCounter = 0;
     let selectedPanelId = 0; // 0 = main panel, >0 = extra panel ID
 
-    function _saveP0() {
-        return { chart, mainSeries, chartOverlayCanvas, ctxOverlay,
-                 offscreenCanvas, offscreenCtx, displayCandles, displayClusters,
-                 tpoProfilesCache, tpoCacheKey, indicatorManager: indicatorManager,
-                 activePriceLabelEl, activeTimerBox, activeWrapperEl, showTPO: config.showTPO,
-                 vwapVisible: config.vwapVisible, showDailyLevels: config.showDailyLevels, hideFootprints: config.hideFootprints, };
+function _saveP0() {
+    const indSettings = {};
+    IND_SETTING_KEYS.forEach(k => { indSettings[k] = config[k]; });
+    indSettings.levelsEnabled = { ...config.levelsEnabled };
+    return { chart, mainSeries, chartOverlayCanvas, ctxOverlay,
+             offscreenCanvas, offscreenCtx, displayCandles, displayClusters,
+             tpoProfilesCache, tpoCacheKey, indicatorManager: indicatorManager,
+             activePriceLabelEl, activeTimerBox, activeWrapperEl,
+             showTPO: config.showTPO, vwapVisible: config.vwapVisible,
+             showDailyLevels: config.showDailyLevels, hideFootprints: config.hideFootprints,
+             indSettings };
+}
+function _restoreP0(s) {
+    chart = s.chart; mainSeries = s.mainSeries;
+    chartOverlayCanvas = s.chartOverlayCanvas; ctxOverlay = s.ctxOverlay;
+    offscreenCanvas = s.offscreenCanvas; offscreenCtx = s.offscreenCtx;
+    displayCandles = s.displayCandles; displayClusters = s.displayClusters;
+    tpoProfilesCache = s.tpoProfilesCache; tpoCacheKey = s.tpoCacheKey;
+    indicatorManager = s.indicatorManager;
+    activePriceLabelEl = s.activePriceLabelEl;
+    activeTimerBox = s.activeTimerBox;
+    activeWrapperEl = s.activeWrapperEl;
+    config.showTPO = s.showTPO;
+    config.vwapVisible = s.vwapVisible;
+    config.showDailyLevels = s.showDailyLevels;
+    config.hideFootprints = s.hideFootprints;
+    if (s.indSettings) {
+        IND_SETTING_KEYS.forEach(k => { config[k] = s.indSettings[k]; });
+        config.levelsEnabled = { ...s.indSettings.levelsEnabled };
     }
-    function _restoreP0(s) {
-        chart = s.chart; mainSeries = s.mainSeries;
-        chartOverlayCanvas = s.chartOverlayCanvas; ctxOverlay = s.ctxOverlay;
-        offscreenCanvas = s.offscreenCanvas; offscreenCtx = s.offscreenCtx;
-        displayCandles = s.displayCandles; displayClusters = s.displayClusters;
-        tpoProfilesCache = s.tpoProfilesCache; tpoCacheKey = s.tpoCacheKey;
-        indicatorManager = s.indicatorManager;
-        activePriceLabelEl = s.activePriceLabelEl;
-        activeTimerBox = s.activeTimerBox;
-        activeWrapperEl = s.activeWrapperEl;
-        config.showTPO = s.showTPO;
-        config.vwapVisible = s.vwapVisible;
-        config.showDailyLevels = s.showDailyLevels;
-        config.hideFootprints = s.hideFootprints;
-    }
+}
     function _activatePanel(panel) {
         chart = panel.chart; mainSeries = panel.mainSeries;
         chartOverlayCanvas = panel.overlayCanvas; ctxOverlay = panel.ctxOverlay;
@@ -1326,6 +1284,8 @@
         config.vwapVisible = panel.vwapVisible;
         config.showDailyLevels = panel.showDailyLevels;
         config.hideFootprints = panel.hideFootprints;
+        IND_SETTING_KEYS.forEach(k => { if (panel[k] !== undefined) config[k] = panel[k]; });
+        if (panel.levelsEnabled) config.levelsEnabled = { ...panel.levelsEnabled };
     }
     function _deactivatePanel(panel) {
         panel.tpoProfilesCache = tpoProfilesCache;
@@ -1334,6 +1294,8 @@
         panel.vwapVisible = config.vwapVisible;
         panel.showDailyLevels = config.showDailyLevels;
         panel.hideFootprints = config.hideFootprints;
+        IND_SETTING_KEYS.forEach(k => { panel[k] = config[k]; });
+        panel.levelsEnabled = { ...config.levelsEnabled };
     }
 
     function schedulePanelDraw(panel) {
@@ -1513,7 +1475,7 @@
             timerBoxEl: timerEl,
             displayTimeframe: 5,
             displayCandles: displayCandles.slice(),
-            displayClusters: JSON.parse(JSON.stringify(displayClusters)),
+            displayClusters: structuredClone(displayClusters),
             tpoProfilesCache: null,
             tpoCacheKey: '',
             rafRunning: false,
@@ -1524,7 +1486,8 @@
             vwapVisible: false,
             showDailyLevels: false,
             hideFootprints: false,
-        };
+            ...makeDefaultIndSettings(), // per-panel indicator colors/styles
+    };
 
         newSeries.setData(panel.displayCandles);
         setupPanelBuffers(panel);
@@ -1684,7 +1647,7 @@ function setupVerticalResizer(resizerEl, panelId) {
             return new Date(timestamp * 1000).toLocaleString('ro-RO', {
                 timeZone: 'Europe/Bucharest',
                 hour: '2-digit', minute: '2-digit',
-                day: '2-digit', month: '2-digit'
+                //day: '2-digit', month: '2-digit'
             });
         }
     },
@@ -1742,7 +1705,7 @@ function setupVerticalResizer(resizerEl, panelId) {
     }
 
     function aggregateClusters(source5mClusters, targetTFMinutes) {
-        if (targetTFMinutes === BASE_TIMEFRAME) return JSON.parse(JSON.stringify(source5mClusters));
+        if (targetTFMinutes === BASE_TIMEFRAME) return structuredClone(source5mClusters);
         const aggregated = {};
         const targetBarSeconds = targetTFMinutes * 60;
         const timestamps = Object.keys(source5mClusters).map(Number).sort((a,b)=>a-b);
@@ -1813,22 +1776,22 @@ function setupVerticalResizer(resizerEl, panelId) {
     function toggleSwitch(element) {
         element.classList.toggle('active');
         const switchId = element.id;
-        if (switchId === 'toggle-price-line-switch') { config.showPriceLine = element.classList.contains('active'); mainSeries.applyOptions({ priceLineVisible: config.showPriceLine }); }
+        if (switchId === 'toggle-price-line-switch') {
+    config.showPriceLine = element.classList.contains('active');
+    const lastCandle = displayCandles[displayCandles.length - 1];
+    const lineColor = (lastCandle && lastCandle.close >= lastCandle.open) ? config.upColor : config.downColor;
+    mainSeries.applyOptions({
+        priceLineVisible: config.showPriceLine,
+        priceLineColor: lineColor,
+        priceLineWidth: 1,
+        priceLineStyle: 2
+    });
+}
         else if (switchId === 'toggle-price-label-switch') { config.showPriceLabel = element.classList.contains('active'); scheduleDraw(); }
         else if (switchId === 'toggle-countdown-switch') { config.showCountdown = element.classList.contains('active'); scheduleDraw(); }
         else if (switchId === 'toggle-crosshair-switch') {
             config.showCrosshair = element.classList.contains('active');
             chart.applyOptions({ crosshair: { vertLine: { visible: config.showCrosshair }, horzLine: { visible: config.showCrosshair } } });
-        }
-        // ── TPO Settings Panel toggle switch ──
-        else if (switchId === 'toggle-tpo-switch') {
-            config.showTPO = element.classList.contains('active');
-            // Sync header button state
-            const headerBtn = document.getElementById('toggle-tpo');
-            if (config.showTPO) headerBtn.classList.add('active');
-            else headerBtn.classList.remove('active');
-            tpoCacheKey = ''; // invalidate cache
-            scheduleDraw();
         }
     }
 
@@ -1838,7 +1801,7 @@ function setupVerticalResizer(resizerEl, panelId) {
             gridSpacing: 1000, gridColor: '#636363', gridOpacity: 1.0, gridLineWidth: 1,
             baseTickSize: 2.5, minCellHeight: 15, upColor: '#608feb', downColor: '#ff4242',
             candleOpacity: 1.0, seriesType: 'candle', minBubbleVolume: 500000,
-            showPriceLine: false, showPriceLabel: true, showCountdown: true, showCrosshair: true,
+            showPriceLine: true, showPriceLabel: true, showCountdown: true, showCrosshair: true,
             pocColor: '#f0b90b', currentTimeframe: 5, displayTimeframe: 5, candleWidthPercent: 0.20,
             clusterWidthPercent: 0.80, cumulativeMode: 'all', wickThickness: 1, borderThickness: 1,
             bgColor: '#0a0e1a', panelColor: '#0f1419', accentColor: '#3b82f6',
@@ -1846,15 +1809,15 @@ function setupVerticalResizer(resizerEl, panelId) {
             statsFontSize: 11, statsFontWeight: '600', cellFontSize: 11, cellFontWeight: '400',
             barSpacing: 50, clusterBgOpacity: 0, pocBorderWidth: 1.5, cellBorderWidth: 1,
             bubbleInnerSize: 5, bubbleOuterSize: 10, bubblePulseSpeed: 1500,
-            absorptionDotSize: 4, absorptionGlow: 10, absorptionThreshold: 100000,
-            priceLabelFontSize: 10, timerFontSize: 11, timerOpacity: 0.9,
-            defaultIndicatorHeight: 150, oiCandleWidth: 0.5, cvdLineThickness: 2,
+            absorptionDotSize: 4, absorptionGlow: 10, absorptionThreshold: 1000000,
+            priceLabelFontSize: 9, timerFontSize: 8, timerOpacity: 0.9,
+            defaultIndicatorHeight: 150, oiCandleWidth: 0.5, cvdLineThickness: 1,
             indicatorPadding: 10, indicatorBgOpacity: 0.95, drawDelay: 100, interactionHold: 180,
-            clusterVolumeThreshold: 50000,
+            clusterVolumeThreshold: 25000,
             showTPO: false, tpoTickSize: 50, tpoBlockWidth: 8,
-            tpoOpacityVA: 0.65, tpoOpacityNonVA: 0.30,
+            tpoOpacityVA: 0.65, tpoOpacityNonVA: 0.70,
             tpoColorSingle: '#ff6ec7', tpoColorVA: '#3b82f6',
-            tpoColorNonVA: '#4a5568', tpoColorPOC: '#ffffff',
+            tpoColorNonVA: '#ffffff', tpoColorPOC: '#ffffff',
         };
         tpoCacheKey = '';
         // Reset UI controls (existing ones)
@@ -1895,26 +1858,16 @@ function setupVerticalResizer(resizerEl, panelId) {
         document.getElementById('timer-opacity').value = 90; document.getElementById('timer-opacity-val').textContent = '90%';
         document.getElementById('default-indicator-height').value = 150;
         document.getElementById('oi-candle-width').value = 50; document.getElementById('oi-candle-width-val').textContent = '50%';
-        document.getElementById('cvd-line-thickness').value = 2; document.getElementById('cvd-line-thickness-val').textContent = '2px';
+        document.getElementById('cvd-line-thickness').value = 1; document.getElementById('cvd-line-thickness-val').textContent = '1px';
         document.getElementById('indicator-padding').value = 10; document.getElementById('indicator-bg-opacity').value = 95;
         document.getElementById('draw-delay').value = 50; document.getElementById('draw-delay-val').textContent = '50ms';
         document.getElementById('interaction-hold').value = 180; document.getElementById('interaction-hold-val').textContent = '180ms';
-        // Reset TPO UI controls
-        document.getElementById('toggle-tpo-switch').classList.remove('active');
-        document.getElementById('toggle-tpo').classList.remove('active');
-        document.getElementById('tpo-tick-size').value = 50;
-        document.getElementById('tpo-block-width').value = 8;
-        document.getElementById('tpo-opacity-va').value = 65; document.getElementById('tpo-opacity-va-val').textContent = '65%';
-        document.getElementById('tpo-opacity-non-va').value = 30; document.getElementById('tpo-opacity-non-va-val').textContent = '30%';
-        document.getElementById('tpo-color-single').value = '#ff6ec7';
-        document.getElementById('tpo-color-va').value = '#3b82f6';
-        document.getElementById('tpo-color-non-va').value = '#4a5568';
-        document.getElementById('tpo-color-poc').value = '#f0b90b';
         updateCandleAppearance();
         chart.applyOptions({ layout: { background: { color: config.bgColor } }, timeScale: { barSpacing: config.barSpacing } });
         mainSeries.applyOptions({ priceLineVisible: config.showPriceLine });
         chart.applyOptions({ crosshair: { vertLine: { visible: config.showCrosshair }, horzLine: { visible: config.showCrosshair } } });
         applyTimeframeChange(5);
+        saveSettings();
     }
 
     // Settings event listeners
@@ -1958,35 +1911,9 @@ function setupVerticalResizer(resizerEl, panelId) {
     document.getElementById('draw-delay').addEventListener('input', (e) => { config.drawDelay = parseInt(e.target.value); document.getElementById('draw-delay-val').textContent = config.drawDelay+'ms'; });
     document.getElementById('interaction-hold').addEventListener('input', (e) => { config.interactionHold = parseInt(e.target.value); document.getElementById('interaction-hold-val').textContent = config.interactionHold+'ms'; });
 
-    // ── TPO Settings Event Listeners ─────────────────────────────────────────────
-    document.getElementById('tpo-tick-size').addEventListener('change', (e) => {
-        config.tpoTickSize = Math.max(10, parseInt(e.target.value) || 100);
-        e.target.value = config.tpoTickSize;
-        tpoCacheKey = ''; // force rebuild
-        scheduleDraw();
-    });
-    document.getElementById('tpo-block-width').addEventListener('input', (e) => {
-        config.tpoBlockWidth = Math.max(3, parseInt(e.target.value) || 8);
-        scheduleDraw();
-    });
-    document.getElementById('tpo-opacity-va').addEventListener('input', (e) => {
-        config.tpoOpacityVA = parseInt(e.target.value) / 100;
-        document.getElementById('tpo-opacity-va-val').textContent = e.target.value + '%';
-        scheduleDraw();
-    });
-    document.getElementById('tpo-opacity-non-va').addEventListener('input', (e) => {
-        config.tpoOpacityNonVA = parseInt(e.target.value) / 100;
-        document.getElementById('tpo-opacity-non-va-val').textContent = e.target.value + '%';
-        scheduleDraw();
-    });
-    document.getElementById('tpo-color-single').addEventListener('change', (e) => { config.tpoColorSingle = e.target.value; scheduleDraw(); });
-    document.getElementById('tpo-color-va').addEventListener('change', (e) => { config.tpoColorVA = e.target.value; scheduleDraw(); });
-    document.getElementById('tpo-color-non-va').addEventListener('change', (e) => { config.tpoColorNonVA = e.target.value; scheduleDraw(); });
-    document.getElementById('tpo-color-poc').addEventListener('change', (e) => { config.tpoColorPOC = e.target.value; scheduleDraw(); });
-
     // Core draw loop
     let rafId = null, rafRunning = false, needsRedraw = false, lastInteractionTime = 0;
-
+    let clustersDirty = false; // ← add this line right here
     function scheduleDraw() {
         needsRedraw = true;
         lastInteractionTime = Date.now();
@@ -2418,7 +2345,9 @@ function setupVerticalResizer(resizerEl, panelId) {
             const resizer = this.element.querySelector('.resizer-handle');
             let dragging = false, startY = 0, startH = 0;
             resizer.addEventListener('mousedown', (e) => { e.stopPropagation(); dragging = true; startY = e.clientY; startH = this.height; document.body.style.cursor = 'ns-resize'; });
-            window.addEventListener('mousemove', (e) => { if (!this.dragState) return; this.height = Math.max(MIN_PANE_HEIGHT, startH+(startY-e.clientY)); indicatorManager.updateLayout(); });
+            window.addEventListener('mousemove', (e) => { if (!dragging) return; this.height = Math.max(MIN_PANE_HEIGHT, startH + (startY - e.clientY)); 
+            const mgr = selectedPanelId === 0 ? indicatorManager : extraPanels.find(p => p.id === selectedPanelId)?.indicatorManager;
+            if (mgr) mgr.updateLayout(); });
             window.addEventListener('mouseup', () => { if (dragging) { dragging = false; document.body.style.cursor = ''; } });
             this.element.querySelector('.pane-header').addEventListener('mousedown', (e) => { if (e.target.classList.contains('pane-close')) return; indicatorManager.startDrag(this.id, e); });
         }
@@ -2439,57 +2368,77 @@ function setupVerticalResizer(resizerEl, panelId) {
         }
     }
 
-    class OIIndicator extends BaseIndicator {
-        constructor() { super('oi','Open Interest',200); }
+class OIIndicator extends BaseIndicator {
+        constructor() { super('oi', 'Open Interest', 200); }
         draw(cssWidth) {
             if (!this.visible || !this.offscreenCtx) return;
             const ctxS = this.offscreenCtx;
             const PRICE_SCALE_WIDTH = 77;
             const drawWidth = cssWidth - PRICE_SCALE_WIDTH;
-            ctxS.clearRect(0,0,cssWidth,this.height);
+            ctxS.clearRect(0, 0, cssWidth, this.height);
             const barSpacing = chart.timeScale().options().barSpacing;
             const visibleCandles = getVisibleCandles(cssWidth);
+
             let minOI = Infinity, maxOI = -Infinity;
-                visibleCandles.forEach(item => {
-                    const { candle, x } = item;
-                    if (x > drawWidth) return;
-                    if (candle.oiClose && candle.oiClose > 0) {
-                        const cHigh = candle.oiHigh || Math.max(candle.oiOpen, candle.oiClose);
-                        const cLow  = candle.oiLow  || Math.min(candle.oiOpen, candle.oiClose);
-                        if (cHigh > maxOI) maxOI = cHigh;
-                        if (cLow < minOI && cLow > 0) minOI = cLow;
-                    }
-                });
+            visibleCandles.forEach(({ candle, x }) => {
+                if (x > drawWidth) return;
+                if (candle.oiClose && candle.oiClose > 0) {
+                    const cHigh = candle.oiHigh || Math.max(candle.oiOpen, candle.oiClose);
+                    const cLow  = candle.oiLow  || Math.min(candle.oiOpen, candle.oiClose);
+                    if (cHigh > maxOI) maxOI = cHigh;
+                    if (cLow < minOI && cLow > 0) minOI = cLow;
+                }
+            });
             if (maxOI === -Infinity || minOI === Infinity) { minOI = 0; maxOI = 100; }
-            if (minOI === maxOI) { minOI = maxOI*0.99; maxOI = maxOI*1.01; }
-            const padding = config.indicatorPadding;
-            const availableH = this.height - (padding*2);
-            const oiRange = maxOI - minOI;
-            const getOIY = (val) => { if (val<=0) return this.height-padding; return padding+(availableH*(1-(val-minOI)/oiRange)); };
-            visibleCandles.forEach(item => {
-                const { candle, x } = item;
+            if (minOI === maxOI) { minOI = maxOI * 0.99; maxOI = maxOI * 1.01; }
+
+            const oPadding   = config.indicatorPadding;
+            const availableH = this.height - oPadding * 2;
+            const oiRange    = maxOI - minOI;
+            const getOIY = val => val <= 0
+                ? this.height - oPadding
+                : oPadding + availableH * (1 - (val - minOI) / oiRange);
+
+            visibleCandles.forEach(({ candle, x }) => {
                 if (x > drawWidth) return;
                 if (!candle.oiClose || candle.oiClose <= 0) return;
-                const cOpen = candle.oiOpen || candle.oiClose, cClose = candle.oiClose;
-                const cHigh = candle.oiHigh||Math.max(cOpen,cClose), cLow = candle.oiLow||Math.min(cOpen,cClose);
-                const openY = getOIY(cOpen), closeY = getOIY(cClose);
-                const highY = getOIY(cHigh), lowY = getOIY(cLow);
-                const isUp = cClose >= cOpen;
-                const color = isUp ? config.upColor : config.downColor;
-                const w = Math.max(3, barSpacing*config.oiCandleWidth);
-                ctxS.fillStyle = color; ctxS.strokeStyle = color; ctxS.lineWidth = 1;
-                ctxS.beginPath(); ctxS.moveTo(x,highY); ctxS.lineTo(x,lowY); ctxS.stroke();
-                let bodyTop = Math.min(openY,closeY), bodyHeight = Math.abs(closeY-openY);
-                if (bodyHeight < 1) bodyHeight = 1;
-                ctxS.fillRect(x-w/2,bodyTop,w,bodyHeight);
-                ctxS.strokeStyle = '#ffffff'; ctxS.lineWidth = 1; ctxS.strokeRect(x-w/2,bodyTop,w,bodyHeight);
+                const cOpen  = candle.oiOpen || candle.oiClose;
+                const cClose = candle.oiClose;
+                const cHigh  = candle.oiHigh || Math.max(cOpen, cClose);
+                const cLow   = candle.oiLow  || Math.min(cOpen, cClose);
+                const openY  = getOIY(cOpen);
+                const closeY = getOIY(cClose);
+                const highY  = getOIY(cHigh);
+                const lowY   = getOIY(cLow);
+                const isUp   = cClose >= cOpen;
+                const color  = hexToRgba(isUp ? config.oiUpColor : config.oiDownColor, config.oiOpacity);
+                const w      = Math.max(3, barSpacing * config.oiCandleWidth);
+
+                // Wick
+                ctxS.strokeStyle = color;
+                ctxS.lineWidth   = 1;
+                ctxS.beginPath();
+                ctxS.moveTo(x, highY);
+                ctxS.lineTo(x, lowY);
+                ctxS.stroke();
+
+                // Body
+                const bodyTop = Math.min(openY, closeY);
+                const bodyH   = Math.max(1, Math.abs(closeY - openY));
+                ctxS.fillStyle = color;
+                ctxS.fillRect(x - w / 2, bodyTop, w, bodyH);
+
+                // Border
+                ctxS.strokeStyle = config.oiBorderColor;
+                ctxS.lineWidth   = 1;
+                ctxS.strokeRect(x - w / 2, bodyTop, w, bodyH);
             });
         }
     }
 
-    class CVDIndicator extends BaseIndicator {
+class CVDIndicator extends BaseIndicator {
         constructor() { super('cvd','Cumulative Volume Delta',150); }
-draw(cssWidth) {
+        draw(cssWidth) {
             if (!this.visible || !this.offscreenCtx) return;
             const ctxS = this.offscreenCtx;
             const PRICE_SCALE_WIDTH = 77;
@@ -2512,14 +2461,17 @@ draw(cssWidth) {
             if (cvdData.length === 0) return;
             const visibleCandles = getVisibleCandles(cssWidth);
             if (visibleCandles.length === 0) return;
+
+            // ── Build Map once instead of find() on every iteration ───────────
+            const cvdMap = new Map(cvdData.map(d => [d.time, d.cvd]));
             
-            // ── First loop: calculate min/max (NO width check) ────────────────
+            // ── First loop: calculate min/max ─────────────────────────────────
             let minCVD = Infinity, maxCVD = -Infinity;
             visibleCandles.forEach(item => {
-                const cvdPoint = cvdData.find(d => d.time===item.candle.time);
-                if (cvdPoint) { 
-                    if (cvdPoint.cvd<minCVD) minCVD=cvdPoint.cvd; 
-                    if (cvdPoint.cvd>maxCVD) maxCVD=cvdPoint.cvd; 
+                const cvd = cvdMap.get(item.candle.time);  // ← was cvdData.find(...)
+                if (cvd !== undefined) { 
+                    if (cvd < minCVD) minCVD = cvd; 
+                    if (cvd > maxCVD) maxCVD = cvd; 
                 }
             });
             
@@ -2539,19 +2491,19 @@ draw(cssWidth) {
                 ctxS.setLineDash([]);
             }
             
-            // ── Second loop: draw the line (WITH width check) ─────────────────
+            // ── Second loop: draw the line ────────────────────────────────────
             ctxS.beginPath(); 
             let firstPoint=true;
             visibleCandles.forEach(item => {
-                const cvdPoint = cvdData.find(d => d.time===item.candle.time);
-                if (!cvdPoint || item.x > drawWidth) return; // <-- ADD WIDTH CHECK HERE
-                const y = getCVDY(cvdPoint.cvd);
+                const cvd = cvdMap.get(item.candle.time);  // ← was cvdData.find(...)
+                if (cvd === undefined || item.x > drawWidth) return;
+                const y = getCVDY(cvd);
                 if (firstPoint) { ctxS.moveTo(item.x,y); firstPoint=false; } 
                 else ctxS.lineTo(item.x,y);
             });
             
             const finalCVD = cvdData[cvdData.length-1]?.cvd||0;
-            const lineColor = finalCVD>=0 ? config.upColor : config.downColor;
+            const lineColor = (config.cvdLineColor && config.cvdLineColor !== 'auto') ? config.cvdLineColor : (finalCVD >= 0 ? config.upColor : config.downColor);
             ctxS.strokeStyle=lineColor; ctxS.lineWidth=config.cvdLineThickness; ctxS.stroke();
             
             // Labels
@@ -2567,6 +2519,7 @@ draw(cssWidth) {
             }
         }
     }
+
     class BarStatsIndicator extends BaseIndicator {
         constructor() { super('barstats', 'Bar Statistics', 72); }
 
@@ -2618,11 +2571,11 @@ draw(cssWidth) {
                 const colLeft = x - cellWidth / 2;
 
                 const volAlpha = 0.08 + volRatio * 0.65;
-                ctxS.fillStyle = hexToRgba(config.upColor, volAlpha);
+                ctxS.fillStyle = hexToRgba(config.barStatsUpColor, volAlpha);
                 ctxS.fillRect(colLeft, 0, cellWidth, ROW_H);
 
                 const deltaAlpha = 0.08 + deltaRatio * 0.78;
-                ctxS.fillStyle = hexToRgba(isDeltaPos ? config.upColor : config.downColor, deltaAlpha);
+                ctxS.fillStyle = hexToRgba(isDeltaPos ? config.barStatsUpColor : config.barStatsDownColor, deltaAlpha);
                 ctxS.fillRect(colLeft, ROW_H, cellWidth, ROW_H);
 
                 ctxS.strokeStyle = 'rgba(26,31,46,0.35)';
@@ -2684,65 +2637,59 @@ function calculateVWAP() {
         }
     }
 
-    function drawVWAP(cssWidth, candleBottomY) {
-        if (!config.vwapVisible) return;
-        
-        // Cache key: candle count + last candle time + last candle close
-        const lastCandle = displayCandles[displayCandles.length - 1];
-        const cacheKey = `${displayCandles.length}_${lastCandle?.time ?? 0}_${lastCandle?.volume ?? 0}_${lastCandle?.high ?? 0}_${lastCandle?.low ?? 0}`;
-        if (cacheKey !== vwapCacheKey) {
-            calculateVWAP();
-            vwapCacheKey = cacheKey;
-        }
-        
-        if (vwapData.length === 0) return;
-     
-        const timeScale = chart.timeScale();
-        offscreenCtx.save();
-        offscreenCtx.strokeStyle = '#FFFFFF'; // White
-        offscreenCtx.lineWidth = 1; // Thin
-        offscreenCtx.setLineDash([4, 4]); // Dotted
-        offscreenCtx.globalAlpha = 0.7; // Slightly transparent
-        
-        const PRICE_SCALE_WIDTH = 77;
-        const drawWidth = cssWidth - PRICE_SCALE_WIDTH;
-        offscreenCtx.beginPath();
-        let firstPoint = true;
-        
-        vwapData.forEach(point => {
-            const x = timeScale.timeToCoordinate(point.time);
-            if (x === null || x < -100 || x > drawWidth) return;
-            
-            const y = mainSeries.priceToCoordinate(point.vwap);
-            if (y === null || y < 0 || y > candleBottomY) return;
-            
-            if (firstPoint) {
-                offscreenCtx.moveTo(x, y);
-                firstPoint = false;
-            } else {
-                offscreenCtx.lineTo(x, y);
-            }
-        });
-        
-        offscreenCtx.stroke();
-        offscreenCtx.restore();
-        
-        // Label
-        if (vwapData.length > 0) {
-            const lastVwap = vwapData[vwapData.length - 1].vwap;
-            const lastX = timeScale.timeToCoordinate(vwapData[vwapData.length - 1].time);
-            const lastY = mainSeries.priceToCoordinate(lastVwap);
-            
-            if (lastX !== null && lastY !== null && lastY >= 0 && lastY <= candleBottomY) {
-                offscreenCtx.save();
-                offscreenCtx.font = 'bold 10px JetBrains Mono';
-                offscreenCtx.fillStyle = '#FFFFFF';
+ function drawVWAP(cssWidth, candleBottomY) {
+    if (!config.vwapVisible) return;
+
+    const lastCandle = displayCandles[displayCandles.length - 1];
+    const cacheKey = `${displayCandles.length}_${lastCandle?.time ?? 0}_${lastCandle?.volume ?? 0}_${lastCandle?.high ?? 0}_${lastCandle?.low ?? 0}`;
+    if (cacheKey !== vwapCacheKey) { calculateVWAP(); vwapCacheKey = cacheKey; }
+    if (vwapData.length === 0) return;
+
+    const timeScale        = chart.timeScale();
+    const PRICE_SCALE_WIDTH = 77;
+    const drawWidth        = cssWidth - PRICE_SCALE_WIDTH;
+
+    offscreenCtx.save();
+    offscreenCtx.strokeStyle = config.vwapColor;
+    offscreenCtx.lineWidth   = 1;
+    offscreenCtx.setLineDash(getLineDash(config.vwapLineStyle));
+    offscreenCtx.globalAlpha = 0.85;
+
+    offscreenCtx.beginPath();
+    let firstPoint = true;
+    vwapData.forEach(point => {
+        const x = timeScale.timeToCoordinate(point.time);
+        if (x === null || x < -100 || x > drawWidth) return;
+        const y = mainSeries.priceToCoordinate(point.vwap);
+        if (y === null || y < 0 || y > candleBottomY) return;
+        if (firstPoint) { offscreenCtx.moveTo(x, y); firstPoint = false; }
+        else offscreenCtx.lineTo(x, y);
+    });
+    offscreenCtx.stroke();
+    offscreenCtx.setLineDash([]);
+
+    // Label next to the last visible VWAP point
+    if (vwapData.length > 0 && (config.vwapShowLabel || config.vwapShowPrice)) {
+        const last = vwapData[vwapData.length - 1];
+        const lastX = timeScale.timeToCoordinate(last.time);
+        const lastY = mainSeries.priceToCoordinate(last.vwap);
+        if (lastX !== null && lastY !== null && lastY >= 0 && lastY <= candleBottomY) {
+            let text = '';
+            if (config.vwapShowLabel) text += 'VWAP';
+            if (config.vwapShowLabel && config.vwapShowPrice) text += ' ';
+            if (config.vwapShowPrice) text += last.vwap.toFixed(2);
+            if (text) {
+                offscreenCtx.font      = "bold 10px 'JetBrains Mono', monospace";
+                offscreenCtx.fillStyle = config.vwapColor;
                 offscreenCtx.textAlign = 'left';
-                offscreenCtx.fillText(`VWAP ${lastVwap.toFixed(2)}`, lastX + 8, lastY + 4);
-                offscreenCtx.restore();
+                offscreenCtx.globalAlpha = 0.9;
+                offscreenCtx.fillText(text, lastX + 8, lastY + 4);
             }
         }
     }
+
+    offscreenCtx.restore();
+}
 
     class IndicatorManager {
         constructor() { this.indicators = new Map(); this.order = []; this.container = document.getElementById('indicators-container'); this.dragState = null; this.placeholder = null; }
@@ -2889,6 +2836,305 @@ function calculateVWAP() {
         }
     });
 
+// ── Line-dash helper ──────────────────────────────────────────────────────────
+function getLineDash(style) {
+    switch (style) {
+        case 'solid':  return [];
+        case 'dashed': return [8, 4];
+        case 'dotted': return [2, 4];
+        default:       return [4, 4];
+    }
+}
+
+// ── DOM helpers for building menu rows ───────────────────────────────────────
+function _iRow(label, controlEl) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:26px;';
+    const lbl = document.createElement('span');
+    lbl.style.cssText = 'font-size:10px;color:#8b92a7;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;flex-shrink:0;';
+    lbl.textContent = label;
+    row.appendChild(lbl);
+    row.appendChild(controlEl);
+    return row;
+}
+
+function _iDivider() {
+    const d = document.createElement('div');
+    d.style.cssText = 'height:1px;background:rgba(26,31,46,0.8);margin:1px 0;';
+    return d;
+}
+
+function _iSectionLabel(text) {
+    const s = document.createElement('div');
+    s.style.cssText = 'font-size:9px;color:#5a6178;text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;';
+    s.textContent = text;
+    return s;
+}
+
+function _iColor(value, onChange) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'width:54px;height:22px;border-radius:4px;overflow:hidden;border:1px solid #1a1f2e;cursor:pointer;flex-shrink:0;transition:border-color 0.2s;';
+    wrap.onmouseover = () => wrap.style.borderColor = '#3b82f6';
+    wrap.onmouseout  = () => wrap.style.borderColor = '#1a1f2e';
+    const inp = document.createElement('input');
+    inp.type = 'color';
+    inp.value = value;
+    inp.style.cssText = 'border:none;width:200%;height:200%;transform:translate(-25%,-25%);cursor:pointer;background:none;';
+    inp.addEventListener('input', e => onChange(e.target.value));
+    wrap.appendChild(inp);
+    return wrap;
+}
+
+function _iSlider(value, min, max, step, format, onChange) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;align-items:center;gap:6px;flex:1;min-width:0;';
+    const inp = document.createElement('input');
+    inp.type = 'range';
+    inp.min = min; inp.max = max; inp.step = step; inp.value = value;
+    inp.style.cssText = 'flex:1;min-width:0;';
+    const val = document.createElement('span');
+    val.style.cssText = 'font-size:10px;color:#3b82f6;min-width:36px;text-align:right;flex-shrink:0;';
+    val.textContent = format(value);
+    inp.addEventListener('input', e => { val.textContent = format(e.target.value); onChange(parseFloat(e.target.value)); });
+    wrap.appendChild(inp);
+    wrap.appendChild(val);
+    return wrap;
+}
+
+function _iSelect(options, value, onChange) {
+    const sel = document.createElement('select');
+    sel.style.cssText = 'background:#0a0e1a;border:1px solid #1a1f2e;color:#e8eaed;font-family:"JetBrains Mono",monospace;font-size:10px;border-radius:4px;padding:3px 6px;cursor:pointer;flex-shrink:0;';
+    options.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.v; opt.textContent = o.l;
+        if (o.v === value) opt.selected = true;
+        sel.appendChild(opt);
+    });
+    sel.addEventListener('change', e => onChange(e.target.value));
+    return sel;
+}
+
+function _iToggle(checked, onChange) {
+    const sw = document.createElement('div');
+    sw.style.cssText = `width:36px;height:20px;background:${checked ? '#3b82f6' : '#1a1f2e'};
+        border-radius:10px;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0;`;
+    const knob = document.createElement('div');
+    knob.style.cssText = `position:absolute;top:2px;left:${checked ? '16' : '2'}px;
+        width:16px;height:16px;background:white;border-radius:50%;transition:left 0.2s;
+        box-shadow:0 1px 3px rgba(0,0,0,0.3);`;
+    sw.appendChild(knob);
+    let state = checked;
+    sw.addEventListener('click', () => {
+        state = !state;
+        sw.style.background = state ? '#3b82f6' : '#1a1f2e';
+        knob.style.left = state ? '16px' : '2px';
+        onChange(state);
+    });
+    return sw;
+}
+
+// Keys that are stored per-panel and synced into config during draw
+const IND_SETTING_KEYS = [
+    'oiUpColor','oiDownColor','oiOpacity','oiBorderColor',
+    'cvdLineColor','cvdLineThickness',
+    'barStatsUpColor','barStatsDownColor',
+    'tpoTickSize','tpoBlockWidth','tpoOpacityVA','tpoOpacityNonVA',
+    'tpoColorSingle','tpoColorVA','tpoColorNonVA','tpoColorPOC',
+    'vwapColor','vwapLineStyle','vwapShowLabel','vwapShowPrice',
+    'levelsColor','levelsLineStyle',
+];
+
+// Snapshot of indicator settings from config (used when creating a new panel)
+function makeDefaultIndSettings() {
+    const s = {};
+    IND_SETTING_KEYS.forEach(k => { s[k] = config[k]; });
+    s.levelsEnabled = { ...config.levelsEnabled };
+    return s;
+}
+
+// Returns the live settings object for the currently-selected panel
+function getIC() {
+    if (selectedPanelId === 0) return config;
+    return extraPanels.find(p => p.id === selectedPanelId) || config;
+}
+
+// Invalidates the TPO cache for the currently-selected panel
+function invalidateTpoCache() {
+    if (selectedPanelId === 0) {
+        tpoCacheKey = '';
+    } else {
+        const p = extraPanels.find(p => p.id === selectedPanelId);
+        if (p) p.tpoCacheKey = '';
+    }
+}
+
+
+// ── Per-indicator menu builders ───────────────────────────────────────────────
+
+function _menuOI(body) {
+    const ic = getIC();
+    body.appendChild(_iRow('Up Color',     _iColor(ic.oiUpColor,    v => { getIC().oiUpColor    = v; scheduleDraw(); })));
+    body.appendChild(_iRow('Down Color',   _iColor(ic.oiDownColor,  v => { getIC().oiDownColor  = v; scheduleDraw(); })));
+    body.appendChild(_iRow('Border Color', _iColor(ic.oiBorderColor,v => { getIC().oiBorderColor= v; scheduleDraw(); })));
+    body.appendChild(_iRow('Opacity',
+        _iSlider(Math.round(ic.oiOpacity * 100), 10, 100, 5, v => v + '%',
+            v => { getIC().oiOpacity = v / 100; scheduleDraw(); })));
+}
+
+function _menuCVD(body) {
+    const ic = getIC();
+    body.appendChild(_iSectionLabel('Line Color'));
+    const autoRow = _iRow('Auto (up/down)', _iToggle(ic.cvdLineColor === 'auto', on => {
+        getIC().cvdLineColor = on ? 'auto' : '#3b82f6';
+        colorWrap.style.opacity       = on ? '0.3' : '1';
+        colorWrap.style.pointerEvents = on ? 'none' : 'auto';
+        scheduleDraw();
+    }));
+    body.appendChild(autoRow);
+    const colorWrap = document.createElement('div');
+    const isAuto    = ic.cvdLineColor === 'auto';
+    colorWrap.style.opacity       = isAuto ? '0.3' : '1';
+    colorWrap.style.pointerEvents = isAuto ? 'none' : 'auto';
+    const colorCtrl = _iColor(isAuto ? '#3b82f6' : ic.cvdLineColor,
+        v => { if (getIC().cvdLineColor !== 'auto') { getIC().cvdLineColor = v; scheduleDraw(); } });
+    colorWrap.appendChild(colorCtrl);
+    body.appendChild(_iRow('Custom Color', colorWrap));
+    body.appendChild(_iDivider());
+    body.appendChild(_iRow('Thickness',
+        _iSlider(ic.cvdLineThickness, 1, 5, 0.5, v => v + 'px',
+            v => { getIC().cvdLineThickness = v; scheduleDraw(); })));
+}
+
+function _menuBarStats(body) {
+    const ic = getIC();
+    body.appendChild(_iRow('Positive Color', _iColor(ic.barStatsUpColor,   v => { getIC().barStatsUpColor   = v; scheduleDraw(); })));
+    body.appendChild(_iRow('Negative Color', _iColor(ic.barStatsDownColor, v => { getIC().barStatsDownColor = v; scheduleDraw(); })));
+}
+
+function _menuTPO(body) {
+    const ic = getIC();
+    body.appendChild(_iRow('Tick Size ($)',
+        _iSlider(ic.tpoTickSize, 10, 500, 10, v => '$' + v,
+            v => { getIC().tpoTickSize = v; invalidateTpoCache(); scheduleDraw(); })));
+    body.appendChild(_iRow('Block Width',
+        _iSlider(ic.tpoBlockWidth, 3, 24, 1, v => v + 'px',
+            v => { getIC().tpoBlockWidth = v; scheduleDraw(); })));
+    body.appendChild(_iDivider());
+    body.appendChild(_iSectionLabel('Opacity'));
+    body.appendChild(_iRow('Value Area',
+        _iSlider(Math.round(ic.tpoOpacityVA * 100), 10, 100, 5, v => v + '%',
+            v => { getIC().tpoOpacityVA = v / 100; scheduleDraw(); })));
+    body.appendChild(_iRow('Non-VA',
+        _iSlider(Math.round(ic.tpoOpacityNonVA * 100), 5, 80, 5, v => v + '%',
+            v => { getIC().tpoOpacityNonVA = v / 100; scheduleDraw(); })));
+    body.appendChild(_iDivider());
+    body.appendChild(_iSectionLabel('Colors'));
+    body.appendChild(_iRow('Value Area',   _iColor(ic.tpoColorVA,     v => { getIC().tpoColorVA     = v; scheduleDraw(); })));
+    body.appendChild(_iRow('Non-VA',       _iColor(ic.tpoColorNonVA,  v => { getIC().tpoColorNonVA  = v; scheduleDraw(); })));
+    body.appendChild(_iRow('Single Print', _iColor(ic.tpoColorSingle, v => { getIC().tpoColorSingle = v; scheduleDraw(); })));
+    body.appendChild(_iRow('POC Border',   _iColor(ic.tpoColorPOC,    v => { getIC().tpoColorPOC    = v; scheduleDraw(); })));
+}
+
+function _menuVWAP(body) {
+    const ic = getIC();
+    body.appendChild(_iRow('Color', _iColor(ic.vwapColor, v => { getIC().vwapColor = v; scheduleDraw(); })));
+    body.appendChild(_iRow('Line Style',
+        _iSelect(
+            [{ v:'solid', l:'──── Solid' }, { v:'dashed', l:'- - - Dashed' }, { v:'dotted', l:'··· Dotted' }],
+            ic.vwapLineStyle,
+            v => { getIC().vwapLineStyle = v; scheduleDraw(); }
+        )));
+    body.appendChild(_iDivider());
+    body.appendChild(_iSectionLabel('Labels'));
+    body.appendChild(_iRow('Show "VWAP"', _iToggle(ic.vwapShowLabel, v => { getIC().vwapShowLabel = v; scheduleDraw(); })));
+    body.appendChild(_iRow('Show Price',  _iToggle(ic.vwapShowPrice, v => { getIC().vwapShowPrice = v; scheduleDraw(); })));
+}
+
+function _menuLevels(body) {
+    const ic = getIC();
+    body.appendChild(_iRow('Color', _iColor(ic.levelsColor, v => { getIC().levelsColor = v; scheduleDraw(); })));
+    body.appendChild(_iRow('Line Style',
+        _iSelect(
+            [{ v:'solid', l:'──── Solid' }, { v:'dashed', l:'- - - Dashed' }, { v:'dotted', l:'··· Dotted' }],
+            ic.levelsLineStyle,
+            v => { getIC().levelsLineStyle = v; scheduleDraw(); }
+        )));
+    body.appendChild(_iDivider());
+    body.appendChild(_iSectionLabel('Visible Levels'));
+    const LABELS = {
+        dOpen:'Day Open', dHigh:'Day High', dLow:'Day Low', dEQ:'Day EQ',
+        pdHigh:'Prev High', pdLow:'Prev Low', pdEQ:'Prev EQ'
+    };
+    Object.entries(LABELS).forEach(([key, label]) => {
+        body.appendChild(_iRow(label, _iToggle(ic.levelsEnabled[key],
+            v => { getIC().levelsEnabled[key] = v; scheduleDraw(); })));
+    });
+}
+
+// ── Show / hide ───────────────────────────────────────────────────────────────
+let _indCtxActive = null;
+
+function showIndicatorCtxMenu(id, anchorEl) {
+    const menu  = document.getElementById('indicator-ctx-menu');
+    const title = document.getElementById('ind-ctx-title');
+    const body  = document.getElementById('ind-ctx-body');
+
+    const NAMES = { oi: 'Open Interest', cvd: 'Volume Delta', barstats: 'Bar Statistics',
+                    tpo: 'TPO / Market Profile', vwap: 'VWAP', dailylevels: 'Key Levels' };
+    title.textContent = NAMES[id] || id;
+    body.innerHTML = '';
+
+    switch (id) {
+        case 'oi':         _menuOI(body);         break;
+        case 'cvd':        _menuCVD(body);        break;
+        case 'barstats':   _menuBarStats(body);   break;
+        case 'tpo':        _menuTPO(body);        break;
+        case 'vwap':       _menuVWAP(body);       break;
+        case 'dailylevels': _menuLevels(body);    break;
+    }
+
+    _indCtxActive = id;
+    menu.style.display = 'block';
+
+    // Position below the button, clamped to viewport
+    const rect = anchorEl.getBoundingClientRect();
+    const mw   = menu.offsetWidth  || 252;
+    const mh   = menu.offsetHeight || 300;
+    let left = rect.left;
+    let top  = rect.bottom + 6;
+    if (left + mw > window.innerWidth  - 8) left = window.innerWidth  - mw - 8;
+    if (top  + mh > window.innerHeight - 8) top  = rect.top - mh - 6;
+    menu.style.left = left + 'px';
+    menu.style.top  = top  + 'px';
+}
+
+function hideIndicatorCtxMenu() {
+    document.getElementById('indicator-ctx-menu').style.display = 'none';
+    _indCtxActive = null;
+}
+
+// ── Attach right-click listeners to all six toggle buttons ───────────────────
+// (Add these lines after the existing click-listener blocks for each button)
+['oi', 'cvd', 'barstats', 'tpo', 'vwap', 'dailylevels'].forEach(id => {
+    const btn = document.getElementById(`toggle-${id}`);
+    if (!btn) return;
+    btn.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        showIndicatorCtxMenu(id, btn);
+    });
+});
+
+// Close on click outside the menu
+document.addEventListener('mousedown', e => {
+    const menu = document.getElementById('indicator-ctx-menu');
+    if (menu && menu.style.display !== 'none' && !menu.contains(e.target)) {
+        hideIndicatorCtxMenu();
+    }
+});
+
+document.getElementById('ind-ctx-close').addEventListener('click', hideIndicatorCtxMenu);
+
     // Drawing helpers
     function hexToRgba(hex, alpha) {
         if (!hex || hex.length < 7) return `rgba(100,100,100,${alpha})`;
@@ -2906,15 +3152,16 @@ function calculateVWAP() {
 
     function createSeries(type) {
         if (mainSeries) { try { chart.removeSeries(mainSeries); } catch(e){} mainSeries = null; }
-        const options = { upColor:'rgba(0,0,0,0)', downColor:'rgba(0,0,0,0)', borderVisible:false, wickUpColor:'rgba(0,0,0,0)', wickDownColor:'rgba(0,0,0,0)', priceLineVisible:config.showPriceLine, lastValueVisible:false };
+        const options = { upColor:'rgba(0,0,0,0)', downColor:'rgba(0,0,0,0)', borderVisible:false, wickUpColor:'rgba(0,0,0,0)', wickDownColor:'rgba(0,0,0,0)', priceLineVisible:config.showPriceLine, lastValueVisible:false, priceLineColor: config.upColor, priceLineWidth: 1, priceLineStyle: 2 };
         mainSeries = (type==='candle') ? chart.addCandlestickSeries(options) : chart.addBarSeries(options);
         return mainSeries;
     }
 
     function updateCandleAppearance() {
-        mainSeries.applyOptions({ upColor:'rgba(0,0,0,0)', downColor:'rgba(0,0,0,0)', wickUpColor:'rgba(0,0,0,0)', wickDownColor:'rgba(0,0,0,0)', priceLineVisible:config.showPriceLine, lastValueVisible:false });
-    }
-
+    const lastCandle = displayCandles[displayCandles.length - 1];
+    const lineColor = (lastCandle && lastCandle.close >= lastCandle.open) ? config.upColor : config.downColor;
+    mainSeries.applyOptions({ upColor:'rgba(0,0,0,0)', downColor:'rgba(0,0,0,0)', wickUpColor:'rgba(0,0,0,0)', wickDownColor:'rgba(0,0,0,0)', priceLineVisible:config.showPriceLine, lastValueVisible:false, priceLineColor: lineColor, priceLineWidth: 1, priceLineStyle: 2 });
+}
     mainSeries = createSeries(config.seriesType);
 
     let chartOverlayCanvas = document.getElementById('footprint-overlay');
@@ -2978,7 +3225,7 @@ function calculateVWAP() {
         labelContainer.style.display='flex'; labelContainer.style.top=(yCoord-13)+'px';
         labelContainer.style.fontFamily=config.statsFontFamily; labelContainer.style.fontSize=config.priceLabelFontSize+'px';
         const priceText=currentPrice.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-        labelContainer.innerHTML=`<div class="price-label-box" style="border-color:${color};color:${color};">${priceText}</div><div class="price-label-arrow" style="border-width:6px 0 6px 8px;border-color:transparent transparent transparent ${color};"></div>`;
+        labelContainer.innerHTML=`<div class="price-label-box" style="border-color:${color};color:${color};font-size:${config.priceLabelFontSize}px;padding:2px 6px;">${priceText}</div><div class="price-label-arrow" style="border-width:5px 0 5px 7px;border-color:transparent transparent transparent ${color};"></div>`;
     }
 
     function drawCumulativeCluster(cssWidth, cssHeight, candleBottomY) {
@@ -3107,12 +3354,10 @@ function drawDailyLevels(cssWidth, candleBottomY) {
     const drawWidth = cssWidth - PRICE_SCALE_WIDTH;
     const timeScale = chart.timeScale();
 
-    // UTC midnight boundaries
-    const now = new Date();
+    const now            = new Date();
     const todayStart     = Math.floor(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).getTime() / 1000);
     const yesterdayStart = todayStart - 86400;
 
-    // Accumulate levels
     let dOpen = null, dHigh = -Infinity, dLow = Infinity;
     let pdHigh = -Infinity, pdLow = Infinity;
 
@@ -3130,55 +3375,69 @@ function drawDailyLevels(cssWidth, candleBottomY) {
     const dEQ  = (dHigh  > -Infinity && dLow  < Infinity) ? (dHigh  + dLow)  / 2 : null;
     const pdEQ = (pdHigh > -Infinity && pdLow < Infinity) ? (pdHigh + pdLow) / 2 : null;
 
-    // X anchor: left edge of today's first candle (for current-day lines)
     const todayFirstCandle = displayCandles.find(c => c.time >= todayStart);
-    const todayX = todayFirstCandle
-        ? (timeScale.timeToCoordinate(todayFirstCandle.time) ?? 0)
-        : 0;
-
-    // X anchor for previous-day lines: start of yesterday's first candle
+    const todayX = todayFirstCandle ? (timeScale.timeToCoordinate(todayFirstCandle.time) ?? 0) : 0;
     const pdFirstCandle = displayCandles.find(c => c.time >= yesterdayStart && c.time < todayStart);
-    const pdX = pdFirstCandle
-        ? (timeScale.timeToCoordinate(pdFirstCandle.time) ?? 0)
-        : 0;
+    const pdX = pdFirstCandle ? (timeScale.timeToCoordinate(pdFirstCandle.time) ?? 0) : 0;
 
     const levels = [
-        { value: dOpen,                                  label: 'dOpen',  startX: todayX },
-        { value: dHigh  > -Infinity ? dHigh  : null,    label: 'dHigh',  startX: todayX },
-        { value: dLow   < Infinity  ? dLow   : null,    label: 'dLow',   startX: todayX },
-        { value: dEQ,                                    label: 'dEQ',    startX: todayX },
-        { value: pdHigh > -Infinity ? pdHigh : null,     label: 'pdHigh', startX: pdX    },
-        { value: pdLow  < Infinity  ? pdLow  : null,     label: 'pdLow',  startX: pdX    },
-        { value: pdEQ,                                   label: 'pdEQ',   startX: pdX    },
+        { value: dOpen,                               label: 'dOpen',  startX: todayX },
+        { value: dHigh  > -Infinity ? dHigh  : null, label: 'dHigh',  startX: todayX },
+        { value: dLow   < Infinity  ? dLow   : null, label: 'dLow',   startX: todayX },
+        { value: dEQ,                                 label: 'dEQ',    startX: todayX },
+        { value: pdHigh > -Infinity ? pdHigh : null,  label: 'pdHigh', startX: pdX    },
+        { value: pdLow  < Infinity  ? pdLow  : null,  label: 'pdLow',  startX: pdX    },
+        { value: pdEQ,                                label: 'pdEQ',   startX: pdX    },
     ];
 
+    const lineColor  = hexToRgba(config.levelsColor, 0.75);
+    const labelColor = hexToRgba(config.levelsColor, 0.92);
+    const GAP        = 6;
+
     offscreenCtx.save();
-    offscreenCtx.lineWidth = 1;
-    offscreenCtx.setLineDash([4, 6]);
-    offscreenCtx.font = `600 9px 'JetBrains Mono', monospace`;
+    offscreenCtx.font         = "600 9px 'JetBrains Mono', monospace";
+    offscreenCtx.textBaseline = 'middle';
+    offscreenCtx.lineWidth    = 1;
+    offscreenCtx.strokeStyle  = lineColor;
+    offscreenCtx.fillStyle    = labelColor;
+
+    const dash = getLineDash(config.levelsLineStyle);
 
     levels.forEach(({ value, label, startX }) => {
+        // Respect per-level visibility toggle
+        if (!config.levelsEnabled[label]) return;
         if (value === null || value === undefined) return;
+
         const y = mainSeries.priceToCoordinate(value);
         if (y === null || y < 0 || y > candleBottomY) return;
 
         const lineStart = Math.max(0, startX);
         if (lineStart >= drawWidth) return;
 
-        // Line
-        offscreenCtx.strokeStyle = 'rgba(255, 140, 0, 0.75)';
+        const labelWidth = offscreenCtx.measureText(label).width;
+        const labelX     = drawWidth - labelWidth - 12;
+        if (labelX <= lineStart + 20) return;
+
+        const labelLeft  = labelX - GAP;
+        const labelRight = labelX + labelWidth + GAP;
+
+        offscreenCtx.setLineDash(dash);
+
+        // Left segment  ── ── ── ──
         offscreenCtx.beginPath();
         offscreenCtx.moveTo(lineStart, y);
-        offscreenCtx.lineTo(drawWidth, y);
+        offscreenCtx.lineTo(labelLeft, y);
         offscreenCtx.stroke();
 
-        // Label (solid, no dash)
+        // Right segment  ── ── ── ──
+        offscreenCtx.beginPath();
+        offscreenCtx.moveTo(labelRight, y);
+        offscreenCtx.lineTo(drawWidth,  y);
+        offscreenCtx.stroke();
+
+        // Label centred on the line  ── dEQ ──
         offscreenCtx.setLineDash([]);
-        offscreenCtx.fillStyle = 'rgba(255, 140, 0, 0.90)';
-        offscreenCtx.textAlign = 'right';
-        offscreenCtx.textBaseline = 'bottom';
-        offscreenCtx.fillText(label, drawWidth - 4, y - 2);
-        offscreenCtx.setLineDash([4, 6]);
+        offscreenCtx.fillText(label, labelX, y);
     });
 
     offscreenCtx.restore();
@@ -3187,8 +3446,15 @@ function drawDailyLevels(cssWidth, candleBottomY) {
     //  Main Draw Loop
     // ════════════════════════════════════════════════════════════════════════════
     function drawFrames() {
+        if (clustersDirty) {
+            displayClusters = aggregateClusters(base5mClusters, config.displayTimeframe);
+            extraPanels.forEach(p => {
+                p.displayClusters = aggregateClusters(base5mClusters, p.displayTimeframe);
+            });
+            clustersDirty = false;
+        }
         if (!offscreenCtx) return;
-        const cssWidth=chartOverlayCanvas.clientWidth, cssHeight=chartOverlayCanvas.clientHeight;
+        const cssWidth = chartOverlayCanvas.clientWidth, cssHeight = chartOverlayCanvas.clientHeight;
         const PRICE_SCALE_WIDTH = 77;
         const drawWidth = cssWidth - PRICE_SCALE_WIDTH;
         offscreenCtx.clearRect(0,0,cssWidth,cssHeight);
@@ -3330,7 +3596,7 @@ function drawDailyLevels(cssWidth, candleBottomY) {
         drawCumulativeCluster(cssWidth,cssHeight,candleBottomY);
 
         // ── Bubble indicators ─────────────────────────────────────────────────
-        if (displayCandles&&config.minBubbleVolume>0) {
+   if (!config.hideFootprints && displayCandles&&config.minBubbleVolume>0) {
             const currentTime=Date.now();
             const pulsePhase=(currentTime%config.bubblePulseSpeed)/config.bubblePulseSpeed;
             const pulseOpacity=0.3+(Math.sin(pulsePhase*Math.PI*2)*0.3);
@@ -3359,7 +3625,7 @@ function drawDailyLevels(cssWidth, candleBottomY) {
         }
 
         // ── Per-candle stats + absorption dots ───────────────────────────────
-        if (displayCandles) {
+        if (!config.hideFootprints && displayCandles) {
             offscreenCtx.textAlign="center"; offscreenCtx.textBaseline="middle";
             displayCandles.forEach(candle => {
                 const x=timeScale.timeToCoordinate(candle.time);
@@ -3482,7 +3748,6 @@ function drawDailyLevels(cssWidth, candleBottomY) {
         }
         ctxMenuMain.classList.add('hidden');
     };
-
     const toggleSettings=()=>{ settingsPanel.classList.toggle('-translate-x-full'); settingsPanel.classList.toggle('translate-x-0'); };
     document.getElementById('header-settings-btn').onclick = toggleSettings;
     document.getElementById('close-settings').onclick = toggleSettings;
@@ -3521,6 +3786,269 @@ function drawDailyLevels(cssWidth, candleBottomY) {
     window.addEventListener('resize', resizeAll);
     chart.timeScale().subscribeVisibleLogicalRangeChange(()=>scheduleDraw());
 
+    // ════════════════════════════════════════════════════════════════════════
+    //  Layout Manager
+    // ════════════════════════════════════════════════════════════════════════
+
+function captureCurrentLayout() {
+    const panels = [];
+    const container = document.getElementById('charts-container');
+    const totalContainerWidth = container.clientWidth;
+
+    // Main panel (id 0)
+    const mainWrapper = document.getElementById('panel-wrapper-0');
+    const mainIndicators = [];
+    indicatorManager.indicators.forEach((ind, id) => { if (ind.visible) mainIndicators.push(id); });
+    panels.push({
+        id: 0,
+        timeframe: config.displayTimeframe,
+        indicators: mainIndicators,
+        hideFootprints: config.hideFootprints,
+        showTPO: config.showTPO,
+        vwapVisible: config.vwapVisible,
+        showDailyLevels: config.showDailyLevels,
+        visibleRange: chart.timeScale().getVisibleRange(),
+        barSpacing: chart.timeScale().options().barSpacing,
+        // NEW: save width as a ratio of the total container width
+        widthRatio: totalContainerWidth > 0 ? mainWrapper.clientWidth / totalContainerWidth : 1,
+    });
+
+    // Extra panels
+    extraPanels.forEach(p => {
+        const panelIndicators = [];
+        p.indicatorManager.indicators.forEach((ind, id) => { if (ind.visible) panelIndicators.push(id); });
+        panels.push({
+            id: p.id,
+            timeframe: p.displayTimeframe,
+            indicators: panelIndicators,
+            hideFootprints: p.hideFootprints,
+            showTPO: p.showTPO,
+            vwapVisible: p.vwapVisible,
+            showDailyLevels: p.showDailyLevels,
+            visibleRange: p.chart.timeScale().getVisibleRange(),
+            barSpacing: p.chart.timeScale().options().barSpacing,
+            // NEW: save width as a ratio of the total container width
+            widthRatio: totalContainerWidth > 0 ? p.wrapperEl.clientWidth / totalContainerWidth : 1,
+        });
+    });
+
+    return {
+        name: `Layout ${Date.now()}`,
+        timestamp: Date.now(),
+        panels,
+    };
+}
+
+    function saveLayout() {
+        const name = prompt('Name this layout:', `Layout ${new Date().toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}`);
+        if (!name || name.trim() === '') return;
+
+        const layout = captureCurrentLayout();
+        layout.name = name.trim();
+
+        let layouts = getSavedLayouts();
+        layouts.push(layout);
+        // Keep max 10 layouts
+        if (layouts.length > 10) layouts = layouts.slice(-10);
+        localStorage.setItem('btcChartLayouts', JSON.stringify(layouts));
+        renderSavedLayouts();
+    }
+
+    function getSavedLayouts() {
+        try {
+            const raw = localStorage.getItem('btcChartLayouts');
+            return raw ? JSON.parse(raw) : [];
+        } catch(e) { return []; }
+    }
+
+    function deleteLayout(timestamp) {
+        let layouts = getSavedLayouts().filter(l => l.timestamp !== timestamp);
+        localStorage.setItem('btcChartLayouts', JSON.stringify(layouts));
+        renderSavedLayouts();
+    }
+
+function applyLayout(layout) {
+    // 1. Remove all extra panels
+    [...extraPanels].forEach(p => removeExtraPanel(p.id));
+
+    // 2. Apply main panel settings
+    const mainLayout = layout.panels.find(p => p.id === 0);
+    if (mainLayout) {
+        applyTimeframeChange(mainLayout.timeframe);
+
+        ['oi', 'cvd', 'barstats'].forEach(id => {
+            const ind = indicatorManager.getIndicator(id);
+            if (ind && ind.visible) indicatorManager.removeIndicator(id);
+        });
+        mainLayout.indicators.forEach(id => {
+            if      (id === 'oi')       indicatorManager.addIndicator(new OIIndicator());
+            else if (id === 'cvd')      indicatorManager.addIndicator(new CVDIndicator());
+            else if (id === 'barstats') indicatorManager.addIndicator(new BarStatsIndicator());
+        });
+
+        config.hideFootprints  = mainLayout.hideFootprints;
+        config.showTPO         = mainLayout.showTPO;
+        config.vwapVisible     = mainLayout.vwapVisible;
+        config.showDailyLevels = mainLayout.showDailyLevels;
+        tpoCacheKey = '';
+    }
+
+    // 3. Recreate extra panels
+    const extraLayouts = layout.panels.filter(p => p.id !== 0);
+    extraLayouts.forEach(savedPanel => {
+        const newPanel = createExtraPanel();
+
+        newPanel.displayTimeframe = savedPanel.timeframe;
+        newPanel.displayCandles   = aggregateCandles(base5mCandles, savedPanel.timeframe);
+        newPanel.displayClusters  = aggregateClusters(base5mClusters, savedPanel.timeframe);
+        newPanel.mainSeries.setData(newPanel.displayCandles);
+
+        savedPanel.indicators.forEach(id => {
+            if      (id === 'oi')       newPanel.indicatorManager.addIndicator(new OIIndicator());
+            else if (id === 'cvd')      newPanel.indicatorManager.addIndicator(new CVDIndicator());
+            else if (id === 'barstats') newPanel.indicatorManager.addIndicator(new BarStatsIndicator());
+        });
+
+        newPanel.hideFootprints  = savedPanel.hideFootprints;
+        newPanel.showTPO         = savedPanel.showTPO;
+        newPanel.vwapVisible     = savedPanel.vwapVisible;
+        newPanel.showDailyLevels = savedPanel.showDailyLevels;
+        newPanel.tpoCacheKey     = '';
+
+        // Sync the mini TF bar to the saved timeframe
+        syncPanelTFBar(newPanel, savedPanel.timeframe);
+        schedulePanelDraw(newPanel);
+    });
+
+    // 4. Sync header buttons to main panel state
+    selectedPanelId = 0;
+    syncHeaderButtons();
+
+    // 5. Apply saved widths, then after layout settles restore zoom/scroll
+    setTimeout(() => {
+        const container = document.getElementById('charts-container');
+        const totalW    = container.clientWidth;
+        const wrapper0  = document.getElementById('panel-wrapper-0');
+
+        if (extraPanels.length > 0) {
+            const mainPanelSaved = layout.panels.find(p => p.id === 0);
+            wrapper0.style.flex = mainPanelSaved?.widthRatio
+                ? `0 0 ${Math.round(mainPanelSaved.widthRatio * totalW)}px`
+                : '1';
+
+            extraLayouts.forEach((savedPanel, i) => {
+                const newPanel = extraPanels[i];
+                if (!newPanel) return;
+                newPanel.wrapperEl.style.flex = savedPanel.widthRatio
+                    ? `0 0 ${Math.round(savedPanel.widthRatio * totalW)}px`
+                    : '1';
+            });
+        } else {
+            wrapper0.style.flex = '1';
+        }
+
+        resizeAll();
+        scheduleDraw();
+
+        // Restore zoom + scroll AFTER resize settles
+        setTimeout(() => {
+            if (mainLayout?.barSpacing) {
+                chart.timeScale().applyOptions({ barSpacing: mainLayout.barSpacing });
+            }
+            if (mainLayout?.visibleRange) {
+                try { chart.timeScale().setVisibleRange(mainLayout.visibleRange); } catch (e) {}
+            }
+
+            extraLayouts.forEach((savedPanel, i) => {
+                const newPanel = extraPanels[i];
+                if (!newPanel) return;
+                if (savedPanel.barSpacing) {
+                    newPanel.chart.timeScale().applyOptions({ barSpacing: savedPanel.barSpacing });
+                }
+                if (savedPanel.visibleRange) {
+                    try { newPanel.chart.timeScale().setVisibleRange(savedPanel.visibleRange); } catch (e) {}
+                }
+                schedulePanelDraw(newPanel);
+            });
+
+            scheduleDraw();
+        }, 250);
+    }, 150);
+
+    closeLayoutsDropdown();
+}
+
+    function renderSavedLayouts() {
+        const container = document.getElementById('saved-layouts-list');
+        const layouts = getSavedLayouts();
+        if (layouts.length === 0) {
+            container.innerHTML = '<div class="px-4 py-2 text-[10px] text-gray-600 font-mono italic">No saved layouts yet</div>';
+            return;
+        }
+        container.innerHTML = '';
+        // Show newest first
+        [...layouts].reverse().forEach(layout => {
+            const row = document.createElement('div');
+            row.className = 'group flex items-center justify-between px-4 py-2 hover:bg-blue-600/10 cursor-pointer transition-colors';
+            const panelCount = layout.panels.length;
+            const timeStr = new Date(layout.timestamp).toLocaleString('ro-RO', {
+                day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'
+            });
+            row.innerHTML = `
+                <div class="flex-1 min-w-0" onclick="">
+                    <div class="text-[11px] font-mono text-gray-300 group-hover:text-blue-400 transition-colors truncate">${layout.name}</div>
+                    <div class="text-[9px] text-gray-600 font-mono mt-0.5">${panelCount} chart${panelCount>1?'s':''} · ${timeStr}</div>
+                </div>
+                <button class="delete-layout-btn ml-2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-600 hover:text-red-400 text-xs p-1 rounded" data-ts="${layout.timestamp}">✕</button>
+            `;
+            row.querySelector('.flex-1').addEventListener('click', () => applyLayout(layout));
+            row.querySelector('.delete-layout-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm(`Delete "${layout.name}"?`)) deleteLayout(layout.timestamp);
+            });
+            container.appendChild(row);
+        });
+    }
+
+function syncPanelTFBar(panel, timeframe) {
+    const tfBar = panel.wrapperEl.querySelector('.panel-tf-bar');
+    if (!tfBar) return;
+    tfBar.querySelectorAll('.timeframe-btn').forEach(btn => {
+        btn.classList.remove('active');
+        const tfMap = { '5m': 5, '15m': 15, '30m': 30, '1h': 60, '4h': 240, '1D': 1440 };
+        if (tfMap[btn.textContent.trim()] === timeframe) btn.classList.add('active');
+    });
+}
+
+    function closeLayoutsDropdown() {
+        const dd = document.getElementById('layouts-dropdown');
+        dd.classList.remove('open');
+        setTimeout(() => dd.classList.add('hidden'), 200);
+    }
+
+    // ── Layouts button toggle ─────────────────────────────────────────────────
+    document.getElementById('layouts-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const dd = document.getElementById('layouts-dropdown');
+        const isOpen = dd.classList.contains('open');
+        if (isOpen) {
+            closeLayoutsDropdown();
+        } else {
+            dd.classList.remove('hidden');
+            requestAnimationFrame(() => dd.classList.add('open'));
+            renderSavedLayouts();
+        }
+    });
+
+    document.getElementById('save-layout-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        saveLayout();
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#layouts-wrapper')) closeLayoutsDropdown();
+    });
+
     async function init() {
         try {
             const interval=getIntervalString(BASE_TIMEFRAME);
@@ -3540,6 +4068,7 @@ function drawDailyLevels(cssWidth, candleBottomY) {
                 tpoCacheKey = ''; // ensure fresh build after data load
                 await fetchOpenInterest();
                 chart.timeScale().fitContent();
+                updateCandleAppearance();
             }
             startWebSockets();
             setInterval(()=>{needsRedraw=true;scheduleDraw();},config.drawDelay);
@@ -3571,12 +4100,17 @@ function drawDailyLevels(cssWidth, candleBottomY) {
         } catch(e) { console.error("OI Fetch Error",e); }
     }
 
-    function startWebSockets() {
-        const wsInterval=getWSInterval(BASE_TIMEFRAME);
-        ws=new WebSocket("wss://stream.bybit.com/v5/public/inverse");
-        ws.onopen=()=>ws.send(JSON.stringify({op:"subscribe",args:[`kline.${wsInterval}.BTCUSD`,"publicTrade.BTCUSD","tickers.BTCUSD"]}));
-        ws.onmessage=(event)=>{
-            const msg=JSON.parse(event.data); if (!msg.data) return;
+function startWebSockets() {
+        const wsInterval = getWSInterval(BASE_TIMEFRAME);
+        ws = new WebSocket("wss://stream.bybit.com/v5/public/inverse");
+        ws.onopen = () => ws.send(JSON.stringify({op:"subscribe",args:[`kline.${wsInterval}.BTCUSD`,"publicTrade.BTCUSD","tickers.BTCUSD"]}));
+        ws.onclose = () => {
+            console.warn('WebSocket disconnected, reconnecting in 3s...');
+            setTimeout(startWebSockets, 3000);
+        };
+        ws.onerror = (e) => { console.error('WebSocket error', e); ws.close(); };
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data); if (!msg.data) return;
             if (msg.topic&&msg.topic.includes("tickers")&&msg.data.openInterest) {
                 const rawOI=parseFloat(msg.data.openInterest), lastCandle=base5mCandles[base5mCandles.length-1];
                 if (lastCandle&&currentPrice>0) {
@@ -3595,7 +4129,6 @@ function drawDailyLevels(cssWidth, candleBottomY) {
                     upsertCandle(ts,parseFloat(k.open),parseFloat(k.high),parseFloat(k.low),parseFloat(k.close),parseFloat(k.volume||0));
                     const newCandle=base5mCandles[base5mCandles.length-1];
                     newCandle.oiOpen=closingOI;newCandle.oiClose=closingOI;newCandle.oiHigh=closingOI;newCandle.oiLow=closingOI;
-                    // New bar = new session potential → invalidate TPO cache
                     tpoCacheKey = '';
                 } else { upsertCandle(ts,parseFloat(k.open),parseFloat(k.high),parseFloat(k.low),parseFloat(k.close),parseFloat(k.volume||0)); }
                 displayCandles=aggregateCandles(base5mCandles,config.displayTimeframe);
@@ -3610,7 +4143,7 @@ function drawDailyLevels(cssWidth, candleBottomY) {
                 scheduleDraw();
             }
             if (msg.topic&&msg.topic.includes("publicTrade")) {
-                msg.data.forEach(trade=>{
+                msg.data.forEach(trade => {
                     const price=parseFloat(trade.p); currentPrice=price;
                     const valUsd=parseFloat(trade.v);
                     const bucket=Math.floor(price/config.baseTickSize)*config.baseTickSize;
@@ -3619,10 +4152,7 @@ function drawDailyLevels(cssWidth, candleBottomY) {
                     if (!base5mClusters[timeKey][bucketKey]) base5mClusters[timeKey][bucketKey]={buy:0,sell:0};
                     if (trade.S==="Buy") base5mClusters[timeKey][bucketKey].buy+=valUsd;
                     else base5mClusters[timeKey][bucketKey].sell+=valUsd;
-                    displayClusters=aggregateClusters(base5mClusters,config.displayTimeframe);
-                    extraPanels.forEach(p => {
-                        p.displayClusters = aggregateClusters(base5mClusters, p.displayTimeframe);
-                    });
+                    clustersDirty = true;
                     document.getElementById('price').innerText=price.toLocaleString(); scheduleDraw();
                 });
             }
