@@ -1482,6 +1482,8 @@ function _restoreP0(s) {
 
         const panelIndicatorManager = new IndicatorManager();
         panelIndicatorManager.container = indicatorsContainer;
+        panelIndicatorManager.chart = newChart;
+        panelIndicatorManager.wrapper = wrapperEl;
 
         const panel = {
             id: pid,
@@ -1510,7 +1512,7 @@ function _restoreP0(s) {
             hideFootprints: false,
             ...makeDefaultIndSettings(), // per-panel indicator colors/styles
     };
-
+        panelIndicatorManager.onLayout = () => schedulePanelDraw(panel);
         newSeries.setData(panel.displayCandles);
         setupPanelBuffers(panel);
         newChart.timeScale().fitContent();
@@ -1927,7 +1929,7 @@ function scheduleDraw() {
         document.getElementById('indicator-padding').value = 10; document.getElementById('indicator-bg-opacity').value = 95;
         document.getElementById('draw-delay').value = 50; document.getElementById('draw-delay-val').textContent = '50ms';
         document.getElementById('interaction-hold').value = 180; document.getElementById('interaction-hold-val').textContent = '180ms';
-        pdateCandleAppearance();
+        updateCandleAppearance();
         document.getElementById('price-scale-width-input').value = 44;
         document.getElementById('price-scale-font-input').value = 10;
         chart.applyOptions({ rightPriceScale: { width: 44 }, layout: { background: { color: config.bgColor }, fontSize: 10 }, timeScale: { barSpacing: config.barSpacing } });
@@ -2364,57 +2366,73 @@ function scheduleDraw() {
     //  Indicator System
     // ════════════════════════════════════════════════════════════════════════════
 
-    class BaseIndicator {
-        constructor(id, name, defaultHeight = config.defaultIndicatorHeight) {
-            this.id = id; this.name = name; this.height = defaultHeight;
-            this.element = null; this.canvas = null; this.ctx = null;
-            this.offscreenCanvas = null; this.offscreenCtx = null; this.visible = false;
-        }
-        createElement() {
-            const div = document.createElement('div');
-            div.className = 'indicator-pane'; div.id = `indicator-${this.id}`; div.style.height = this.height+'px';
-            div.innerHTML = `
-                <div class="pane-header" data-indicator="${this.id}">
-                    <span class="pane-label">${this.name}</span>
-                    <div class="pane-close" data-indicator="${this.id}">✕</div>
-                </div>
-                <div class="resizer-handle" data-indicator="${this.id}"><div class="resizer-line"></div></div>
-                <canvas class="pane-canvas" id="canvas-${this.id}"></canvas>`;
-            this.element = div;
-            this.canvas = div.querySelector(`#canvas-${this.id}`);
-            this.ctx = this.canvas.getContext('2d');
-            this.offscreenCanvas = document.createElement('canvas');
-            this.offscreenCtx = this.offscreenCanvas.getContext('2d');
-            this.setupEventListeners();
-            return div;
-        }
-        setupEventListeners() {
-            this.element.querySelector('.pane-close').addEventListener('click', (e) => { e.stopPropagation(); indicatorManager.removeIndicator(this.id); });
-            const resizer = this.element.querySelector('.resizer-handle');
-            let dragging = false, startY = 0, startH = 0;
-            resizer.addEventListener('mousedown', (e) => { e.stopPropagation(); dragging = true; startY = e.clientY; startH = this.height; document.body.style.cursor = 'ns-resize'; });
-            window.addEventListener('mousemove', (e) => { if (!dragging) return; this.height = Math.max(MIN_PANE_HEIGHT, startH + (startY - e.clientY)); 
-            const mgr = selectedPanelId === 0 ? indicatorManager : extraPanels.find(p => p.id === selectedPanelId)?.indicatorManager;
-            if (mgr) mgr.updateLayout(); });
-            window.addEventListener('mouseup', () => { if (dragging) { dragging = false; document.body.style.cursor = ''; } });
-            this.element.querySelector('.pane-header').addEventListener('mousedown', (e) => { if (e.target.classList.contains('pane-close')) return; indicatorManager.startDrag(this.id, e); });
-        }
-        setupBuffers(width, height) {
-            const dpr = window.devicePixelRatio || 1;
-            this.canvas.width = Math.floor(width*dpr); this.canvas.height = Math.floor(height*dpr);
-            this.canvas.style.width = width+'px'; this.canvas.style.height = height+'px';
-            this.offscreenCanvas.width = this.canvas.width; this.offscreenCanvas.height = this.canvas.height;
-            this.offscreenCtx.setTransform(dpr,0,0,dpr,0,0); this.ctx.setTransform(1,0,0,1,0,0);
-        }
-        show() { this.visible = true; }
-        hide() { this.visible = false; }
-        draw(cssWidth) {}
-        render() {
-            if (!this.visible || !this.ctx || !this.offscreenCanvas) return;
-            this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
-            this.ctx.drawImage(this.offscreenCanvas,0,0);
-        }
+class BaseIndicator {
+    constructor(id, name, defaultHeight = config.defaultIndicatorHeight) {
+        this.id = id; this.name = name; this.height = defaultHeight;
+        this.element = null; this.canvas = null; this.ctx = null;
+        this.offscreenCanvas = null; this.offscreenCtx = null; this.visible = false;
     }
+    createElement() {
+        const div = document.createElement('div');
+        div.className = 'indicator-pane'; div.id = `indicator-${this.id}`; div.style.height = this.height+'px';
+        div.innerHTML = `
+            <div class="pane-header" data-indicator="${this.id}">
+                <span class="pane-label">${this.name}</span>
+                <div class="pane-close" data-indicator="${this.id}">✕</div>
+            </div>
+            <div class="resizer-handle" data-indicator="${this.id}"><div class="resizer-line"></div></div>
+            <canvas class="pane-canvas" id="canvas-${this.id}"></canvas>`;
+        this.element = div;
+        this.canvas = div.querySelector(`#canvas-${this.id}`);
+        this.ctx = this.canvas.getContext('2d');
+        this.offscreenCanvas = document.createElement('canvas');
+        this.offscreenCtx = this.offscreenCanvas.getContext('2d');
+        this.setupEventListeners();
+        return div;
+    }
+setupEventListeners() {
+    this.element.querySelector('.pane-close').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const mgr = findManagerForIndicator(this.id, this.element);
+        mgr.removeIndicator(this.id);
+    });
+    const resizer = this.element.querySelector('.resizer-handle');
+    let dragging = false, startY = 0, startH = 0;
+    resizer.addEventListener('mousedown', (e) => {
+        e.stopPropagation(); dragging = true; startY = e.clientY; startH = this.height;
+        document.body.style.cursor = 'ns-resize';
+    });
+    window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        this.height = Math.max(MIN_PANE_HEIGHT, startH + (startY - e.clientY));
+        const mgr = findManagerForIndicator(this.id, this.element);
+        mgr.updateLayout();
+    });
+    window.addEventListener('mouseup', () => {
+        if (dragging) { dragging = false; document.body.style.cursor = ''; }
+    });
+    this.element.querySelector('.pane-header').addEventListener('mousedown', (e) => {
+        if (e.target.classList.contains('pane-close')) return;
+        const mgr = findManagerForIndicator(this.id, this.element);
+        mgr.startDrag(this.id, e);
+    });
+}
+    setupBuffers(width, height) {
+        const dpr = window.devicePixelRatio || 1;
+        this.canvas.width = Math.floor(width*dpr); this.canvas.height = Math.floor(height*dpr);
+        this.canvas.style.width = width+'px'; this.canvas.style.height = height+'px';
+        this.offscreenCanvas.width = this.canvas.width; this.offscreenCanvas.height = this.canvas.height;
+        this.offscreenCtx.setTransform(dpr,0,0,dpr,0,0); this.ctx.setTransform(1,0,0,1,0,0);
+    }
+    show() { this.visible = true; }
+    hide() { this.visible = false; }
+    draw(cssWidth) {}
+    render() {
+        if (!this.visible || !this.ctx || !this.offscreenCanvas) return;
+        this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
+        this.ctx.drawImage(this.offscreenCanvas,0,0);
+    }
+}
 
 class OIIndicator extends BaseIndicator {
         constructor() { super('oi', 'Open Interest', 200); }
@@ -2744,8 +2762,21 @@ function calculateVWAP() {
     offscreenCtx.restore();
 }
 
+function findManagerForIndicator(id, element) {
+    if (element) {
+        if (indicatorManager.container.contains(element)) return indicatorManager;
+        for (const p of extraPanels) {
+            if (p.indicatorManager.container.contains(element)) return p.indicatorManager;
+        }
+    }
+    if (indicatorManager.indicators.has(id)) return indicatorManager;
+    for (const p of extraPanels) {
+        if (p.indicatorManager.indicators.has(id)) return p.indicatorManager;
+    }
+    return indicatorManager;
+}
     class IndicatorManager {
-        constructor() { this.indicators = new Map(); this.order = []; this.container = document.getElementById('indicators-container'); this.dragState = null; this.placeholder = null; }
+        constructor() { this.indicators = new Map(); this.order = []; this.container = document.getElementById('indicators-container'); this.dragState = null; this.placeholder = null; this.chart = null; this.wrapper = null; this.onLayout = null; }
         addIndicator(indicator) {
             if (this.indicators.has(indicator.id)) return;
             this.container.appendChild(indicator.createElement());
@@ -2757,22 +2788,24 @@ function calculateVWAP() {
             const toggleBtn = document.getElementById(`toggle-${id}`); if (toggleBtn) toggleBtn.classList.remove('active');
         }
         getIndicator(id) { return this.indicators.get(id); }
-        updateLayout() {
-            const wrapper = activeWrapperEl || document.getElementById('panel-wrapper-0');
+    updateLayout() {
+            const activeChart = this.chart || chart;
+            const wrapper = this.wrapper || activeWrapperEl || document.getElementById('panel-wrapper-0');
             const totalHeight = window.innerHeight - HEADER_HEIGHT;
             let totalIndicatorHeight = 0;
             this.order.forEach(id => { const ind = this.indicators.get(id); if (ind && ind.visible) totalIndicatorHeight += ind.height; });
-            const marginPct = (totalIndicatorHeight + TIME_AXIS_HEIGHT) / totalHeight;
-            chart.priceScale('right').applyOptions({ scaleMargins: { top: 0.05, bottom: marginPct } });
+            const marginPct = Math.min(0.92, (totalIndicatorHeight + TIME_AXIS_HEIGHT) / totalHeight);
+            activeChart.priceScale('right').applyOptions({ scaleMargins: { top: 0.05, bottom: marginPct } });
             let currentBottom = TIME_AXIS_HEIGHT;
             this.order.forEach(id => {
                 const indicator = this.indicators.get(id); if (!indicator || !indicator.visible) return;
                 indicator.element.style.bottom = currentBottom+'px'; indicator.element.style.height = indicator.height+'px';
                 indicator.setupBuffers(wrapper.clientWidth, indicator.height); currentBottom += indicator.height;
             });
-        chart.applyOptions({ width: wrapper.clientWidth, height: totalHeight });
-        updatePaneRight();
-        if (typeof scheduleDraw === 'function') scheduleDraw();
+            activeChart.applyOptions({ width: wrapper.clientWidth, height: totalHeight });
+            updatePaneRight();
+            if (this.onLayout) this.onLayout();
+            else if (typeof scheduleDraw === 'function') scheduleDraw();
         }
         startDrag(id, e) {
             const indicator = this.indicators.get(id); if (!indicator) return;
@@ -2817,6 +2850,8 @@ function calculateVWAP() {
     }
 
     let indicatorManager = new IndicatorManager();
+    indicatorManager.chart = chart;
+    indicatorManager.wrapper = document.getElementById('panel-wrapper-0');
     indicatorManager.addIndicator(new OIIndicator());
 
     document.getElementById('toggle-oi').addEventListener('click', function() {
@@ -3292,6 +3327,7 @@ document.getElementById('ind-ctx-close').addEventListener('click', hideIndicator
     }   // ← ADD THIS closing brace for updateCustomPriceLabel
 
     function drawCumulativeCluster(cssWidth, cssHeight, candleBottomY) {
+        if (config.hideFootprints) return;
         const timeScale=chart.timeScale(); const barSpacing=timeScale.options().barSpacing;
         const visibleRange=timeScale.getVisibleLogicalRange(); if (!visibleRange) return;
         const renderTickSize=getDynamicTickSize(config.baseTickSize,config.minCellHeight);
