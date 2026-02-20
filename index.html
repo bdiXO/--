@@ -1161,7 +1161,8 @@
         panel.chart.applyOptions({ width: w, height: h });
     }
 
-// ── Golden Layout Initialization & Component Registration ───────────────────
+    // ── Golden Layout Initialization & Component Registration ───────────────────
+  // ── Golden Layout Initialization & Component Registration ───────────────────
     function initGoldenLayout() {
         const glConfig = {
             root: {
@@ -1176,9 +1177,11 @@
             settings: { showPopoutIcon: false }
         };
 
+        // FIX: Pass the config directly into the constructor for the first boot!
         myLayout = new window.goldenLayout.GoldenLayout(glConfig, document.getElementById('charts-container'));
 
         myLayout.registerComponentFactoryFunction('chartComponent', function(container, itemConfig) {
+            // FIX: Safely extract state in GL v2
             const state = itemConfig.componentState || itemConfig || {};
             const isMain = state.isMain === true;
             const pid = isMain ? 0 : ++extraPanelCounter;
@@ -1223,7 +1226,7 @@
                         panel.displayClusters = aggregateClusters(base5mClusters, tf);
                         panel.mainSeries.setData(panel.displayCandles);
                         panel.tpoCacheKey = '';
-                        setTimeout(() => { try{ panel.chart.timeScale().fitContent(); schedulePanelDraw(panel); }catch(e){} }, 80);
+                        setTimeout(() => { panel.chart.timeScale().fitContent(); schedulePanelDraw(panel); }, 80);
                     };
                     tfBar.appendChild(btn);
                 });
@@ -1279,6 +1282,7 @@
                 activeTimerBox = timerEl;
                 activeWrapperEl = wrapperEl;
                 
+                // Initialize main indicator manager safely
                 if (typeof IndicatorManager !== 'undefined') {
                     indicatorManager = new IndicatorManager();
                     indicatorManager.chart = chart;
@@ -1300,7 +1304,7 @@
                 overlayCanvas: overlayEl, ctxOverlay: overlayEl.getContext('2d'), offscreenCanvas: offscreenC, offscreenCtx: offscreenC.getContext('2d'),
                 priceLabelEl, timerBoxEl: timerEl, displayTimeframe: 5, displayCandles: displayCandles.slice(), displayClusters: structuredClone(displayClusters),
                 tpoProfilesCache: null, tpoCacheKey: '', rafRunning: false, needsRedraw: false, lastInteractionTime: 0, rafId: null,
-                showTPO: false, vwapVisible: false, showDailyLevels: false, hideFootprints: false, initialFit: false, ...makeDefaultIndSettings(),
+                showTPO: false, vwapVisible: false, showDailyLevels: false, hideFootprints: false, ...makeDefaultIndSettings(),
             };
 
             if (!isMain) {
@@ -1309,84 +1313,95 @@
                 extraPanels.push(panel);
             }
 
-            // CRITICAL FIX: Bind Pan/Scroll Events directly to every new chart so they don't freeze!
-            newChart.timeScale().subscribeVisibleLogicalRangeChange(() => {
-                if (isMain) {
-                    if (typeof scheduleDraw === 'function') scheduleDraw();
-                } else if (panel) {
-                    if (typeof schedulePanelDraw === 'function') schedulePanelDraw(panel);
-                }
-            });
-
+// 5. Native Resize Handling (Protects Canvas Math)
             const ro = new ResizeObserver((entries) => {
                 for (const entry of entries) {
                     const w = Math.floor(entry.contentRect.width);
                     const h = Math.floor(entry.contentRect.height);
+                    
                     if (w === 0 || h === 0) continue;
                     
-                    try { 
-                        if (isMain && chart) {
-                            chart.applyOptions({ width: w, height: h });
-                            setupBuffersForSize();
-                            if (indicatorManager) indicatorManager.updateLayout();
-                            
-                            if (!window._mainChartFit && displayCandles && displayCandles.length > 0) {
-                                chart.timeScale().fitContent();
-                                window._mainChartFit = true;
-                            }
-                            scheduleDraw();
-                        } else if (panel && panel.chart) {
-                            panel.chart.applyOptions({ width: w, height: h });
-                            setupPanelBuffers(panel);
-                            panel.indicatorManager.updateLayout();
-                            
-                            if (!panel.initialFit && panel.displayCandles && panel.displayCandles.length > 0) {
-                                panel.chart.timeScale().fitContent();
-                                panel.initialFit = true;
-                            }
-                            schedulePanelDraw(panel);
-                        }
-                    } catch (e) {}
+                    if (isMain) {
+                        chart.applyOptions({ width: w, height: h });
+                        setupBuffersForSize();
+                        if (indicatorManager) indicatorManager.updateLayout();
+                        scheduleDraw();
+                    } else if (panel) {
+                        panel.chart.applyOptions({ width: w, height: h });
+                        setupPanelBuffers(panel);
+                        panel.indicatorManager.updateLayout();
+                        schedulePanelDraw(panel);
+                    }
                 }
             });
             ro.observe(wrapperEl);
 
             container.on('destroy', () => {
                 ro.disconnect();
-                if (!isMain && panel) {
-                    if (panel.rafId) { cancelAnimationFrame(panel.rafId); panel.rafId = null; }
+                if (!isMain) {
+                    if (panel.rafId) cancelAnimationFrame(panel.rafId);
                     const idx = extraPanels.findIndex(p => p.id === pid);
                     if (idx > -1) extraPanels.splice(idx, 1);
-                    try { const c = panel.chart; panel.chart = null; panel.mainSeries = null; if (c) c.remove(); } catch(e){} 
-                } else if (isMain) {
-                    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-                    try { const c = chart; chart = null; mainSeries = null; if (c) c.remove(); } catch(e){} 
+                    panel.chart.remove(); 
                 }
             });
         });
-
+        // FIX: Just call init()! The config was already passed in the constructor above.
         myLayout.init();
+
+        // ── Black-screen fix ──────────────────────────────────────────────────
+        // GL emits 'initialised' once its own layout pass is complete, so canvas
+        // buffers can now be measured correctly.  Two rAF calls ensure we run
+        // after both GL's paint and any pending microtasks.
+        myLayout.on('initialised', () => {
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                if (chart && activeWrapperEl && activeWrapperEl.clientWidth > 0) {
+                    chart.applyOptions({
+                        width:  activeWrapperEl.clientWidth,
+                        height: activeWrapperEl.clientHeight
+                    });
+                    setupBuffersForSize();
+                    if (indicatorManager) indicatorManager.updateLayout();
+                }
+                extraPanels.forEach(p => {
+                    if (p.wrapperEl && p.wrapperEl.clientWidth > 0) {
+                        setupPanelBuffers(p);
+                        p.indicatorManager.updateLayout();
+                        schedulePanelDraw(p);
+                    }
+                });
+                scheduleDraw();
+            }));
+        });
+        // ─────────────────────────────────────────────────────────────────────
+
         window.addEventListener('resize', () => myLayout.updateSize());
     }
 
-// ── Global Draw Loop Variables ────────────────────────────────────────────────
+    // ── Global Draw Loop Variables ────────────────────────────────────────────────
     let rafId = null, rafRunning = false, needsRedraw = false, lastInteractionTime = 0;
     let clustersDirty = false;
-    
+    // ── Buffer / Draw Triggers ────────────────────────────────────────────────────
     function updatePaneRight() {
         let right = 54;
+        // Use the currently active Golden Layout wrapper to measure the price scale
         if (activeWrapperEl) {
             const lastTd = activeWrapperEl.querySelector('tr td:last-child');
-            if (lastTd) { const w = Math.round(lastTd.getBoundingClientRect().width); if (w > 10) right = w; }
+            if (lastTd) {
+                const w = Math.round(lastTd.getBoundingClientRect().width);
+                if (w > 10) right = w;
+            }
         }
         measuredPriceScaleWidth = right;
-        if (typeof indicatorManager !== 'undefined' && indicatorManager && indicatorManager.wrapper) {
+        
+        // Update panes in the main indicator manager
+        if (typeof indicatorManager !== 'undefined' && indicatorManager.wrapper) {
             indicatorManager.wrapper.querySelectorAll('.indicator-pane').forEach(el => { el.style.right = right + 'px'; });
             const ph = indicatorManager.wrapper.querySelector('.drag-placeholder');
             if (ph) ph.style.right = right + 'px';
         }
+        // Update panes in extra panels
         extraPanels.forEach(p => {
-            if(!p.wrapperEl) return;
             p.wrapperEl.querySelectorAll('.indicator-pane').forEach(el => { el.style.right = right + 'px'; });
             const ph = p.wrapperEl.querySelector('.drag-placeholder');
             if (ph) ph.style.right = right + 'px';
@@ -1394,13 +1409,19 @@
     }
 
     function scheduleDraw() {
-        needsRedraw = true; lastInteractionTime = Date.now();
+        needsRedraw = true;
+        lastInteractionTime = Date.now();
         extraPanels.forEach(p => schedulePanelDraw(p));
         if (!rafRunning) {
             rafRunning = true;
             const loop = () => {
-                if (Date.now() - lastInteractionTime < config.interactionHold) { drawFrames(); rafId = requestAnimationFrame(loop); } 
-                else { if (needsRedraw) { needsRedraw = false; drawFrames(); rafId = requestAnimationFrame(loop); } else { rafRunning = false; rafId = null; } }
+                const now = Date.now();
+                if (now - lastInteractionTime < config.interactionHold) {
+                    drawFrames(); rafId = requestAnimationFrame(loop);
+                } else {
+                    if (needsRedraw) { needsRedraw = false; drawFrames(); rafId = requestAnimationFrame(loop); }
+                    else { rafRunning = false; rafId = null; }
+                }
             };
             rafId = requestAnimationFrame(loop);
         }
@@ -3376,134 +3397,182 @@
     // ════════════════════════════════════════════════════════════════════════
     //  Golden Layout Configuration Manager
     // ════════════════════════════════════════════════════════════════════════
-function captureCurrentLayout() {
+    function captureCurrentLayout() {
         const panels = [];
+        // Save Main Panel
         const mainIndicators = [];
-        if(indicatorManager) indicatorManager.indicators.forEach((ind, id) => { if (ind.visible) mainIndicators.push(id); });
+        indicatorManager.indicators.forEach((ind, id) => { if (ind.visible) mainIndicators.push(id); });
         panels.push({
-            id: 0, timeframe: config.displayTimeframe, indicators: mainIndicators,
-            hideFootprints: config.hideFootprints, showTPO: config.showTPO, vwapVisible: config.vwapVisible, showDailyLevels: config.showDailyLevels,
-            visibleRange: chart ? chart.timeScale().getVisibleRange() : null, barSpacing: chart ? chart.timeScale().options().barSpacing : config.barSpacing,
+            id: 0,
+            timeframe: config.displayTimeframe,
+            indicators: mainIndicators,
+            hideFootprints: config.hideFootprints,
+            showTPO: config.showTPO,
+            vwapVisible: config.vwapVisible,
+            showDailyLevels: config.showDailyLevels,
+            visibleRange: chart.timeScale().getVisibleRange(),
+            barSpacing: chart.timeScale().options().barSpacing,
         });
 
+        // Save Extra Panels
         extraPanels.forEach(p => {
             const panelIndicators = [];
             p.indicatorManager.indicators.forEach((ind, id) => { if (ind.visible) panelIndicators.push(id); });
             panels.push({
-                id: p.id, timeframe: p.displayTimeframe, indicators: panelIndicators,
-                hideFootprints: p.hideFootprints, showTPO: p.showTPO, vwapVisible: p.vwapVisible, showDailyLevels: p.showDailyLevels,
-                visibleRange: p.chart ? p.chart.timeScale().getVisibleRange() : null, barSpacing: p.chart ? p.chart.timeScale().options().barSpacing : config.barSpacing,
+                id: p.id,
+                timeframe: p.displayTimeframe,
+                indicators: panelIndicators,
+                hideFootprints: p.hideFootprints,
+                showTPO: p.showTPO,
+                vwapVisible: p.vwapVisible,
+                showDailyLevels: p.showDailyLevels,
+                visibleRange: p.chart.timeScale().getVisibleRange(),
+                barSpacing: p.chart.timeScale().options().barSpacing,
             });
         });
 
-        return { name: `Layout ${Date.now()}`, timestamp: Date.now(), panels, glConfig: myLayout.saveLayout() };
+        const glConfig = myLayout.saveLayout();
+
+        return {
+            name: `Layout ${Date.now()}`,
+            timestamp: Date.now(),
+            panels,
+            glConfig
+        };
     }
 
     function saveLayout() {
         const name = prompt('Name this layout:', `Layout ${new Date().toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}`);
         if (!name || name.trim() === '') return;
-        const layout = captureCurrentLayout(); layout.name = name.trim();
-        let layouts = getSavedLayouts(); layouts.push(layout);
+        const layout = captureCurrentLayout();
+        layout.name = name.trim();
+        let layouts = getSavedLayouts();
+        layouts.push(layout);
         if (layouts.length > 10) layouts = layouts.slice(-10);
         localStorage.setItem('btcChartLayouts', JSON.stringify(layouts));
         renderSavedLayouts();
     }
 
-    function getSavedLayouts() { try { const raw = localStorage.getItem('btcChartLayouts'); return raw ? JSON.parse(raw) : []; } catch(e) { return []; } }
-    function deleteLayout(timestamp) { let layouts = getSavedLayouts().filter(l => l.timestamp !== timestamp); localStorage.setItem('btcChartLayouts', JSON.stringify(layouts)); renderSavedLayouts(); }
+    function getSavedLayouts() {
+        try { const raw = localStorage.getItem('btcChartLayouts'); return raw ? JSON.parse(raw) : []; } 
+        catch(e) { return []; }
+    }
+
+    function deleteLayout(timestamp) {
+        let layouts = getSavedLayouts().filter(l => l.timestamp !== timestamp);
+        localStorage.setItem('btcChartLayouts', JSON.stringify(layouts));
+        renderSavedLayouts();
+    }
 
     function applyLayout(layout) {
-        if (!layout.glConfig) { alert('Incompatible layout.'); return; }
+        if (!layout.glConfig) {
+            alert('This layout format is from an older version and is incompatible with the new Layout Engine.');
+            return;
+        }
 
-        try { if (myLayout) myLayout.clear(); } catch(e) {}
-        extraPanels.length = 0; extraPanelCounter = 0; window._mainChartFit = false;
+    function fixGLSizes(obj) {
+            if (!obj || typeof obj !== 'object') return;
 
-        ['oi', 'cvd', 'barstats'].forEach(id => { const ind = indicatorManager?.getIndicator(id); if (ind && ind.visible) indicatorManager.removeIndicator(id); });
+            // Row/Col relative sizes — GL v2 wants percentage strings
+            if (typeof obj.size === 'number')   obj.size   = obj.size   + '%';
+            if (typeof obj.width === 'number')  obj.width  = obj.width  + '%';
+            if (typeof obj.height === 'number') obj.height = obj.height + '%';
 
-        let safeConfig;
-        try {
-            let configStr = JSON.stringify(layout.glConfig);
-            safeConfig = JSON.parse(configStr);
-            if (safeConfig.dimensions) delete safeConfig.dimensions;
-            if (safeConfig.settings) delete safeConfig.settings;
-            
-            // Deep-clean the node tree mapping sizes to strict Strings so Golden Layout doesn't crash
-            function fixGLSizes(node) {
-                if (Array.isArray(node)) {
-                    node.forEach(fixGLSizes);
-                } else if (node && typeof node === 'object') {
-                    for (let k in node) {
-                        if (['size', 'width', 'height', 'minItemHeight', 'minItemWidth'].includes(k)) {
-                            if (typeof node[k] === 'number' || (typeof node[k] === 'string' && !isNaN(Number(node[k])))) {
-                                node[k] = String(node[k]) + (k === 'size' ? '%' : 'px');
-                            }
-                        } else {
-                            fixGLSizes(node[k]);
-                        }
-                    }
+            // Pixel-unit props — GL v2 needs strings like "0px", NOT raw numbers.
+            // Also covers settings-level defaults that resolveDefaultMinItemHeight
+            // reads with .trimStart(), which crashes on numbers or null/undefined.
+            const pxProps = [
+                'minItemHeight', 'minItemWidth', 'minHeight', 'minWidth',
+                'defaultMinItemHeight', 'defaultMinItemWidth'   // ← NEW
+            ];
+            pxProps.forEach(prop => {
+                if (obj[prop] === null || obj[prop] === undefined) {
+                    delete obj[prop];           // Let GL use its own built-in default
+                } else if (typeof obj[prop] === 'number') {
+                    obj[prop] = obj[prop] + 'px';
                 }
-            }
-            fixGLSizes(safeConfig.root);
-            if (safeConfig.settings) delete safeConfig.settings;
-            function fixGLSizes(node) {
-                if (Array.isArray(node)) node.forEach(fixGLSizes);
-                else if (node && typeof node === 'object') {
-                    for (let k in node) {
-                        if (['size', 'width', 'height', 'minItemHeight', 'minItemWidth'].includes(k)) {
-                            if (typeof node[k] === 'number' || (typeof node[k] === 'string' && !isNaN(Number(node[k])))) node[k] = String(node[k]) + (k === 'size' ? '%' : 'px');
-                        } else fixGLSizes(node[k]);
-                    }
-                }
-            }
-            fixGLSizes(safeConfig.root);
-        } catch(e) { return; }
-
-        try { myLayout.loadLayout(safeConfig); } catch (e) { alert("Failed to load layout."); return; }
-
-        // CRITICAL FIX: Delay data injection so the DOM exists!
-        setTimeout(() => {
-            const mainLayout = layout.panels.find(p => p.id === 0);
-            if (mainLayout && chart && mainSeries) {
-                applyTimeframeChange(mainLayout.timeframe);
-                mainLayout.indicators.forEach(id => {
-                    if(id === 'oi') indicatorManager.addIndicator(new OIIndicator());
-                    else if(id === 'cvd') indicatorManager.addIndicator(new CVDIndicator());
-                    else if(id === 'barstats') indicatorManager.addIndicator(new BarStatsIndicator());
-                });
-                config.hideFootprints = mainLayout.hideFootprints; config.showTPO = mainLayout.showTPO; config.vwapVisible = mainLayout.vwapVisible; config.showDailyLevels = mainLayout.showDailyLevels; tpoCacheKey = '';
-                try { 
-                    mainSeries.setData(displayCandles); 
-                    if (mainLayout.barSpacing) chart.timeScale().applyOptions({ barSpacing: mainLayout.barSpacing });
-                    chart.timeScale().fitContent();
-                    if (mainLayout.visibleRange) setTimeout(() => { try { chart.timeScale().setVisibleRange(mainLayout.visibleRange); } catch(e){} }, 100);
-                } catch(e){}
-            }
-
-            const extraLayouts = layout.panels.filter(p => p.id !== 0);
-            extraPanels.forEach((newPanel, i) => {
-                const savedPanel = extraLayouts[i];
-                if (!savedPanel) return;
-                newPanel.displayTimeframe = savedPanel.timeframe;
-                newPanel.displayCandles = aggregateCandles(base5mCandles, savedPanel.timeframe);
-                newPanel.displayClusters = aggregateClusters(base5mClusters, savedPanel.timeframe);
-                try { newPanel.mainSeries.setData(newPanel.displayCandles); } catch(e){}
-                savedPanel.indicators.forEach(id => {
-                    if(id === 'oi') newPanel.indicatorManager.addIndicator(new OIIndicator());
-                    else if(id === 'cvd') newPanel.indicatorManager.addIndicator(new CVDIndicator());
-                    else if(id === 'barstats') newPanel.indicatorManager.addIndicator(new BarStatsIndicator());
-                });
-                newPanel.hideFootprints = savedPanel.hideFootprints; newPanel.showTPO = savedPanel.showTPO; newPanel.vwapVisible = savedPanel.vwapVisible; newPanel.showDailyLevels = savedPanel.showDailyLevels; newPanel.tpoCacheKey = '';
-                try {
-                    if (savedPanel.barSpacing) newPanel.chart.timeScale().applyOptions({ barSpacing: savedPanel.barSpacing });
-                    newPanel.chart.timeScale().fitContent();
-                    if (savedPanel.visibleRange) setTimeout(() => { try { newPanel.chart.timeScale().setVisibleRange(savedPanel.visibleRange); } catch(e){} }, 100);
-                } catch(e){}
-                syncPanelTFBar(newPanel, savedPanel.timeframe); schedulePanelDraw(newPanel);
             });
-            selectedPanelId = 0; syncHeaderButtons(); closeLayoutsDropdown();
-            myLayout.updateSize(); scheduleDraw();
-        }, 150); // The 150ms delay is vital for Golden Layout to finish drawing boxes before we inject data!
+
+            // Recurse — guard against null values so we don't re-enter on null
+            Object.values(obj).forEach(val => {
+                if (val && typeof val === 'object') fixGLSizes(val);  // ← added null guard
+            });
+        }
+        fixGLSizes(layout.glConfig);
+        // -----------------------------------------
+
+        // 1. Teardown existing extra panels & indicators safely
+        [...extraPanels].forEach(p => {
+            if (p.rafId) cancelAnimationFrame(p.rafId);
+            p.chart.remove();
+        });
+        extraPanels.length = 0;
+        extraPanelCounter = 0;
+
+        ['oi', 'cvd', 'barstats'].forEach(id => {
+            const ind = indicatorManager.getIndicator(id);
+            if (ind && ind.visible) indicatorManager.removeIndicator(id);
+        });
+
+        // 2. Feed the configuration back to Golden Layout. 
+        // This triggers the Component Factory synchronously, rebuilding panels 1 by 1.
+        myLayout.loadLayout(layout.glConfig);
+
+        // 3. Restore Main Panel state
+        const mainLayout = layout.panels.find(p => p.id === 0);
+        if (mainLayout) {
+            applyTimeframeChange(mainLayout.timeframe);
+            mainLayout.indicators.forEach(id => {
+                if      (id === 'oi')       indicatorManager.addIndicator(new OIIndicator());
+                else if (id === 'cvd')      indicatorManager.addIndicator(new CVDIndicator());
+                else if (id === 'barstats') indicatorManager.addIndicator(new BarStatsIndicator());
+            });
+            config.hideFootprints  = mainLayout.hideFootprints;
+            config.showTPO         = mainLayout.showTPO;
+            config.vwapVisible     = mainLayout.vwapVisible;
+            config.showDailyLevels = mainLayout.showDailyLevels;
+            tpoCacheKey = '';
+            
+            if (mainLayout.barSpacing) chart.timeScale().applyOptions({ barSpacing: mainLayout.barSpacing });
+            if (mainLayout.visibleRange) setTimeout(() => { try { chart.timeScale().setVisibleRange(mainLayout.visibleRange); } catch(e){} }, 50);
+        }
+
+        // 4. Restore Extra Panels states (matches by array index since components were added sequentially)
+        const extraLayouts = layout.panels.filter(p => p.id !== 0);
+        extraPanels.forEach((newPanel, i) => {
+            const savedPanel = extraLayouts[i];
+            if (!savedPanel) return;
+
+            newPanel.displayTimeframe = savedPanel.timeframe;
+            newPanel.displayCandles   = aggregateCandles(base5mCandles, savedPanel.timeframe);
+            newPanel.displayClusters  = aggregateClusters(base5mClusters, savedPanel.timeframe);
+            newPanel.mainSeries.setData(newPanel.displayCandles);
+
+            savedPanel.indicators.forEach(id => {
+                if      (id === 'oi')       newPanel.indicatorManager.addIndicator(new OIIndicator());
+                else if (id === 'cvd')      newPanel.indicatorManager.addIndicator(new CVDIndicator());
+                else if (id === 'barstats') newPanel.indicatorManager.addIndicator(new BarStatsIndicator());
+            });
+
+            newPanel.hideFootprints  = savedPanel.hideFootprints;
+            newPanel.showTPO         = savedPanel.showTPO;
+            newPanel.vwapVisible     = savedPanel.vwapVisible;
+            newPanel.showDailyLevels = savedPanel.showDailyLevels;
+            newPanel.tpoCacheKey     = '';
+
+            if (savedPanel.barSpacing) newPanel.chart.timeScale().applyOptions({ barSpacing: savedPanel.barSpacing });
+            if (savedPanel.visibleRange) setTimeout(() => { try { newPanel.chart.timeScale().setVisibleRange(savedPanel.visibleRange); } catch(e){} }, 50);
+            
+            syncPanelTFBar(newPanel, savedPanel.timeframe);
+            schedulePanelDraw(newPanel);
+        });
+
+        selectedPanelId = 0;
+        syncHeaderButtons();
+        scheduleDraw();
+        closeLayoutsDropdown();
     }
+
     function renderSavedLayouts() {
         const container = document.getElementById('saved-layouts-list');
         const layouts = getSavedLayouts();
@@ -3586,7 +3655,7 @@ function captureCurrentLayout() {
         } catch(e) { console.error("OI Fetch Error",e); }
     }
 
-function startWebSockets() {
+    function startWebSockets() {
         const wsInterval = getWSInterval(BASE_TIMEFRAME);
         ws = new WebSocket("wss://stream.bybit.com/v5/public/inverse");
         ws.onopen = () => ws.send(JSON.stringify({op:"subscribe",args:[`kline.${wsInterval}.BTCUSD`,"publicTrade.BTCUSD","tickers.BTCUSD"]}));
@@ -3614,21 +3683,14 @@ function startWebSockets() {
                     newCandle.oiOpen=closingOI;newCandle.oiClose=closingOI;newCandle.oiHigh=closingOI;newCandle.oiLow=closingOI;
                     tpoCacheKey = '';
                 } else { upsertCandle(ts,parseFloat(k.open),parseFloat(k.high),parseFloat(k.low),parseFloat(k.close),parseFloat(k.volume||0)); }
-                
                 displayCandles=aggregateCandles(base5mCandles,config.displayTimeframe);
                 displayClusters=aggregateClusters(base5mClusters,config.displayTimeframe);
-                
-                if (mainSeries && chart) {
-                    try { mainSeries.update(displayCandles[displayCandles.length-1]); } catch(e){}
-                }
-                
+                mainSeries.update(displayCandles[displayCandles.length-1]);
                 extraPanels.forEach(p => {
                     p.displayCandles = aggregateCandles(base5mCandles, p.displayTimeframe);
                     p.displayClusters = aggregateClusters(base5mClusters, p.displayTimeframe);
                     const last = p.displayCandles[p.displayCandles.length-1];
-                if (last && p.mainSeries && p.chart) {
-                        try { p.mainSeries.update(last); } catch(e){}
-                    }
+                    if (last) p.mainSeries.update(last);
                 });
                 scheduleDraw();
             }
@@ -3650,12 +3712,11 @@ function startWebSockets() {
                         if (price > lastBase.high) lastBase.high = price;
                         if (price < lastBase.low) lastBase.low = price;
                         const lastDisplay = displayCandles[displayCandles.length - 1];
-                        
-                        if (lastDisplay && mainSeries && chart) {
+                        if (lastDisplay) {
                             lastDisplay.close = price;
                             if (price > lastDisplay.high) lastDisplay.high = price;
                             if (price < lastDisplay.low) lastDisplay.low = price;
-                            try { mainSeries.update(lastDisplay); } catch(e){}
+                            mainSeries.update(lastDisplay);
                         }
                     }
                     document.getElementById('price').innerText = price.toLocaleString();
@@ -3663,37 +3724,39 @@ function startWebSockets() {
                 });
             }
         };  
-    }
+    }       
 
-    // ── Add Chart Button ──────────────────────────────────────────────────────────
-    const addChartBtn = document.getElementById('add-chart-btn');
-    if (addChartBtn) {
-        addChartBtn.addEventListener('click', () => {
-            if (!myLayout) return;
-            const panelConfig = {
-                type: 'component',
-                componentType: 'chartComponent',
-                componentState: { isMain: false },
-                title: `BTCUSD ${extraPanelCounter + 1}`
-            };
-            try {
-                if (myLayout.rootItem && myLayout.rootItem.contentItems.length > 0) {
-                    myLayout.rootItem.contentItems[0].addItem(panelConfig);
-                } else {
-                    myLayout.addItem(panelConfig);
-                }
-            } catch(e) {
-                console.error("Failed to add chart panel:", e);
+// ── Add Chart Button ──────────────────────────────────────────────────────────
+    document.getElementById('add-chart-btn').addEventListener('click', () => {
+        if (!myLayout) return;
+        
+        const panelConfig = {
+            type: 'component',
+            componentType: 'chartComponent',
+            componentState: { isMain: false },
+            title: `BTCUSD ${extraPanelCounter + 1}`
+        };
+
+        try {
+            // Golden Layout v2 natively handles injecting the new tab into the active row
+            if (myLayout.rootItem && myLayout.rootItem.contentItems.length > 0) {
+                myLayout.rootItem.contentItems[0].addItem(panelConfig);
+            } else {
+                myLayout.addItem(panelConfig);
             }
-        });
-    }
+        } catch(e) {
+            console.error("Failed to add chart panel:", e);
+        }
+    });
 
-    async function init() {
+async function init() {
         const glModule = await import('https://cdn.jsdelivr.net/npm/golden-layout@2.6.0/+esm');
         window.goldenLayout = glModule;
 
+        // Boot up Golden Layout (myLayout.init() inside here builds the DOM)
         initGoldenLayout();
 
+        // Wait 50ms for the DOM to attach safely before drawing indicators
         setTimeout(async () => {
             if (!chart || !mainSeries) {
                 console.error("Golden Layout failed to map Panel 0 correctly.");
@@ -3702,6 +3765,7 @@ function startWebSockets() {
 
             chart.timeScale().subscribeVisibleLogicalRangeChange(() => { if (typeof scheduleDraw === 'function') scheduleDraw(); });
             
+            // This is what was crashing before! Now the container is guaranteed to exist.
             if(indicatorManager) indicatorManager.addIndicator(new OIIndicator());
             syncHeaderButtons();
 
@@ -3724,23 +3788,9 @@ function startWebSockets() {
                     currentPrice = base5mCandles[base5mCandles.length-1].close;
                     tpoCacheKey = ''; 
                     
-            await fetchOpenInterest();
+                    await fetchOpenInterest();
+                    chart.timeScale().fitContent();
                     updateCandleAppearance();
-
-                    // Aggressively force layout to fit content until successful (Fixes F12 bug)
-                    myLayout.updateSize();
-                    let fitAttempts = 0;
-                    const fitInterval = setInterval(() => {
-                        if (chart && mainSeries && activeWrapperEl && activeWrapperEl.clientWidth > 0) {
-                            try { 
-                                chart.timeScale().fitContent(); 
-                                scheduleDraw();
-                                window._mainChartFit = true;
-                            } catch(e){}
-                            fitAttempts++;
-                            if (fitAttempts > 5) clearInterval(fitInterval);
-                        }
-                    }, 100);
                 }
                 startWebSockets();
                 setInterval(() => { needsRedraw = true; scheduleDraw(); }, config.drawDelay);
