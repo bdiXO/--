@@ -1813,7 +1813,22 @@
 
             const singlePrints = new Set();
             rowKeys.forEach(k => { if (rowMap[k] === 1) singlePrints.add(parseFloat(k)); });
-
+            // Poor high: consecutive rows of exactly 2 at the very top
+            const poorHighPrints = new Set();
+            let phPrev = Infinity;
+            for (let i = sortedPrices.length - 1; i >= 0; i--) {
+                const c = rowMap[sortedPrices[i]];
+                if (c >= 2 && c <= phPrev) { poorHighPrints.add(sortedPrices[i]); phPrev = c; }
+                else break;
+            }
+            // Poor low: consecutive rows of exactly 2 at the very bottom
+            const poorLowPrints = new Set();
+            let plPrev = Infinity;
+            for (let i = 0; i < sortedPrices.length; i++) {
+                const c = rowMap[sortedPrices[i]];
+                if (c >= 2 && c <= plPrev) { poorLowPrints.add(sortedPrices[i]); plPrev = c; }
+                else break;
+            }
             const maxBlocks = Math.max(...Object.values(rowMap));
             const sessionHigh = Math.max(...candles.map(c => c.high));
             const sessionLow  = Math.min(...candles.map(c => c.low));
@@ -1833,7 +1848,8 @@
             profiles.push({
                 dayStart, firstCandleTime, rowMap, sortedPrices, pocPrice, pocCount,
                 vaLow, vaHigh, totalTPO, singlePrints, maxBlocks, sessionHigh, sessionLow,
-                tickSize, topExtremes, bottomExtremes, sessionEndTime: candles[candles.length - 1].time,   
+                tickSize, topExtremes, bottomExtremes, sessionEndTime: candles[candles.length - 1].time,
+                poorHighPrints, poorLowPrints,   
             });
         });
         return profiles;
@@ -1861,7 +1877,7 @@
             const profileMaxWidth = profile.maxBlocks * blockW;
             if (anchorX + profileMaxWidth < -50 || anchorX > cssWidth + 50) return;
 
-            const { rowMap, sortedPrices, pocPrice, vaLow, vaHigh, singlePrints, tickSize } = profile;
+            const { rowMap, sortedPrices, pocPrice, vaLow, vaHigh, singlePrints, tickSize, poorHighPrints, poorLowPrints } = profile;
 
             sortedPrices.forEach(price => {
                 const count = rowMap[price];
@@ -1878,8 +1894,13 @@
                 const isInVA    = price >= vaLow && price <= vaHigh;
                 const isPOC     = Math.abs(price - pocPrice) < 0.5;
 
+                const isPoorExtreme = poorHighPrints.has(price) || poorLowPrints.has(price);
+
                 let fillColor, fillAlpha;
-                if (isSingle) {
+                if (isPoorExtreme) {
+                    fillColor = '#84cc16';
+                    fillAlpha = Math.min(1, config.tpoOpacityVA + 0.15);
+                } else if (isSingle) {
                     fillColor = config.tpoColorSingle;
                     fillAlpha = Math.min(1, config.tpoOpacityVA + 0.20);
                 } else if (isInVA) {
