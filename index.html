@@ -3172,12 +3172,27 @@
         const totalWidth=barSpacing*0.92, candleWidth=totalWidth*config.candleWidthPercent, clusterWidth=totalWidth*config.clusterWidthPercent;
         const timestamps=Object.keys(displayClusters);
 
-        offscreenCtx.lineWidth=config.gridLineWidth; offscreenCtx.strokeStyle=hexToRgba(config.gridColor,config.gridOpacity);
-        offscreenCtx.beginPath();
         const approxRange=60000;
         const startPrice=Math.floor(currentPrice/config.gridSpacing)*config.gridSpacing-approxRange;
         const endPrice=Math.floor(currentPrice/config.gridSpacing)*config.gridSpacing+approxRange;
+
+        // Normal (gray) grid lines — every 1k except 5k multiples
+        offscreenCtx.lineWidth=config.gridLineWidth;
+        offscreenCtx.strokeStyle=hexToRgba(config.gridColor,config.gridOpacity);
+        offscreenCtx.beginPath();
         for (let p=startPrice; p<=endPrice; p+=config.gridSpacing) {
+            if (Math.round(p) % 5000 === 0) continue;
+            const y=mainSeries.priceToCoordinate?mainSeries.priceToCoordinate(p):null;
+            if (y!==null&&y>=0&&y<=candleBottomY) { offscreenCtx.moveTo(0,y); offscreenCtx.lineTo(cssWidth-60,y); }
+        }
+        offscreenCtx.stroke();
+
+        // Psychological 5k levels in yellow (65k, 70k, 75k…)
+        offscreenCtx.lineWidth=config.gridLineWidth * 1.5;
+        offscreenCtx.strokeStyle=hexToRgba('#f0b90b', config.gridOpacity);
+        offscreenCtx.beginPath();
+        for (let p=startPrice; p<=endPrice; p+=config.gridSpacing) {
+            if (Math.round(p) % 5000 !== 0) continue;
             const y=mainSeries.priceToCoordinate?mainSeries.priceToCoordinate(p):null;
             if (y!==null&&y>=0&&y<=candleBottomY) { offscreenCtx.moveTo(0,y); offscreenCtx.lineTo(cssWidth-60,y); }
         }
@@ -3877,3 +3892,4 @@ async function init() {
 </script>
 </body>
 </html>
+
