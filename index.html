@@ -37,7 +37,7 @@ body{background:var(--bg);overflow:hidden;user-select:none;color:var(--tx);margi
 .lm_splitter{background:var(--border)!important}
 .lm_splitter:hover{background:rgba(59,130,246,.2)!important}
 .lm_content{background:var(--bg)!important}
-.indicator-pane{position:absolute;left:0;right:54px;background:rgba(10,14,26,.95);border-top:1px solid var(--border);z-index:30;backdrop-filter:blur(4px);transition:bottom .2s ease;pointer-events:none}
+.indicator-pane{position:absolute;left:0;right:54px;background:rgba(10,14,26,.98);border-top:1px solid var(--border);z-index:30;transition:bottom .2s ease;pointer-events:none}
 .indicator-pane.dragging{z-index:100;box-shadow:0 4px 20px rgba(59,130,246,.3);border:1px solid var(--accent)}
 .pane-canvas{display:block;width:100%;height:100%;pointer-events:none}
 .pane-header{position:absolute;top:0;left:0;right:0;height:20px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;background:transparent;cursor:move;z-index:100;pointer-events:auto}
@@ -519,7 +519,7 @@ let config={
   levelsColor:'#ff8c00',levelsLineStyle:'dashed',
   levelsEnabled:{dOpen:true,dHigh:true,dLow:true,dEQ:true,pdHigh:true,pdLow:true,pdEQ:true},
 };
-
+let crosshairPos=null;
 let base5mClusters={},base5mCandles=[],displayCandles=[],displayClusters={};
 let lastBarTime=0,currentPrice=0,mainSeries,ws=null,measuredPriceScaleWidth=54;
 let tpoProfilesCache=null,tpoCacheKey='';
@@ -542,14 +542,14 @@ function makeDefaultIndSettings(){const s={};IND_SETTING_KEYS.forEach(k=>{s[k]=c
 
 function _saveP0(){
   const s={};IND_SETTING_KEYS.forEach(k=>{s[k]=config[k]});s.levelsEnabled={...config.levelsEnabled};
-  return{chart,mainSeries,chartOverlayCanvas,ctxOverlay,offscreenCanvas,offscreenCtx,
+  return{chart,mainSeries,chartOverlayCanvas,ctxOverlay,offscreenCanvas,offscreenCtx, crosshairPos,
     displayCandles,displayClusters,tpoProfilesCache,tpoCacheKey,vwapData,vwapCacheKey,
     indicatorManager,activePriceLabelEl,activeTimerBox,activeWrapperEl,
     showTPO:config.showTPO,vwapVisible:config.vwapVisible,
     showDailyLevels:config.showDailyLevels,hideFootprints:config.hideFootprints,indSettings:s};
 }
 function _restoreP0(s){
-  chart=s.chart;mainSeries=s.mainSeries;chartOverlayCanvas=s.chartOverlayCanvas;ctxOverlay=s.ctxOverlay;
+  chart=s.chart;mainSeries=s.mainSeries;crosshairPos=s.crosshairPos;chartOverlayCanvas=s.chartOverlayCanvas;ctxOverlay=s.ctxOverlay;
   offscreenCanvas=s.offscreenCanvas;offscreenCtx=s.offscreenCtx;
   displayCandles=s.displayCandles;displayClusters=s.displayClusters;
   tpoProfilesCache=s.tpoProfilesCache;tpoCacheKey=s.tpoCacheKey;
@@ -568,7 +568,7 @@ function _activatePanel(p){
   indicatorManager=p.indicatorManager;activePriceLabelEl=p.priceLabelEl;
   activeTimerBox=p.timerBoxEl;activeWrapperEl=p.wrapperEl;
   config.showTPO=p.showTPO;config.vwapVisible=p.vwapVisible;
-  config.showDailyLevels=p.showDailyLevels;config.hideFootprints=p.hideFootprints;
+  config.showDailyLevels=p.showDailyLevels;config.hideFootprints=p.hideFootprints; crosshairPos=p.crosshairPos||null;
   IND_SETTING_KEYS.forEach(k=>{if(p[k]!==undefined)config[k]=p[k]});
   if(p.levelsEnabled)config.levelsEnabled={...p.levelsEnabled};
 }
@@ -709,6 +709,7 @@ function initGoldenLayout(){
       panelIndicatorManager.onLayout=()=>schedulePanelDraw(panel);
       newSeries.setData(panel.displayCandles);extraPanels.push(panel);
       newChart.timeScale().subscribeVisibleLogicalRangeChange(()=>schedulePanelDraw(panel));
+      newChart.subscribeCrosshairMove(param=>{panel.crosshairPos=param.point||null;});
     }
     const ro=new ResizeObserver((entries)=>{
       for(const entry of entries){
@@ -994,8 +995,10 @@ function buildTPOProfiles(){
     const maxBlocks=Math.max(...Object.values(rowMap));
     const sessionHigh=Math.max(...candles.map(c=>c.high)),sessionLow=Math.min(...candles.map(c=>c.low));
     const topExtremes=new Set(),bottomExtremes=new Set();
-    for(let i=sortedPrices.length-1;i>=0;i--){if(rowMap[sortedPrices[i]]===2)topExtremes.add(sortedPrices[i]);else break;}
-    for(let i=0;i<sortedPrices.length;i++){if(rowMap[sortedPrices[i]]===2)bottomExtremes.add(sortedPrices[i]);else break;}
+    if(sortedPrices.length>0){
+      const tp=sortedPrices[sortedPrices.length-1];if(rowMap[tp]>=2)topExtremes.add(tp);
+      const bp=sortedPrices[0];if(rowMap[bp]>=2)bottomExtremes.add(bp);
+    }
     profiles.push({dayStart,firstCandleTime:candles[0].time,rowMap,sortedPrices,pocPrice,pocCount,
       vaLow,vaHigh,totalTPO,singlePrints,maxBlocks,sessionHigh,sessionLow,tickSize,
       topExtremes,bottomExtremes,sessionEndTime:candles[candles.length-1].time,poorHighPrints,poorLowPrints});
@@ -1240,6 +1243,11 @@ class IndicatorManager{
     ac.priceScale('right').applyOptions({scaleMargins:{top:0.05,bottom:mPct}});
     let curBottom=TIME_AXIS_HEIGHT;
     this.order.forEach(id=>{const ind=this.indicators.get(id);if(!ind||!ind.visible)return;ind.element.style.bottom=curBottom+'px';ind.element.style.height=ind.height+'px';ind.setupBuffers(wr.clientWidth,ind.height);curBottom+=ind.height;});
+    let gapCover=wr.querySelector('.ind-gap-cover');
+    if(totalIH>0){
+      if(!gapCover){gapCover=document.createElement('div');gapCover.className='ind-gap-cover';gapCover.style.cssText=`position:absolute;left:0;right:0;bottom:${TIME_AXIS_HEIGHT-1}px;height:4px;background:rgba(10,14,26,.98);z-index:29;pointer-events:none;`;wr.appendChild(gapCover);}
+      gapCover.style.display='block';
+    }else if(gapCover){gapCover.style.display='none';}
     ac.applyOptions({width:wr.clientWidth,height:totalH});updatePaneRight();
     if(this.onLayout)this.onLayout();else if(typeof scheduleDraw==='function')scheduleDraw();
   }
@@ -1567,12 +1575,12 @@ function drawFrames(){
   if(!offscreenCtx||!chartOverlayCanvas)return;
   const cssWidth=chartOverlayCanvas.clientWidth,cssHeight=chartOverlayCanvas.clientHeight;
   const drawWidth=cssWidth-measuredPriceScaleWidth;
-  offscreenCtx.clearRect(0,0,cssWidth,cssHeight);offscreenCtx.save();offscreenCtx.beginPath();offscreenCtx.rect(0,0,drawWidth,cssHeight);offscreenCtx.clip();
+  const mB=chart.priceScale('right').options().scaleMargins.bottom,cbY=cssHeight*(1-mB);
+  offscreenCtx.clearRect(0,0,cssWidth,cssHeight);offscreenCtx.save();offscreenCtx.beginPath();offscreenCtx.rect(0,0,drawWidth,cbY);offscreenCtx.clip();
   const ts=chart.timeScale(),bs=ts.options().barSpacing,vr=ts.getVisibleLogicalRange();
   if(!vr){ctxOverlay.clearRect(0,0,cssWidth,cssHeight);ctxOverlay.drawImage(offscreenCanvas,0,0);return;}
   const rts=getDynamicTickSize(config.baseTickSize,config.minCellHeight);
   document.getElementById('tick-display').innerText=`${rts}`;
-  const mB=chart.priceScale('right').options().scaleMargins.bottom,cbY=cssHeight*(1-mB);
   const totalW=bs*0.92,cw=totalW*config.candleWidthPercent,clw=totalW*config.clusterWidthPercent;
   const approxRange=60000,startP=Math.floor(currentPrice/config.gridSpacing)*config.gridSpacing-approxRange,endP=startP+approxRange*2;
 
@@ -1646,7 +1654,7 @@ function drawFrames(){
       const x=ts.timeToCoordinate(candle.time);if(x===null||x<-20||x>cssWidth+20)return;
       const b=displayClusters[String(Math.floor(candle.time))];if(!b)return;
       let tB=0,tS=0;Object.values(b).forEach(d=>{tB+=d.buy;tS+=d.sell;});
-      const delta=tB-tS;if(Math.abs(delta)<config.minBubbleVolume)return;
+      const delta=tB-tS;const tfMultiplier=config.displayTimeframe/BASE_TIMEFRAME;if(Math.abs(delta)<config.minBubbleVolume*tfMultiplier)return;
       const isUp=candle.close>=candle.open,isDPos=delta>=0;
       const sy=isUp?mainSeries.priceToCoordinate(candle.high)-45:mainSeries.priceToCoordinate(candle.low)+40;
       if(sy<0||sy>cbY)return;
@@ -1866,8 +1874,8 @@ function startWebSockets(){
           const nc=base5mCandles[base5mCandles.length-1];nc.oiOpen=closingOI;nc.oiClose=closingOI;nc.oiHigh=closingOI;nc.oiLow=closingOI;tpoCacheKey='';
         }else upsertCandle(ts,parseFloat(k.open),parseFloat(k.high),parseFloat(k.low),parseFloat(k.close),parseFloat(k.volume||0));
         displayCandles=aggregateCandles(base5mCandles,config.displayTimeframe);displayClusters=aggregateClusters(base5mClusters,config.displayTimeframe);
-        mainSeries.update(displayCandles[displayCandles.length-1]);
-        extraPanels.forEach(p=>{p.displayCandles=aggregateCandles(base5mCandles,p.displayTimeframe);p.displayClusters=aggregateClusters(base5mClusters,p.displayTimeframe);const lc=p.displayCandles[p.displayCandles.length-1];if(lc)p.mainSeries.update(lc);});
+        mainSeries.update(displayCandles[displayCandles.length-1]);updateCandleAppearance();
+        extraPanels.forEach(p=>{p.displayCandles=aggregateCandles(base5mCandles,p.displayTimeframe);p.displayClusters=aggregateClusters(base5mClusters,p.displayTimeframe);const lc=p.displayCandles[p.displayCandles.length-1];if(lc){p.mainSeries.update(lc);const lColor=(lc.close>=lc.open)?config.upColor:config.downColor;p.mainSeries.applyOptions({priceLineColor:lColor});}});
         scheduleDraw();
       }
       if(msg.topic?.includes('publicTrade')){
@@ -1903,6 +1911,7 @@ async function init(){
   setTimeout(async()=>{
     if(!chart||!mainSeries){console.error('Golden Layout failed to map Panel 0 correctly.');return;}
     chart.timeScale().subscribeVisibleLogicalRangeChange(()=>{if(typeof scheduleDraw==='function')scheduleDraw();});
+    chart.subscribeCrosshairMove(param=>{crosshairPos=param.point||null;scheduleDraw();});
     if(indicatorManager)indicatorManager.addIndicator(new OIIndicator());
     syncHeaderButtons();
     try{
