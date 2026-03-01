@@ -1887,7 +1887,7 @@ function drawFrames(){
       const isUp=candle.close>=candle.open,isDPos=delta>=0;
       const sy=isUp?mainSeries.priceToCoordinate(candle.low)+40:mainSeries.priceToCoordinate(candle.high)-45;
       if(sy<0||sy>cbY)return;
-      const dy=isDPos?sy+30:sy-30;bcX=x-totalW/2+totalW/2,dc=isDPos?config.upColor:config.downColor;
+      const dy=isUp?sy+30:sy-30;bcX=x-totalW/2+totalW/2,dc=isDPos?config.upColor:config.downColor;
       offscreenCtx.save();offscreenCtx.globalAlpha=pulseOp;offscreenCtx.beginPath();offscreenCtx.arc(bcX,dy,config.bubbleOuterSize,0,Math.PI*2);offscreenCtx.fillStyle=dc;offscreenCtx.fill();offscreenCtx.restore();
       offscreenCtx.save();offscreenCtx.beginPath();offscreenCtx.arc(bcX,dy,config.bubbleInnerSize,0,Math.PI*2);offscreenCtx.fillStyle=dc;offscreenCtx.fill();offscreenCtx.restore();
     });
