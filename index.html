@@ -553,7 +553,7 @@ function _saveP0(){
     displayCandles,displayClusters,tpoProfilesCache,tpoCacheKey,vwapData,vwapCacheKey,
     indicatorManager,activePriceLabelEl,activeTimerBox,activeWrapperEl,
     showTPO:config.showTPO,vwapVisible:config.vwapVisible,
-    showDailyLevels:config.showDailyLevels,hideFootprints:config.hideFootprints,indSettings:s};
+    showDailyLevels:config.showDailyLevels,hideFootprints:config.hideFootprints,hideRoundNumbers:config.hideRoundNumbers,indSettings:s};
 }
 function _restoreP0(s){
   chart=s.chart;mainSeries=s.mainSeries;crosshairPos=s.crosshairPos;chartOverlayCanvas=s.chartOverlayCanvas;ctxOverlay=s.ctxOverlay;
@@ -564,7 +564,7 @@ function _restoreP0(s){
   indicatorManager=s.indicatorManager;activePriceLabelEl=s.activePriceLabelEl;
   activeTimerBox=s.activeTimerBox;activeWrapperEl=s.activeWrapperEl;
   config.showTPO=s.showTPO;config.vwapVisible=s.vwapVisible;
-  config.showDailyLevels=s.showDailyLevels;config.hideFootprints=s.hideFootprints;
+  config.showDailyLevels=s.showDailyLevels;config.hideFootprints=s.hideFootprints;config.hideRoundNumbers=s.hideRoundNumbers;
   if(s.indSettings){IND_SETTING_KEYS.forEach(k=>{config[k]=s.indSettings[k]});config.levelsEnabled={...s.indSettings.levelsEnabled};}
 }
 function _activatePanel(p){
@@ -575,14 +575,14 @@ function _activatePanel(p){
   indicatorManager=p.indicatorManager;activePriceLabelEl=p.priceLabelEl;
   activeTimerBox=p.timerBoxEl;activeWrapperEl=p.wrapperEl;
   config.showTPO=p.showTPO;config.vwapVisible=p.vwapVisible;
-  config.showDailyLevels=p.showDailyLevels;config.hideFootprints=p.hideFootprints; crosshairPos=p.crosshairPos||null;
+  config.showDailyLevels=p.showDailyLevels;config.hideFootprints=p.hideFootprints;config.hideRoundNumbers=p.hideRoundNumbers;config.hideRoundNumbers=p.hideRoundNumbers;config.hideRoundNumbers=p.hideRoundNumbers; crosshairPos=p.crosshairPos||null;
   IND_SETTING_KEYS.forEach(k=>{if(p[k]!==undefined)config[k]=p[k]});
   if(p.levelsEnabled)config.levelsEnabled={...p.levelsEnabled};
 }
 function _deactivatePanel(p){
   p.tpoProfilesCache=tpoProfilesCache;p.tpoCacheKey=tpoCacheKey;
   p.showTPO=config.showTPO;p.vwapVisible=config.vwapVisible;
-  p.showDailyLevels=config.showDailyLevels;p.hideFootprints=config.hideFootprints;
+  p.showDailyLevels=config.showDailyLevels;p.hideFootprints=config.hideFootprints;p.hideRoundNumbers=config.hideRoundNumbers;
   IND_SETTING_KEYS.forEach(k=>{p[k]=config[k]});p.levelsEnabled={...config.levelsEnabled};
 }
 
