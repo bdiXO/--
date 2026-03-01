@@ -510,7 +510,7 @@ let config={
   statsFontFamily:"'JetBrains Mono', monospace",statsFontSize:9,
   statsFontWeight:'400',cellFontSize:9,cellFontWeight:'400',barSpacing:50,
   clusterBgOpacity:0,pocBorderWidth:1.5,cellBorderWidth:1,
-  bubbleInnerSize:5,bubbleOuterSize:10,bubblePulseSpeed:1500,
+  bubbleInnerSize:5,bubbleOuterSize:10,bubblePulseSpeed:1500, liqBubbleThreshold: 1, liqBubbleInnerSize: 5, liqBubbleOuterSize: 10, liqBubblePulseSpeed: 1200, liqLabelFontSize: 9,
   absorptionDotSize:4,absorptionGlow:10,absorptionThreshold:1000000,
   priceLabelFontSize:9,timerFontSize:8,timerOpacity:0.9,
   defaultIndicatorHeight:150,oiCandleWidth:0.5,cvdLineThickness:1,
@@ -528,6 +528,7 @@ let config={
 };
 let crosshairPos=null;
 let base5mClusters={},base5mCandles=[],displayCandles=[],displayClusters={};
+let liqData = {};
 let lastBarTime=0,currentPrice=0,mainSeries,ws=null,measuredPriceScaleWidth=54;
 let tpoProfilesCache=null,tpoCacheKey='';
 let activePriceLabelEl=null,activeTimerBox=null,activeWrapperEl=null;
@@ -574,6 +575,7 @@ function _activatePanel(p){
   tpoProfilesCache=p.tpoProfilesCache;tpoCacheKey=p.tpoCacheKey;
   indicatorManager=p.indicatorManager;activePriceLabelEl=p.priceLabelEl;
   activeTimerBox=p.timerBoxEl;activeWrapperEl=p.wrapperEl;
+  measuredPriceScaleWidth = p.wrapperEl._cachedScaleWidth || 54;
   config.showTPO=p.showTPO;config.vwapVisible=p.vwapVisible;
   config.showDailyLevels=p.showDailyLevels;config.hideFootprints=p.hideFootprints;config.hideRoundNumbers=p.hideRoundNumbers;config.hideRoundNumbers=p.hideRoundNumbers;config.hideRoundNumbers=p.hideRoundNumbers; crosshairPos=p.crosshairPos||null;
   IND_SETTING_KEYS.forEach(k=>{if(p[k]!==undefined)config[k]=p[k]});
@@ -627,6 +629,7 @@ function initGoldenLayout(){
 
     const chartContEl=document.createElement('div');
     chartContEl.style.cssText='width:100%;height:100%;';
+    chartContEl.dataset.panelId=String(pid);
     const overlayEl=document.createElement('canvas');
     overlayEl.style.cssText='position:absolute;top:0;left:0;pointer-events:none;z-index:20;';
     const priceLabelEl=document.createElement('div');
@@ -693,7 +696,7 @@ function initGoldenLayout(){
       panelIndicatorManager.chart=newChart;panelIndicatorManager.wrapper=wrapperEl;
     }
     const panel=isMain?null:{
-      id:pid,indicatorManager:panelIndicatorManager,wrapperEl,chart:newChart,mainSeries:newSeries,
+      id:pid,chartContEl,indicatorManager:panelIndicatorManager,wrapperEl,chart:newChart,mainSeries:newSeries,
       overlayCanvas:overlayEl,ctxOverlay:overlayEl.getContext('2d'),offscreenCanvas:offscreenC,offscreenCtx:offscreenC.getContext('2d'),
       priceLabelEl,timerBoxEl:timerEl,tfBadgeEl:isMain?null:wrapperEl.querySelector('.panel-tf-badge'),displayTimeframe:5,displayCandles:displayCandles.slice(),displayClusters:structuredClone(displayClusters),
       tpoProfilesCache:null,tpoCacheKey:'',rafRunning:false,needsRedraw:false,lastInteractionTime:0,rafId:null,
@@ -738,13 +741,27 @@ function initGoldenLayout(){
 // ── Global Draw Loop ───────────────────────────────────────────────────────────
 let rafId=null,rafRunning=false,needsRedraw=false,lastInteractionTime=0,clustersDirty=false;
 
+const _scaleWidthCache = new WeakMap();
+
 function updatePaneRight(){
-  let right=54;
-  if(activeWrapperEl){const td=activeWrapperEl.querySelector('tr td:last-child');if(td){const w=Math.round(td.getBoundingClientRect().width);if(w>10)right=w;}}
-  measuredPriceScaleWidth=right;
-  const updatePanes=w=>{w.querySelectorAll('.indicator-pane').forEach(el=>{el.style.right=right+'px'});const ph=w.querySelector('.drag-placeholder');if(ph)ph.style.right=right+'px';};
-  if(indicatorManager?.wrapper)updatePanes(indicatorManager.wrapper);
-  extraPanels.forEach(p=>updatePanes(p.wrapperEl));
+  function measure(wrapperEl){
+    if(!wrapperEl) return wrapperEl?._cachedScaleWidth||54;
+    const td=wrapperEl.querySelector('tr td:last-child');
+    if(td){
+      const wRect=wrapperEl.getBoundingClientRect();
+      const tdRect=td.getBoundingClientRect();
+      const w=Math.round(wRect.right-tdRect.left);
+      if(w>10){wrapperEl._cachedScaleWidth=w;return w;}
+    }
+    return wrapperEl._cachedScaleWidth||54;
+  }
+  function applyRight(wrapperEl,right){
+    wrapperEl.querySelectorAll('.indicator-pane').forEach(el=>el.style.right=right+'px');
+    const ph=wrapperEl.querySelector('.drag-placeholder');if(ph)ph.style.right=right+'px';
+  }
+  const mainWrapper=indicatorManager?.wrapper;
+  if(mainWrapper){const r=measure(mainWrapper);applyRight(mainWrapper,r);if(activeWrapperEl===mainWrapper)measuredPriceScaleWidth=r;}
+  extraPanels.forEach(p=>{const r=measure(p.wrapperEl);applyRight(p.wrapperEl,r);if(activeWrapperEl===p.wrapperEl)measuredPriceScaleWidth=r;});
 }
 function scheduleDraw(){
   needsRedraw=true;lastInteractionTime=Date.now();
@@ -913,7 +930,20 @@ _bindInput('candle-width-input',v=>{config.candleWidthPercent=parseInt(v)/100;sc
 _bindInput('cluster-width-input',v=>{config.clusterWidthPercent=parseInt(v)/100;scheduleDraw();});
 _bindInput('wick-thickness',v=>{config.wickThickness=parseFloat(v);_lbl('wick-thickness-val',v+'px');scheduleDraw();});
 _bindInput('border-thickness',v=>{config.borderThickness=parseFloat(v);_lbl('border-thickness-val',v+'px');scheduleDraw();});
-_bindChange('bg-color-input',v=>{config.bgColor=v;chart.applyOptions({layout:{background:{color:v}}});});
+_bindChange('bg-color-input',v=>{
+  config.bgColor=v;
+  document.documentElement.style.setProperty('--bg',v);
+  chart.applyOptions({layout:{background:{color:v}}});
+  extraPanels.forEach(p=>p.chart.applyOptions({layout:{background:{color:v}}}));
+  document.querySelectorAll('.lm_content').forEach(el=>el.style.background=v);
+  document.querySelectorAll('.chart-panel-wrapper').forEach(el=>el.style.background=v);
+  document.querySelectorAll('.lm_goldenlayout').forEach(el=>el.style.background=v);
+  document.querySelectorAll('.indicator-pane').forEach(el=>el.style.background=v);
+  document.querySelectorAll('.ind-gap-cover').forEach(el=>el.style.background=v); // ← ADD THIS
+  document.getElementById('charts-container').style.background=v;
+  if(indicatorManager)indicatorManager.updateLayout();
+  scheduleDraw();
+});
 _bindChange('panel-color-input',v=>{config.panelColor=v;});
 _bindChange('accent-color-input',v=>{config.accentColor=v;});
 _bindChange('poc-color-input',v=>{config.pocColor=v;scheduleDraw();});
@@ -1130,6 +1160,7 @@ class OIIndicator extends BaseIndicator{
       const bT=Math.min(getY(cO),getY(cC)),bH=Math.max(1,Math.abs(getY(cC)-getY(cO)));
       ctxS.fillStyle=color;ctxS.fillRect(x-w/2,bT,w,bH);
       ctxS.strokeStyle=config.oiBorderColor;ctxS.lineWidth=1;ctxS.strokeRect(x-w/2,bT,w,bH);
+      ctxS.restore();
     });
   }
 }
@@ -1160,6 +1191,7 @@ class CVDIndicator extends BaseIndicator{
     ctxS.fillText(formatUSD(maxC),drawWidth-5,getY(maxC)+12);ctxS.fillText(formatUSD(minC),drawWidth-5,getY(minC)-5);
     const lastV=vc[vc.length-1];const lastX=lastV&&lastV.x<drawWidth?lastV.x:drawWidth-80;
     ctxS.fillStyle=lineColor;ctxS.font=`bold 11px ${config.statsFontFamily}`;ctxS.textAlign='left';ctxS.fillText(formatUSD(fCVD),lastX+10,getY(fCVD)+4);
+    ctxS.restore();
   }
 }
 
@@ -1243,7 +1275,7 @@ class IndicatorManager{
     this.order.forEach(id=>{const ind=this.indicators.get(id);if(!ind||!ind.visible)return;ind.element.style.bottom=curBottom+'px';ind.element.style.height=ind.height+'px';ind.setupBuffers(wr.clientWidth,ind.height);curBottom+=ind.height;});
     let gapCover=wr.querySelector('.ind-gap-cover');
     if(totalIH>0){
-      if(!gapCover){gapCover=document.createElement('div');gapCover.className='ind-gap-cover';gapCover.style.cssText=`position:absolute;left:0;right:0;bottom:${TIME_AXIS_HEIGHT-1}px;height:4px;background:rgba(10,14,26,.98);z-index:29;pointer-events:none;`;wr.appendChild(gapCover);}
+      if(!gapCover){gapCover=document.createElement('div');gapCover.className='ind-gap-cover';gapCover.style.cssText=`position:absolute;left:0;right:0;height:4px;background:${config.bgColor};z-index:29;pointer-events:none;`;;wr.appendChild(gapCover);}
       gapCover.style.display='block';
     }else if(gapCover){gapCover.style.display='none';}
     ac.applyOptions({width:wr.clientWidth,height:totalH});updatePaneRight();
@@ -1454,7 +1486,7 @@ function upsertCandle(tsSec,o,h,l,c,v=0){
     const prevOI=base5mCandles.length>0?(base5mCandles[base5mCandles.length-1].oiClose||0):0;
     base5mCandles.push({time:key,open:o,high:h,low:l,close:c,volume:v,oiOpen:prevOI,oiHigh:prevOI,oiLow:prevOI,oiClose:prevOI});
     base5mCandles.sort((a,b)=>a.time-b.time);
-    const MAX=1500;if(base5mCandles.length>MAX){const pruned=base5mCandles.splice(0,base5mCandles.length-MAX);pruned.forEach(c=>delete base5mClusters[String(c.time)]);}
+    const MAX=1500;if(base5mCandles.length>MAX){const pruned=base5mCandles.splice(0,base5mCandles.length-MAX);pruned.forEach(c=>delete base5mClusters[String(c.time)]);delete liqData[String(c.time)];}
   }
 }
 function getDynamicTickSize(baseTick,minPx){
@@ -1550,12 +1582,13 @@ function drawCumulativeCluster(cssWidth,cssHeight,candleBottomY){
   });
   const totalDelta=totalBuy-totalSell,statsY=cbY-25;
   if(config.cumulativeMode==='all'||(statsY>0&&statsY<candleBottomY)){
-    const dc=totalDelta>=0?config.upColor:config.downColor,cx=clX+cw/2;
-    offscreenCtx.font=`${config.statsFontWeight} ${config.statsFontSize}px ${config.statsFontFamily}`;offscreenCtx.textAlign='center';
-    offscreenCtx.fillStyle='#a6afd3';offscreenCtx.fillText(`V:${formatUSD(totalBuy+totalSell)}`,cx,statsY-8);
-    const dv=formatUSD(totalDelta),dW=offscreenCtx.measureText('D:').width,dvW=offscreenCtx.measureText(dv).width;
-    offscreenCtx.textAlign='left';offscreenCtx.fillStyle='#a6afd3';offscreenCtx.fillText('D:',cx-(dW+dvW)/2,statsY+8);
-    offscreenCtx.fillStyle=dc;offscreenCtx.fillText(dv,cx-(dW+dvW)/2+dW,statsY+8);offscreenCtx.textAlign='center';
+    const dc=totalDelta>=0?config.upColor:config.downColor,cx=clX+cw/2,gap=4;
+    offscreenCtx.font=`${config.statsFontWeight} ${config.statsFontSize}px ${config.statsFontFamily}`;
+    const vv=formatUSD(totalBuy+totalSell),vW=offscreenCtx.measureText('V:').width,vvW=offscreenCtx.measureText(vv).width,vX=cx-(vW+gap+vvW)/2;
+    offscreenCtx.textAlign='left';offscreenCtx.fillStyle='#a6afd3';offscreenCtx.fillText('V:',vX,statsY-8);offscreenCtx.fillStyle='#ffffff';offscreenCtx.fillText(vv,vX+vW+gap,statsY-8);
+    const dv=formatUSD(Math.abs(totalDelta)),dW=offscreenCtx.measureText('D:').width,dvW=offscreenCtx.measureText(dv).width,dX=cx-(dW+gap+dvW)/2;
+    offscreenCtx.fillStyle='#a6afd3';offscreenCtx.fillText('D:',dX,statsY+8);offscreenCtx.globalAlpha=1;offscreenCtx.fillStyle=dc;offscreenCtx.fillText(dv,dX+dW+gap,statsY+8);
+    offscreenCtx.textAlign='center';
   }
 }
 
@@ -1665,7 +1698,74 @@ function drawFrames(){
       offscreenCtx.save();offscreenCtx.beginPath();offscreenCtx.arc(bcX,dy,config.bubbleInnerSize,0,Math.PI*2);offscreenCtx.fillStyle=dc;offscreenCtx.fill();offscreenCtx.restore();
     });
   }
+  // liq bubbles
+function drawLiquidationBubbles(cssWidth, candleBottomY) {
+  const ts = chart.timeScale();
+  const phase = (Date.now() % config.liqBubblePulseSpeed) / config.liqBubblePulseSpeed;
+  const pulseOp = 0.3 + Math.sin(phase * Math.PI * 2) * 0.3;
 
+  displayCandles.forEach(candle => {
+    const x = ts.timeToCoordinate(candle.time);
+    if(x === null || x < -20 || x > cssWidth + 20) return;
+
+    const barKey = String(Math.floor(candle.time));
+    const ld = liqData[barKey];
+    if(!ld) return;
+
+    // Draw LONG liquidations (sell-side liq) — below candle, red
+    if(ld.sellUSD >= config.liqBubbleThreshold) {
+      const y = mainSeries.priceToCoordinate(candle.low);
+      if(y !== null && y > 0 && y < candleBottomY) {
+        const by = y + 20;
+        // Outer pulse
+        offscreenCtx.save();
+        offscreenCtx.globalAlpha = pulseOp;
+        offscreenCtx.beginPath();
+        offscreenCtx.arc(x, by, config.liqBubbleOuterSize, 0, Math.PI * 2);
+        offscreenCtx.fillStyle = config.downColor;
+        offscreenCtx.fill();
+        offscreenCtx.restore();
+        // Inner solid
+        offscreenCtx.beginPath();
+        offscreenCtx.arc(x, by, config.liqBubbleInnerSize, 0, Math.PI * 2);
+        offscreenCtx.fillStyle = config.downColor;
+        offscreenCtx.fill();
+        // Label BELOW the bubble — this is the key difference from volume bubbles
+        offscreenCtx.font = `600 ${config.liqLabelFontSize}px ${config.statsFontFamily}`;
+        offscreenCtx.fillStyle = config.downColor;
+        offscreenCtx.textAlign = 'center';
+        offscreenCtx.textBaseline = 'top';
+        offscreenCtx.fillText(formatUSD(ld.sellUSD), x, by + config.liqBubbleOuterSize + 3);
+      }
+    }
+
+    // Draw SHORT liquidations (buy-side liq) — above candle, blue/up color
+    if(ld.buyUSD >= config.liqBubbleThreshold) {
+      const y = mainSeries.priceToCoordinate(candle.high);
+      if(y !== null && y > 0 && y < candleBottomY) {
+        const by = y - 20;
+        offscreenCtx.save();
+        offscreenCtx.globalAlpha = pulseOp;
+        offscreenCtx.beginPath();
+        offscreenCtx.arc(x, by, config.liqBubbleOuterSize, 0, Math.PI * 2);
+        offscreenCtx.fillStyle = config.upColor;
+        offscreenCtx.fill();
+        offscreenCtx.restore();
+        offscreenCtx.beginPath();
+        offscreenCtx.arc(x, by, config.liqBubbleInnerSize, 0, Math.PI * 2);
+        offscreenCtx.fillStyle = config.upColor;
+        offscreenCtx.fill();
+        // Label ABOVE the bubble
+        offscreenCtx.font = `600 ${config.liqLabelFontSize}px ${config.statsFontFamily}`;
+        offscreenCtx.fillStyle = config.upColor;
+        offscreenCtx.textAlign = 'center';
+        offscreenCtx.textBaseline = 'bottom';
+        offscreenCtx.fillText(formatUSD(ld.buyUSD), x, by - config.liqBubbleOuterSize - 3);
+      }
+    }
+  });
+}
+drawLiquidationBubbles(cssWidth, cbY);
   // Absorption dots & bar stats
   if(!config.hideFootprints&&displayCandles){
     offscreenCtx.textAlign='center';offscreenCtx.textBaseline='middle';
@@ -1684,17 +1784,18 @@ function drawFrames(){
         const dy=isBullAbs?mainSeries.priceToCoordinate(candle.low)+25:mainSeries.priceToCoordinate(candle.high)-25;
         if(dy>0&&dy<cbY){offscreenCtx.save();offscreenCtx.shadowColor=config.absorptionColor;offscreenCtx.shadowBlur=config.absorptionGlow;offscreenCtx.fillStyle=config.absorptionColor;offscreenCtx.beginPath();offscreenCtx.arc(x,dy,config.absorptionDotSize,0,Math.PI*2);offscreenCtx.fill();offscreenCtx.shadowBlur=0;offscreenCtx.strokeStyle='#fff';offscreenCtx.lineWidth=1;offscreenCtx.stroke();offscreenCtx.restore();}
       }
-      if(!bsActive){
-        const sy=isUp?mainSeries.priceToCoordinate(candle.high)-45:mainSeries.priceToCoordinate(candle.low)+40;
-        if(sy>=0&&sy<=cbY){
-          const dc=delta>=0?config.upColor:config.downColor,bcX=x-totalW/2+totalW/2;
-          offscreenCtx.font=`${config.statsFontWeight} ${config.statsFontSize}px ${config.statsFontFamily}`;offscreenCtx.fillStyle='#a6afd3';offscreenCtx.textAlign='center';
-          offscreenCtx.fillText(`V:${formatUSD(total)}`,bcX,sy-8);
-          const dv=formatUSD(delta),dW=offscreenCtx.measureText('D:').width,dvW=offscreenCtx.measureText(dv).width;
-          offscreenCtx.textAlign='left';offscreenCtx.fillStyle='#a6afd3';offscreenCtx.fillText('D:',bcX-(dW+dvW)/2,sy+8);
-          offscreenCtx.fillStyle=dc;offscreenCtx.fillText(dv,bcX-(dW+dvW)/2+dW,sy+8);offscreenCtx.textAlign='center';
-        }
+    if(!bsActive){
+      const sy=isUp?mainSeries.priceToCoordinate(candle.high)-45:mainSeries.priceToCoordinate(candle.low)+40;
+      if(sy>=0&&sy<=cbY){
+        const dc=delta>=0?config.upColor:config.downColor,bcX=x-totalW/2+totalW/2,gap=4;
+        offscreenCtx.font=`${config.statsFontWeight} ${config.statsFontSize}px ${config.statsFontFamily}`;
+        const vv=formatUSD(total),vW=offscreenCtx.measureText('V:').width,vvW=offscreenCtx.measureText(vv).width,vX=bcX-(vW+gap+vvW)/2;
+        offscreenCtx.textAlign='left';offscreenCtx.fillStyle='#a6afd3';offscreenCtx.fillText('V:',vX,sy-8);offscreenCtx.fillStyle='#ffffff';offscreenCtx.fillText(vv,vX+vW+gap,sy-8);
+        const dv=formatUSD(Math.abs(delta)),dW=offscreenCtx.measureText('D:').width,dvW=offscreenCtx.measureText(dv).width,dX=bcX-(dW+gap+dvW)/2;
+        offscreenCtx.fillStyle='#a6afd3';offscreenCtx.fillText('D:',dX,sy+8);offscreenCtx.fillStyle=dc;offscreenCtx.fillText(dv,dX+dW+gap,sy+8);
+        offscreenCtx.textAlign='center';
       }
+    }
     });
   }
   offscreenCtx.restore();
@@ -1913,20 +2014,83 @@ function startWebSockets(){
           if(lb){lb.close=price;if(price>lb.high)lb.high=price;if(price<lb.low)lb.low=price;
             const ld=displayCandles[displayCandles.length-1];if(ld){ld.close=price;if(price>ld.high)ld.high=price;if(price<ld.low)ld.low=price;mainSeries.update(ld);}
           }
+          if(msg.topic?.includes('liquidation')){
+          msg.data.forEach(liq => {
+            const price = parseFloat(liq.price);
+            const sizeUSD = parseFloat(liq.size); // inverse: 1 contract = $1
+            const tk = String(lastBarTime);
+            if(!liqData[tk]) liqData[tk] = { buyUSD: 0, sellUSD: 0 };
+            // "Buy" liquidation = short position got liquidated (bearish pressure)
+            // "Sell" liquidation = long position got liquidated (bullish pressure)
+            if(liq.side === 'Buy') liqData[tk].buyUSD += sizeUSD;
+            else liqData[tk].sellUSD += sizeUSD;
+            scheduleDraw();
+          });
+        }
           document.getElementById('price').innerText=price.toLocaleString();scheduleDraw();
         });
       }
     }catch(e){console.error('WS message error:',e,event.data);}
   };
 }
-
+function startLiqWebSocket() {
+  const liqWs = new WebSocket('wss://stream.bybit.com/v5/public/inverse');
+  
+  liqWs.onopen = () => {
+    liqWs.send(JSON.stringify({ op: 'subscribe', args: ['liquidation.BTCUSD'] }));
+  };
+  
+  liqWs.onclose = () => {
+    console.warn('Liq WS disconnected, reconnecting in 5s...');
+    setTimeout(startLiqWebSocket, 5000);
+  };
+  
+  liqWs.onerror = () => liqWs.close();
+  
+  liqWs.onmessage = event => {
+    try {
+      const msg = JSON.parse(event.data);
+      if(!msg.data || !msg.topic?.includes('liquidation')) return;
+      const liq = msg.data;
+      if(!liq.qty) return;
+      const sizeUSD = parseFloat(liq.qty);
+      const tk = String(lastBarTime);
+      if(!liqData[tk]) liqData[tk] = { buyUSD: 0, sellUSD: 0 };
+      if(liq.side === 'Buy') liqData[tk].buyUSD += sizeUSD;
+      else liqData[tk].sellUSD += sizeUSD;
+      scheduleDraw();
+    } catch(e) { console.warn('Liq parse error:', e); }
+  };
+}
 document.getElementById('add-chart-btn').addEventListener('click',()=>{
   if(!myLayout)return;
-  const pc={type:'component',componentType:'chartComponent',componentState:{isMain:false},title:`BTCUSD ${extraPanelCounter+1}`};
-  try{if(myLayout.rootItem&&myLayout.rootItem.contentItems.length>0)myLayout.rootItem.contentItems[0].addItem(pc);else myLayout.addItem(pc);}
-  catch(e){console.error('Failed to add chart panel:',e);}
+  const title=`BTCUSD ${extraPanelCounter+1}`;
+  try{
+    // GL2 native API — handles all internal wiring without DOM errors
+    if(typeof myLayout.newComponent==='function'){
+      myLayout.newComponent('chartComponent',{isMain:false},title);
+      return;
+    }
+    // Fallback: save current layout, inject new panel into root row, reload
+    const saved=myLayout.saveLayout();
+    const pc={type:'component',componentType:'chartComponent',componentState:{isMain:false},title};
+    function injectPanel(node){
+      if(!node)return false;
+      if(node.type==='row'){node.content.push(pc);return true;}
+      if(Array.isArray(node.content)){
+        for(const child of node.content){if(injectPanel(child))return true;}
+        const copy=JSON.parse(JSON.stringify(node.content));
+        node.type='row';node.content=[...copy,pc];
+        return true;
+      }
+      return false;
+    }
+    if(!injectPanel(saved.root)){
+      saved.root={type:'row',content:[saved.root,pc]};
+    }
+    myLayout.loadLayout(saved);
+  }catch(e){console.error('Failed to add chart panel:',e);}
 });
-
 async function init(){
   const glModule=await import('https://cdn.jsdelivr.net/npm/golden-layout@2.6.0/+esm');
   window.goldenLayout=glModule;
@@ -1946,7 +2110,7 @@ async function init(){
         mainSeries.setData(displayCandles);lastBarTime=base5mCandles[base5mCandles.length-1].time;currentPrice=base5mCandles[base5mCandles.length-1].close;tpoCacheKey='';
         await fetchOpenInterest();chart.timeScale().fitContent();updateCandleAppearance();
       }
-      startWebSockets();setInterval(()=>{needsRedraw=true;scheduleDraw();},config.drawDelay);
+      startWebSockets();startLiqWebSocket();setInterval(()=>{needsRedraw=true;scheduleDraw();},config.drawDelay);
     }catch(e){console.error(e);}
   },50);
 }
