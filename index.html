@@ -13,124 +13,300 @@
 tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{sans:['Inter','sans-serif'],mono:['JetBrains Mono','monospace']},colors:{trade:{bg:'#0a0e1a',panel:'#0f1419',border:'#1a1f2e',accent:'#3b82f6',up:'#608feb',down:'#ff4242',text:'#8b92a7',textLight:'#e8eaed',surface:'#12161f',pocGold:'#f0b90b'}}}}}
 </script>
 <style>
-:root{
-  --bg:#0a0e1a;--panel:#0f1419;--border:#1a1f2e;--accent:#3b82f6;
-  --up:#608feb;--dn:#ff4242;--tx:#8b92a7;--txl:#e8eaed;
-  --sur:#12161f;--gold:#f0b90b;--mute:#5a6178;
-  --fm:'JetBrains Mono',monospace
+/* ══ CSS VARIABLES ══════════════════════════════════════════════════════════ */
+:root {
+  --bg:     #0a0e1a;
+  --panel:  #0f1419;
+  --border: #1a1f2e;
+  --accent: #3b82f6;
+  --up:     #608feb;
+  --dn:     #ff4242;
+  --tx:     #8b92a7;
+  --txl:    #e8eaed;
+  --sur:    #12161f;
+  --gold:   #f0b90b;
+  --mute:   #5a6178;
+  --fm:     'JetBrains Mono', monospace;
 }
-.panel-tf-badge{position:absolute;bottom:36px;left:8px;z-index:200;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:rgba(139,146,167,0.45);pointer-events:none;letter-spacing:.06em;padding:2px 6px;border-radius:3px;border:1px solid rgba(26,31,46,0);transition:color .2s,border-color .2s,background .2s;}
-.chart-panel-wrapper.selected .panel-tf-badge{color:rgba(96,143,235,0.9);border-color:rgba(59,130,246,0.25);background:rgba(59,130,246,0.08);}
-#layouts-dropdown.open{display:block!important;opacity:1;transform:scaleY(1)}
-#layouts-dropdown{transform-origin:top}
-body{background:var(--bg);overflow:hidden;user-select:none;color:var(--tx);margin:0}
-.custom-scroll::-webkit-scrollbar{width:6px}
-.custom-scroll::-webkit-scrollbar-track{background:transparent}
-.custom-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-.custom-scroll::-webkit-scrollbar-thumb:hover{background:#2a2f3e}
-#charts-container{position:absolute;top:48px;left:0;right:0;bottom:0;overflow:hidden}
-.chart-panel-wrapper{position:relative;display:flex;flex-direction:column;width:100%;height:100%;overflow:hidden}
-.chart-panel-wrapper.selected{box-shadow:inset 0 0 0 2px rgba(59,130,246,.4)}
-.panel-tf-bar{position:absolute;top:6px;left:6px;z-index:200;display:flex;gap:3px;opacity:0;pointer-events:none;transition:opacity .2s;background:rgba(10,14,26,.88);border:1px solid var(--border);border-radius:5px;padding:3px 4px;backdrop-filter:blur(4px)}
-.chart-panel-wrapper:hover .panel-tf-bar{opacity:1;pointer-events:all}
-.lm_header{background:var(--panel)!important;border-bottom:1px solid var(--border)}
-.lm_tab{background:var(--sur)!important;color:var(--tx)!important;border:1px solid transparent;font-family:var(--fm);font-size:11px}
-.lm_tab.lm_active{background:var(--bg)!important;color:var(--txl)!important;border-top:2px solid var(--accent)!important}
-.lm_splitter{background:var(--border)!important}
-.lm_splitter:hover{background:rgba(59,130,246,.2)!important}
-.lm_content{background:var(--bg)!important}
-.indicator-pane{position:absolute;left:0;right:54px;background:rgba(10,14,26,.98);border-top:1px solid var(--border);z-index:30;transition:bottom .2s ease;pointer-events:none}
-.indicator-pane.dragging{z-index:100;box-shadow:0 4px 20px rgba(59,130,246,.3);border:1px solid var(--accent)}
-.pane-canvas{display:block;width:100%;height:100%;pointer-events:none}
-.pane-header{position:absolute;top:0;left:0;right:0;height:20px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;background:transparent;cursor:move;z-index:100;pointer-events:auto}
-.pane-header:hover{background:rgba(10,14,26,.8);backdrop-filter:blur(4px)}
-.pane-header:hover .pane-label{color:#a6afd3}
-.pane-header:hover .pane-close{color:var(--tx)}
-.pane-label{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:rgba(139,146,167,.5);font-family:var(--fm);font-weight:600;transition:color .2s}
-.pane-close{width:14px;height:14px;display:flex;align-items:center;justify-content:center;border-radius:2px;font-size:11px;color:rgba(139,146,167,.5);cursor:pointer;transition:all .2s}
-.pane-close:hover{background:rgba(255,66,66,.2);color:var(--dn)}
-.resizer-handle{position:absolute;top:-5px;left:0;right:0;height:10px;cursor:ns-resize;z-index:50;display:flex;align-items:center;justify-content:center;pointer-events:auto}
-.resizer-line{width:0;height:0;background:transparent}
-input[type=range]{-webkit-appearance:none;width:100%;background:transparent}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;height:14px;width:14px;border-radius:50%;background:var(--txl);border:2px solid var(--accent);cursor:pointer;margin-top:-5px}
-input[type=range]::-webkit-slider-runnable-track{width:100%;height:4px;cursor:pointer;background:var(--border);border-radius:2px}
-select,input[type=number],input[type=text]{appearance:none;background:var(--panel);border:1px solid var(--border);color:var(--txl);font-family:var(--fm);font-size:12px;border-radius:4px;transition:all .2s}
-select:focus,input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
-.select-wrapper{position:relative}
-.select-wrapper::after{content:'▼';font-size:8px;color:var(--mute);position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none}
-.color-picker-wrapper{position:relative;height:28px;width:100%;border-radius:4px;overflow:hidden;border:1px solid var(--border);cursor:pointer;transition:all .2s}
-.color-picker-wrapper:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
-input[type=color]{border:none;width:200%;height:200%;transform:translate(-25%,-25%);cursor:pointer;background:none}
-.timeframe-btn{padding:4px 10px;background:transparent;border:1px solid var(--border);color:var(--tx);font-size:11px;font-family:var(--fm);border-radius:4px;cursor:pointer;transition:all .2s}
-.timeframe-btn:hover{background:var(--border);color:var(--txl)}
-.timeframe-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
-.timeframe-btn-plus{padding:4px 8px;background:transparent;border:1px solid var(--border);color:var(--tx);font-size:14px;font-family:var(--fm);border-radius:4px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center}
-.timeframe-btn-plus:hover{background:var(--border);color:var(--accent);border-color:var(--accent);transform:rotate(90deg)}
-#custom-price-label{position:absolute;right:0;z-index:40;pointer-events:none;display:flex;align-items:center;gap:1px}
-.price-label-box{border-radius:4px;padding:5px 10px;font-weight:600;display:flex;flex-direction:column;align-items:flex-end;min-width:68px;gap:2px;box-shadow:0 2px 8px rgba(0,0,0,.4)}
-.price-label-box::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,.1) 0%,transparent 100%);border-radius:3px;pointer-events:none}
-.price-label-arrow{display:none!important}
-.indicator-toggle{display:flex;align-items:center;gap:8px;padding:6px 12px;background:transparent;border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:all .2s;font-size:11px;font-family:var(--fm);color:var(--tx)}
-.indicator-toggle:hover{background:var(--border);color:var(--txl)}
-.indicator-toggle.active{background:rgba(59,130,246,.1);border-color:var(--accent);color:var(--accent)}
-.indicator-checkbox{width:14px;height:14px;border:2px solid var(--border);border-radius:3px;display:flex;align-items:center;justify-content:center;transition:all .2s;position:relative;flex-shrink:0}
-.indicator-toggle.active .indicator-checkbox{background:var(--accent);border-color:var(--accent)}
-.indicator-checkbox::after{content:'';position:absolute;width:6px;height:3.5px;border-left:1.5px solid #fff;border-bottom:1.5px solid #fff;transform:rotate(-45deg);left:50%;top:50%;margin-left:-3px;margin-top:-2.5px;opacity:0;transition:opacity .2s}
-.indicator-toggle.active .indicator-checkbox::after{opacity:1}
-.drag-placeholder{position:absolute;left:0;right:77px;height:2px;background:var(--accent);z-index:150;box-shadow:0 0 10px rgba(59,130,246,.5)}
-.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .3s ease;pointer-events:none}
-.modal-overlay.active{opacity:1;pointer-events:all}
-.modal-content{background:linear-gradient(135deg,#0d1117 0%,var(--panel) 100%);border:1px solid var(--border);border-radius:12px;padding:32px;min-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.5);transform:scale(.9);transition:transform .3s cubic-bezier(.4,0,.2,1)}
-.modal-overlay.active .modal-content{transform:scale(1)}
-.modal-title{font-family:var(--fm);font-size:18px;font-weight:600;color:var(--txl);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
-.modal-description{font-size:13px;color:var(--tx);margin-bottom:24px;line-height:1.5}
-.modal-input{width:100%;padding:12px 16px;background:var(--bg);border:2px solid var(--border);border-radius:8px;color:var(--txl);font-family:var(--fm);font-size:16px;transition:all .2s;margin-bottom:24px}
-.modal-buttons{display:flex;gap:12px;justify-content:flex-end}
-.modal-btn{padding:10px 24px;border-radius:6px;font-family:var(--fm);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.05em}
-.modal-btn-cancel{background:transparent;border:1px solid var(--border);color:var(--tx)}
-.modal-btn-cancel:hover{background:var(--border);color:var(--txl)}
-.modal-btn-confirm{background:var(--accent);border:1px solid var(--accent);color:#fff}
-.modal-btn-confirm:hover{background:#2563eb;border-color:#2563eb;transform:translateY(-1px);box-shadow:0 4px 12px rgba(59,130,246,.3)}
-#settings-panel{background:linear-gradient(135deg,#0d1117 0%,var(--panel) 100%)}
-.settings-section{border-bottom:1px solid rgba(26,31,46,.5);transition:all .3s cubic-bezier(.4,0,.2,1)}
-.settings-section:last-child{border-bottom:none}
-.section-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;transition:all .2s;background:transparent;position:relative;overflow:hidden}
-.section-header::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);transform:scaleY(0);transition:transform .3s ease}
-.section-header:hover{background:rgba(59,130,246,.05)}
-.section-header:hover::before{transform:scaleY(1)}
-.section-header::after{content:'▾';font-size:15px;color:var(--mute);transition:all .3s cubic-bezier(.4,0,.2,1);line-height:1}
-.settings-section.expanded .section-header::after{transform:rotate(180deg);color:var(--accent)}
-.section-title-wrapper{display:flex;align-items:center;gap:12px}
-.section-icon{width:20px;height:20px;display:flex;align-items:center;justify-content:center;color:var(--accent);opacity:.8;transition:all .3s ease}
-.section-header:hover .section-icon{opacity:1;transform:scale(1.1)}
-.section-title{font-family:var(--fm);font-size:13px;font-weight:600;color:var(--txl);text-transform:uppercase;letter-spacing:.05em}
-.section-content{max-height:0;overflow:hidden;transition:max-height .4s cubic-bezier(.4,0,.2,1)}
-.settings-section.expanded .section-content{max-height:2000px}
-.section-body{padding:0 20px 20px;display:grid;gap:16px}
-.setting-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.setting-item{display:flex;flex-direction:column;gap:6px}
-.setting-item.full-width{grid-column:1/-1}
-.setting-label{font-size:11px;font-weight:500;color:#a6afd3;text-transform:uppercase;letter-spacing:.05em;font-family:var(--fm)}
-.setting-description{font-size:10px;color:var(--mute);margin-top:-2px;font-family:'Inter',sans-serif}
-.slider-container{display:flex;flex-direction:column;gap:8px}
-.slider-header{display:flex;justify-content:space-between;align-items:center}
-.slider-value{font-family:var(--fm);font-size:11px;font-weight:600;color:var(--accent);background:rgba(59,130,246,.1);padding:2px 8px;border-radius:3px;min-width:50px;text-align:center}
-.setting-divider{height:1px;background:linear-gradient(90deg,transparent 0%,rgba(26,31,46,.5) 50%,transparent 100%);margin:8px 0}
-.toggle-switch{position:relative;width:44px;height:24px;background:var(--border);border-radius:12px;cursor:pointer;transition:all .3s ease;border:1px solid var(--border)}
-.toggle-switch.active{background:var(--accent);border-color:var(--accent)}
-.toggle-switch::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:all .3s cubic-bezier(.4,0,.2,1);box-shadow:0 2px 4px rgba(0,0,0,.2)}
-.toggle-switch.active::after{transform:translateX(20px)}
-.reset-button{padding:8px 16px;background:rgba(255,66,66,.1);border:1px solid rgba(255,66,66,.3);color:var(--dn);border-radius:4px;font-family:var(--fm);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.05em}
-.reset-button:hover{background:rgba(255,66,66,.2);border-color:var(--dn);transform:translateY(-1px);box-shadow:0 4px 8px rgba(255,66,66,.2)}
-.tpo-legend{display:inline-flex;align-items:center;gap:5px;font-family:var(--fm);font-size:10px;padding:3px 8px;border-radius:3px;border:1px solid rgba(255,255,255,.08)}
-.tpo-swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0}
-.icon-svg{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ══ BASE ════════════════════════════════════════════════════════════════════ */
+body { background: var(--bg); overflow: hidden; user-select: none; color: var(--tx); margin: 0; }
+
+/* ══ SCROLLBAR ═══════════════════════════════════════════════════════════════ */
+.custom-scroll::-webkit-scrollbar              { width: 6px; }
+.custom-scroll::-webkit-scrollbar-track        { background: transparent; }
+.custom-scroll::-webkit-scrollbar-thumb        { background: var(--border); border-radius: 3px; }
+.custom-scroll::-webkit-scrollbar-thumb:hover  { background: #2a2f3e; }
+
+/* ══ LAYOUT ══════════════════════════════════════════════════════════════════ */
+#charts-container       { position: absolute; top: 48px; left: 0; right: 0; bottom: 0; overflow: hidden; }
+
+.chart-panel-wrapper    { position: relative; display: flex; flex-direction: column; width: 100%; height: 100%; overflow: hidden; }
+.chart-panel-wrapper.selected { box-shadow: inset 0 0 0 2px rgba(59,130,246,.4); }
+
+/* ── TF Badge (per-panel label) ── */
+.panel-tf-badge {
+  position: absolute; bottom: 36px; left: 8px; z-index: 200;
+  font-family: var(--fm); font-size: 10px; font-weight: 600;
+  color: rgba(139,146,167,.45); pointer-events: none; letter-spacing: .06em;
+  padding: 2px 6px; border-radius: 3px; border: 1px solid rgba(26,31,46,0);
+  transition: color .2s, border-color .2s, background .2s;
+}
+.chart-panel-wrapper.selected .panel-tf-badge {
+  color: rgba(96,143,235,.9);
+  border-color: rgba(59,130,246,.25);
+  background: rgba(59,130,246,.08);
+}
+
+/* ── TF Bar (hover overlay) ── */
+.panel-tf-bar {
+  position: absolute; top: 6px; left: 6px; z-index: 200;
+  display: flex; gap: 3px; opacity: 0; pointer-events: none;
+  transition: opacity .2s; background: rgba(10,14,26,.88);
+  border: 1px solid var(--border); border-radius: 5px;
+  padding: 3px 4px; backdrop-filter: blur(4px);
+}
+.chart-panel-wrapper:hover .panel-tf-bar { opacity: 1; pointer-events: all; }
+
+/* ══ GOLDEN LAYOUT OVERRIDES ════════════════════════════════════════════════ */
+.lm_header                { background: var(--panel) !important; border-bottom: 1px solid var(--border); }
+.lm_tab                   { background: var(--sur) !important; color: var(--tx) !important; border: 1px solid transparent; font-family: var(--fm); font-size: 11px; }
+.lm_tab.lm_active         { background: var(--bg) !important; color: var(--txl) !important; border-top: 2px solid var(--accent) !important; }
+.lm_splitter              { background: var(--border) !important; }
+.lm_splitter:hover        { background: rgba(59,130,246,.2) !important; }
+.lm_content               { background: var(--bg) !important; }
+
+/* ══ INDICATOR PANES ════════════════════════════════════════════════════════ */
+.indicator-pane {
+  position: absolute; left: 0; right: 54px;
+  background: rgba(10,14,26,.98); border-top: 1px solid var(--border);
+  z-index: 30; transition: bottom .2s ease; pointer-events: none;
+}
+.indicator-pane.dragging {
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(59,130,246,.3);
+  border: 1px solid var(--accent);
+}
+
+.pane-canvas { display: block; width: 100%; height: 100%; pointer-events: none; }
+
+.pane-header {
+  position: absolute; top: 0; left: 0; right: 0; height: 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 8px; background: transparent; cursor: move;
+  z-index: 100; pointer-events: auto;
+}
+.pane-header:hover                  { background: rgba(10,14,26,.8); backdrop-filter: blur(4px); }
+.pane-header:hover .pane-label      { color: #a6afd3; }
+.pane-header:hover .pane-close      { color: var(--tx); }
+
+.pane-label {
+  font-size: 9px; text-transform: uppercase; letter-spacing: .05em;
+  color: rgba(139,146,167,.5); font-family: var(--fm); font-weight: 600; transition: color .2s;
+}
+.pane-close {
+  width: 14px; height: 14px; display: flex; align-items: center; justify-content: center;
+  border-radius: 2px; font-size: 11px; color: rgba(139,146,167,.5); cursor: pointer; transition: all .2s;
+}
+.pane-close:hover { background: rgba(255,66,66,.2); color: var(--dn); }
+
+.resizer-handle {
+  position: absolute; top: -5px; left: 0; right: 0; height: 10px;
+  cursor: ns-resize; z-index: 50; display: flex; align-items: center; justify-content: center; pointer-events: auto;
+}
+.resizer-line { width: 0; height: 0; background: transparent; }
+
+.drag-placeholder {
+  position: absolute; left: 0; right: 77px; height: 2px;
+  background: var(--accent); z-index: 150; box-shadow: 0 0 10px rgba(59,130,246,.5);
+}
+
+/* ══ FORM CONTROLS ═══════════════════════════════════════════════════════════ */
+
+/* Range slider */
+input[type=range]                          { -webkit-appearance: none; width: 100%; background: transparent; }
+input[type=range]::-webkit-slider-thumb   { -webkit-appearance: none; height: 14px; width: 14px; border-radius: 50%; background: var(--txl); border: 2px solid var(--accent); cursor: pointer; margin-top: -5px; }
+input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: var(--border); border-radius: 2px; }
+
+/* Select / number / text inputs */
+select, input[type=number], input[type=text] {
+  appearance: none; background: var(--panel); border: 1px solid var(--border);
+  color: var(--txl); font-family: var(--fm); font-size: 12px; border-radius: 4px; transition: all .2s;
+}
+select:focus, input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+
+/* Select arrow */
+.select-wrapper          { position: relative; }
+.select-wrapper::after   { content: '▼'; font-size: 8px; color: var(--mute); position: absolute; right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+
+/* Color picker */
+.color-picker-wrapper       { position: relative; height: 28px; width: 100%; border-radius: 4px; overflow: hidden; border: 1px solid var(--border); cursor: pointer; transition: all .2s; }
+.color-picker-wrapper:hover { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+input[type=color]           { border: none; width: 200%; height: 200%; transform: translate(-25%,-25%); cursor: pointer; background: none; }
+
+/* ══ TIMEFRAME BUTTONS ═══════════════════════════════════════════════════════ */
+.timeframe-btn {
+  padding: 4px 10px; background: transparent; border: 1px solid var(--border);
+  color: var(--tx); font-size: 11px; font-family: var(--fm); border-radius: 4px; cursor: pointer; transition: all .2s;
+}
+.timeframe-btn:hover  { background: var(--border); color: var(--txl); }
+.timeframe-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+
+.timeframe-btn-plus {
+  padding: 4px 8px; background: transparent; border: 1px solid var(--border);
+  color: var(--tx); font-size: 14px; font-family: var(--fm); border-radius: 4px;
+  cursor: pointer; transition: all .2s; display: flex; align-items: center; justify-content: center;
+}
+.timeframe-btn-plus:hover { background: var(--border); color: var(--accent); border-color: var(--accent); transform: rotate(90deg); }
+
+/* ══ PRICE LABEL ═════════════════════════════════════════════════════════════ */
+#custom-price-label  { position: absolute; right: 0; z-index: 40; pointer-events: none; display: flex; align-items: center; gap: 1px; }
+.price-label-arrow   { display: none !important; }
+
+.price-label-box {
+  border-radius: 4px; padding: 5px 10px; font-weight: 600;
+  display: flex; flex-direction: column; align-items: flex-end;
+  min-width: 68px; gap: 2px; box-shadow: 0 2px 8px rgba(0,0,0,.4);
+}
+.price-label-box::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.1) 0%, transparent 100%);
+  border-radius: 3px; pointer-events: none;
+}
+
+/* ══ INDICATOR TOGGLES ═══════════════════════════════════════════════════════ */
+.indicator-toggle {
+  display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+  background: transparent; border: 1px solid var(--border); border-radius: 4px;
+  cursor: pointer; transition: all .2s; font-size: 11px; font-family: var(--fm); color: var(--tx);
+}
+.indicator-toggle:hover  { background: var(--border); color: var(--txl); }
+.indicator-toggle.active { background: rgba(59,130,246,.1); border-color: var(--accent); color: var(--accent); }
+
+.indicator-checkbox {
+  width: 14px; height: 14px; border: 2px solid var(--border); border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s; position: relative; flex-shrink: 0;
+}
+.indicator-toggle.active .indicator-checkbox { background: var(--accent); border-color: var(--accent); }
+
+.indicator-checkbox::after {
+  content: ''; position: absolute; width: 6px; height: 3.5px;
+  border-left: 1.5px solid #fff; border-bottom: 1.5px solid #fff;
+  transform: rotate(-45deg); left: 50%; top: 50%;
+  margin-left: -3px; margin-top: -2.5px; opacity: 0; transition: opacity .2s;
+}
+.indicator-toggle.active .indicator-checkbox::after { opacity: 1; }
+
+/* ══ MODAL ═══════════════════════════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,.7); backdrop-filter: blur(4px); z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .3s ease; pointer-events: none;
+}
+.modal-overlay.active         { opacity: 1; pointer-events: all; }
+.modal-overlay.active .modal-content { transform: scale(1); }
+
+.modal-content {
+  background: linear-gradient(135deg, #0d1117 0%, var(--panel) 100%);
+  border: 1px solid var(--border); border-radius: 12px; padding: 32px;
+  min-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  transform: scale(.9); transition: transform .3s cubic-bezier(.4,0,.2,1);
+}
+.modal-title       { font-family: var(--fm); font-size: 18px; font-weight: 600; color: var(--txl); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .05em; }
+.modal-description { font-size: 13px; color: var(--tx); margin-bottom: 24px; line-height: 1.5; }
+.modal-input       { width: 100%; padding: 12px 16px; background: var(--bg); border: 2px solid var(--border); border-radius: 8px; color: var(--txl); font-family: var(--fm); font-size: 16px; transition: all .2s; margin-bottom: 24px; }
+.modal-buttons     { display: flex; gap: 12px; justify-content: flex-end; }
+
+.modal-btn         { padding: 10px 24px; border-radius: 6px; font-family: var(--fm); font-size: 12px; font-weight: 600; cursor: pointer; transition: all .2s; text-transform: uppercase; letter-spacing: .05em; }
+.modal-btn-cancel  { background: transparent; border: 1px solid var(--border); color: var(--tx); }
+.modal-btn-cancel:hover  { background: var(--border); color: var(--txl); }
+.modal-btn-confirm { background: var(--accent); border: 1px solid var(--accent); color: #fff; }
+.modal-btn-confirm:hover { background: #2563eb; border-color: #2563eb; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,.3); }
+
+/* ══ LAYOUTS DROPDOWN ════════════════════════════════════════════════════════ */
+#layouts-dropdown      { transform-origin: top; }
+#layouts-dropdown.open { display: block !important; opacity: 1; transform: scaleY(1); }
+
+/* ══ SETTINGS PANEL ══════════════════════════════════════════════════════════ */
+#settings-panel { background: linear-gradient(135deg, #0d1117 0%, var(--panel) 100%); }
+
+.settings-section           { border-bottom: 1px solid rgba(26,31,46,.5); transition: all .3s cubic-bezier(.4,0,.2,1); }
+.settings-section:last-child { border-bottom: none; }
+
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; cursor: pointer; transition: all .2s;
+  background: transparent; position: relative; overflow: hidden;
+}
+.section-header::before      { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); transform: scaleY(0); transition: transform .3s ease; }
+.section-header:hover        { background: rgba(59,130,246,.05); }
+.section-header:hover::before { transform: scaleY(1); }
+.section-header::after       { content: '▾'; font-size: 15px; color: var(--mute); transition: all .3s cubic-bezier(.4,0,.2,1); line-height: 1; }
+.settings-section.expanded .section-header::after { transform: rotate(180deg); color: var(--accent); }
+
+.section-title-wrapper { display: flex; align-items: center; gap: 12px; }
+.section-icon {
+  width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+  color: var(--accent); opacity: .8; transition: all .3s ease;
+}
+.section-header:hover .section-icon { opacity: 1; transform: scale(1.1); }
+.section-title { font-family: var(--fm); font-size: 13px; font-weight: 600; color: var(--txl); text-transform: uppercase; letter-spacing: .05em; }
+
+.section-content                       { max-height: 0; overflow: hidden; transition: max-height .4s cubic-bezier(.4,0,.2,1); }
+.settings-section.expanded .section-content { max-height: 2000px; }
+
+.section-body     { padding: 0 20px 20px; display: grid; gap: 16px; }
+.setting-row      { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.setting-item     { display: flex; flex-direction: column; gap: 6px; }
+.setting-item.full-width { grid-column: 1 / -1; }
+
+.setting-label       { font-size: 11px; font-weight: 500; color: #a6afd3; text-transform: uppercase; letter-spacing: .05em; font-family: var(--fm); }
+.setting-description { font-size: 10px; color: var(--mute); margin-top: -2px; font-family: 'Inter', sans-serif; }
+.setting-divider     { height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(26,31,46,.5) 50%, transparent 100%); margin: 8px 0; }
+
+.slider-container { display: flex; flex-direction: column; gap: 8px; }
+.slider-header    { display: flex; justify-content: space-between; align-items: center; }
+.slider-value     { font-family: var(--fm); font-size: 11px; font-weight: 600; color: var(--accent); background: rgba(59,130,246,.1); padding: 2px 8px; border-radius: 3px; min-width: 50px; text-align: center; }
+
+/* ══ TOGGLE SWITCH ═══════════════════════════════════════════════════════════ */
+.toggle-switch {
+  position: relative; width: 44px; height: 24px;
+  background: var(--border); border-radius: 12px;
+  cursor: pointer; transition: all .3s ease; border: 1px solid var(--border);
+}
+.toggle-switch.active { background: var(--accent); border-color: var(--accent); }
+.toggle-switch::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 18px; height: 18px; background: #fff; border-radius: 50%;
+  transition: all .3s cubic-bezier(.4,0,.2,1); box-shadow: 0 2px 4px rgba(0,0,0,.2);
+}
+.toggle-switch.active::after { transform: translateX(20px); }
+
+/* ══ MISC COMPONENTS ════════════════════════════════════════════════════════ */
+.reset-button {
+  padding: 8px 16px; background: rgba(255,66,66,.1); border: 1px solid rgba(255,66,66,.3);
+  color: var(--dn); border-radius: 4px; font-family: var(--fm); font-size: 11px; font-weight: 600;
+  cursor: pointer; transition: all .2s; text-transform: uppercase; letter-spacing: .05em;
+}
+.reset-button:hover { background: rgba(255,66,66,.2); border-color: var(--dn); transform: translateY(-1px); box-shadow: 0 4px 8px rgba(255,66,66,.2); }
+
+.tpo-legend { display: inline-flex; align-items: center; gap: 5px; font-family: var(--fm); font-size: 10px; padding: 3px 8px; border-radius: 3px; border: 1px solid rgba(255,255,255,.08); }
+.tpo-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+.icon-svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 </style>
 </head>
 <body class="font-sans text-trade-text antialiased h-screen flex flex-col">
 
+<!-- ══ HEADER ══════════════════════════════════════════════════════════════ -->
 <header class="h-[48px] bg-trade-panel/90 backdrop-blur-md border-b border-trade-border flex items-center justify-between px-4 shrink-0 z-50 relative">
+
+  <!-- Left: Symbol · Timeframes · Price · Stats -->
   <div class="flex items-center gap-6 font-mono">
+
+    <!-- Live dot + symbol + TF buttons -->
     <div class="flex items-center gap-2.5">
       <div class="relative flex h-2 w-2">
         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -152,12 +328,18 @@ input[type=color]{border:none;width:200%;height:200%;transform:translate(-25%,-2
         <button class="timeframe-btn-plus" id="custom-tf-btn">+</button>
       </div>
     </div>
+
     <div class="h-6 w-px bg-trade-border/50"></div>
+
+    <!-- Price -->
     <div class="flex items-baseline gap-1.5">
       <span id="price" class="text-[#f0b90b] text-lg font-bold tracking-tight">0.00</span>
       <span class="text-[10px] text-gray-500">USD</span>
     </div>
+
     <div class="h-6 w-px bg-trade-border/50"></div>
+
+    <!-- Tick size + OI -->
     <div class="flex items-center gap-4">
       <div class="flex flex-col items-start leading-none gap-0.5">
         <span class="text-[9px] text-gray-500 uppercase tracking-wider font-sans">Tick Size</span>
@@ -168,18 +350,26 @@ input[type=color]{border:none;width:200%;height:200%;transform:translate(-25%,-2
         <span id="oi-display" class="text-xs text-blue-400 font-medium font-mono">Loading...</span>
       </div>
     </div>
+
   </div>
+
+  <!-- Right: Indicator toggles · Layouts · Add chart · Settings -->
   <div class="flex items-center gap-3">
+
+    <!-- Indicator toggles -->
     <div class="flex items-center gap-2">
       <span class="text-[10px] text-gray-500 uppercase tracking-wider">Indicators:</span>
-      <button id="toggle-oi" class="indicator-toggle active"><div class="indicator-checkbox"></div><span>OI</span></button>
-      <button id="toggle-cvd" class="indicator-toggle"><div class="indicator-checkbox"></div><span>CVD</span></button>
-      <button id="toggle-barstats" class="indicator-toggle"><div class="indicator-checkbox"></div><span>Bar Stats</span></button>
-      <button id="toggle-tpo" class="indicator-toggle"><div class="indicator-checkbox"></div><span>TPO</span></button>
-      <button id="toggle-vwap" class="indicator-toggle"><div class="indicator-checkbox"></div><span>VWAP</span></button>
+      <button id="toggle-oi"          class="indicator-toggle active"><div class="indicator-checkbox"></div><span>OI</span></button>
+      <button id="toggle-cvd"         class="indicator-toggle"><div class="indicator-checkbox"></div><span>CVD</span></button>
+      <button id="toggle-barstats"    class="indicator-toggle"><div class="indicator-checkbox"></div><span>Bar Stats</span></button>
+      <button id="toggle-tpo"         class="indicator-toggle"><div class="indicator-checkbox"></div><span>TPO</span></button>
+      <button id="toggle-vwap"        class="indicator-toggle"><div class="indicator-checkbox"></div><span>VWAP</span></button>
       <button id="toggle-dailylevels" class="indicator-toggle"><div class="indicator-checkbox"></div><span>Levels</span></button>
     </div>
+
     <div class="h-6 w-px bg-trade-border/50"></div>
+
+    <!-- Layouts dropdown -->
     <div class="relative" id="layouts-wrapper">
       <button id="layouts-btn" class="px-3 py-1.5 text-[11px] font-mono font-semibold bg-transparent border border-trade-border hover:border-blue-500 text-gray-400 hover:text-blue-400 rounded-md transition-all active:scale-95">Layouts</button>
       <div id="layouts-dropdown" class="hidden absolute right-0 top-[calc(100%+6px)] w-56 bg-[#12161f] border border-trade-border rounded-lg shadow-2xl py-1.5 z-[5000] backdrop-blur-sm origin-top scale-y-95 opacity-0 transition-all duration-200">
@@ -194,24 +384,37 @@ input[type=color]{border:none;width:200%;height:200%;transform:translate(-25%,-2
         </div>
       </div>
     </div>
+
     <button id="add-chart-btn" class="px-3 py-1.5 text-[11px] font-mono font-semibold bg-transparent border border-trade-border hover:border-blue-500 text-gray-400 hover:text-blue-400 rounded-md transition-all active:scale-95">+ Chart</button>
+
     <div class="h-6 w-px bg-trade-border/50"></div>
+
+    <!-- Settings gear -->
     <button id="header-settings-btn" class="p-2 hover:bg-[#1a1f2e] rounded-md text-gray-400 hover:text-white transition-all active:scale-95 group">
-      <svg class="icon-svg w-[18px] h-[18px] group-hover:rotate-45 transition-transform duration-300" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <svg class="icon-svg w-[18px] h-[18px] group-hover:rotate-45 transition-transform duration-300" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
     </button>
+
   </div>
 </header>
 
+<!-- ══ CHART CONTAINER ══════════════════════════════════════════════════════ -->
 <div id="charts-container"></div>
 
+<!-- ══ INDICATOR CONTEXT MENU ═══════════════════════════════════════════════ -->
 <div id="indicator-ctx-menu" style="display:none;position:fixed;z-index:10000;width:252px;background:linear-gradient(135deg,#0d1117 0%,var(--panel) 100%);border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,.65);overflow:hidden;font-family:var(--fm);">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--border);background:linear-gradient(90deg,rgba(59,130,246,.09) 0%,transparent 100%);">
     <span id="ind-ctx-title" style="font-size:11px;font-weight:600;color:var(--txl);text-transform:uppercase;letter-spacing:.06em;"></span>
-    <button id="ind-ctx-close" style="background:none;border:none;color:var(--mute);cursor:pointer;font-size:13px;padding:1px 4px;border-radius:3px;line-height:1;transition:color .15s;" onmouseover="this.style.color='#ff4242'" onmouseout="this.style.color=getComputedStyle(document.documentElement).getPropertyValue('--mute')">✕</button>
+    <button id="ind-ctx-close" style="background:none;border:none;color:var(--mute);cursor:pointer;font-size:13px;padding:1px 4px;border-radius:3px;line-height:1;transition:color .15s;"
+      onmouseover="this.style.color='#ff4242'"
+      onmouseout="this.style.color=getComputedStyle(document.documentElement).getPropertyValue('--mute')">✕</button>
   </div>
   <div id="ind-ctx-body" style="padding:10px 14px;display:grid;gap:8px;"></div>
 </div>
 
+<!-- ══ CUSTOM TF MODAL ═══════════════════════════════════════════════════════ -->
 <div id="custom-tf-modal" class="modal-overlay">
   <div class="modal-content">
     <h2 class="modal-title">Custom Timeframe</h2>
@@ -224,11 +427,17 @@ input[type=color]{border:none;width:200%;height:200%;transform:translate(-25%,-2
   </div>
 </div>
 
+<!-- ══ SETTINGS PANEL ════════════════════════════════════════════════════════ -->
 <div id="settings-panel" class="absolute top-[49px] left-0 bottom-0 w-96 backdrop-blur-xl border-r border-trade-border z-[1000] transform -translate-x-full transition-transform duration-300 ease-out shadow-2xl flex flex-col">
+
+  <!-- Header -->
   <div class="flex items-center justify-between p-5 border-b border-trade-border/50 bg-gradient-to-r from-blue-600/10 to-transparent">
     <div class="flex items-center gap-3">
       <div class="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center">
-        <svg class="icon-svg w-4 h-4 text-blue-400" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg class="icon-svg w-4 h-4 text-blue-400" viewBox="0 0 24 24">
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
       </div>
       <h2 class="text-white font-semibold text-base">Chart Settings</h2>
     </div>
@@ -237,9 +446,10 @@ input[type=color]{border:none;width:200%;height:200%;transform:translate(-25%,-2
     </button>
   </div>
 
+  <!-- Scrollable sections -->
   <div class="flex-1 overflow-y-auto custom-scroll">
 
-    <!-- Chart Appearance -->
+    <!-- ─ Chart Appearance ─ -->
     <div class="settings-section">
       <div class="section-header" onclick="toggleSection(this)">
         <div class="section-title-wrapper">
@@ -254,8 +464,8 @@ input[type=color]{border:none;width:200%;height:200%;transform:translate(-25%,-2
             <div class="select-wrapper"><select id="series-type-select" class="w-full px-3 py-2"><option value="candle" selected>Candles</option><option value="bar">Bars</option></select></div>
           </div>
           <div class="setting-item">
-            <label class="setting-label">Bar Spacing</label>
-            <input type="number" id="bar-spacing-input" value="50" min="10" max="200" step="5" class="w-full px-3 py-2">
+            <label class="setting-label">Price Scale Font</label>
+            <input type="number" id="price-scale-font-input" value="10" min="8" max="16" step="1" class="w-full px-3 py-2">
           </div>
         </div>
         <div class="setting-item">
@@ -264,40 +474,10 @@ input[type=color]{border:none;width:200%;height:200%;transform:translate(-25%,-2
             <input type="range" id="candle-opacity" min="0" max="100" value="100" step="5">
           </div>
         </div>
-        <div class="setting-divider"></div>
-        <div class="setting-row">
-          <div class="setting-item">
-            <label class="setting-label">Candle Width %</label>
-            <input type="number" id="candle-width-input" value="20" min="5" max="80" step="5" class="w-full px-3 py-2">
-          </div>
-          <div class="setting-item">
-            <label class="setting-label">Cluster Width %</label>
-            <input type="number" id="cluster-width-input" value="80" min="20" max="95" step="5" class="w-full px-3 py-2">
-          </div>
-        </div>
-        <div class="setting-item">
-          <div class="slider-container">
-            <div class="slider-header"><label class="setting-label">Wick Thickness</label><span id="wick-thickness-val" class="slider-value">1px</span></div>
-            <input type="range" id="wick-thickness" min="1" max="5" value="1" step="0.5">
-          </div>
-        </div>
-        <div class="setting-item">
-          <div class="slider-container">
-            <div class="slider-header"><label class="setting-label">Border Thickness</label><span id="border-thickness-val" class="slider-value">1px</span></div>
-            <input type="range" id="border-thickness" min="0" max="5" value="1" step="0.5">
-          </div>
-        </div>
-        <div class="setting-divider"></div>
-        <div class="setting-row">
-          <div class="setting-item">
-            <label class="setting-label">Price Scale Font</label>
-            <input type="number" id="price-scale-font-input" value="10" min="8" max="16" step="1" class="w-full px-3 py-2">
-          </div>
-        </div>
       </div></div>
     </div>
 
-    <!-- Colors & Theme -->
+    <!-- ─ Colors & Theme ─ -->
     <div class="settings-section">
       <div class="section-header" onclick="toggleSection(this)">
         <div class="section-title-wrapper">
@@ -311,7 +491,7 @@ input[type=color]{border:none;width:200%;height:200%;transform:translate(-25%,-2
           <div class="setting-item"><label class="setting-label">Bearish Color</label><div class="color-picker-wrapper"><input type="color" id="down-candle-color" value="#ff4242"></div></div>
         </div>
         <div class="setting-divider"></div>
-        <div class="setting-item"><label class="setting-label">Grid Lines</label><div class="color-picker-wrapper"><input type="color" id="grid-color-input" value="#636363"></div></div>
+        <div class="setting-item"><label class="setting-label">Grid Lines</label><div class="color-picker-wrapper"><input type="color" id="grid-color-input" value="#ffffff"></div></div>
         <div class="setting-item"><label class="setting-label">POC Highlight</label><div class="color-picker-wrapper"><input type="color" id="poc-color-input" value="#f0b90b"></div></div>
         <div class="setting-divider"></div>
         <div class="setting-row">
@@ -323,7 +503,7 @@ input[type=color]{border:none;width:200%;height:200%;transform:translate(-25%,-2
       </div></div>
     </div>
 
-    <!-- Grid & Scale -->
+    <!-- ─ Grid & Scale ─ -->
     <div class="settings-section">
       <div class="section-header" onclick="toggleSection(this)">
         <div class="section-title-wrapper">
@@ -346,24 +526,13 @@ input[type=color]{border:none;width:200%;height:200%;transform:translate(-25%,-2
         <div class="setting-item">
           <div class="slider-container">
             <div class="slider-header"><label class="setting-label">Grid Line Width</label><span id="grid-line-width-val" class="slider-value">1px</span></div>
-            <input type="range" id="grid-line-width" min="0.5" max="3" value="1" step="0.5">
+            <input type="range" id="grid-line-width" min="0.5" max="3" value="0.5" step="0.5">
           </div>
-        </div>
-        <div class="setting-divider"></div>
-        <div class="setting-item">
-          <label class="setting-label">Base Tick Size</label>
-          <input type="number" id="base-tick-input" value="2.5" step="0.5" min="0.5" max="50" class="w-full px-3 py-2">
-          <span class="setting-description">Minimum price level grouping</span>
-        </div>
-        <div class="setting-item">
-          <label class="setting-label">Min Cell Height (px)</label>
-          <input type="number" id="min-cell-height-input" value="15" step="1" min="8" max="40" class="w-full px-3 py-2">
-          <span class="setting-description">Minimum height before auto-scaling kicks in</span>
         </div>
       </div></div>
     </div>
 
-    <!-- Footprint Clusters -->
+    <!-- ─ Footprint Clusters ─ -->
     <div class="settings-section">
       <div class="section-header" onclick="toggleSection(this)">
         <div class="section-title-wrapper">
@@ -377,35 +546,15 @@ input[type=color]{border:none;width:200%;height:200%;transform:translate(-25%,-2
           <div class="select-wrapper"><select id="cumulative-mode-select" class="w-full px-3 py-2"><option value="all" selected>All Candles</option><option value="visible">Visible Candles Only</option></select></div>
           <span class="setting-description">Cumulative cluster aggregation range</span>
         </div>
-        <div class="setting-divider"></div>
         <div class="setting-item">
           <label class="setting-label">Low-Volume Cell Threshold (USD)</label>
           <input type="number" id="cluster-volume-threshold" value="25000" min="0" step="10000" class="w-full px-3 py-2">
           <span class="setting-description">Cells below this total volume are shown in muted gray. Set to 0 to disable.</span>
         </div>
-        <div class="setting-divider"></div>
-        <div class="setting-item">
-          <div class="slider-container">
-            <div class="slider-header"><label class="setting-label">Cluster BG Opacity</label><span id="cluster-bg-opacity-val" class="slider-value">0%</span></div>
-            <input type="range" id="cluster-bg-opacity" min="0" max="100" value="0" step="5">
-          </div>
-        </div>
-        <div class="setting-item">
-          <div class="slider-container">
-            <div class="slider-header"><label class="setting-label">POC Border Width</label><span id="poc-border-width-val" class="slider-value">1px</span></div>
-            <input type="range" id="poc-border-width" min="1" max="5" value="1.5" step="0.5">
-          </div>
-        </div>
-        <div class="setting-item">
-          <div class="slider-container">
-            <div class="slider-header"><label class="setting-label">Cell Border Width</label><span id="cell-border-width-val" class="slider-value">1px</span></div>
-            <input type="range" id="cell-border-width" min="0" max="3" value="1" step="0.5">
-          </div>
-        </div>
       </div></div>
     </div>
 
-    <!-- Volume Analysis -->
+    <!-- ─ Volume Analysis ─ -->
     <div class="settings-section">
       <div class="section-header" onclick="toggleSection(this)">
         <div class="section-title-wrapper">
@@ -421,20 +570,17 @@ input[type=color]{border:none;width:200%;height:200%;transform:translate(-25%,-2
         </div>
         <div class="setting-divider"></div>
         <div class="setting-row">
-          <div class="setting-item"><label class="setting-label">Bubble Inner Size</label><input type="number" id="bubble-inner-size" value="5" min="2" max="15" step="1" class="w-full px-3 py-2"></div>
-          <div class="setting-item"><label class="setting-label">Bubble Outer Size</label><input type="number" id="bubble-outer-size" value="10" min="5" max="25" step="1" class="w-full px-3 py-2"></div>
+          <div class="setting-item"><label class="setting-label">Bubble Size</label><input type="number" id="bubble-inner-size" value="5" min="2" max="15" step="1" class="w-full px-3 py-2"></div>
+          <div class="setting-item"><label class="setting-label">Bubble Glow Size</label><input type="number" id="bubble-outer-size" value="10" min="5" max="25" step="1" class="w-full px-3 py-2"></div>
         </div>
         <div class="setting-item">
           <div class="slider-container">
             <div class="slider-header"><label class="setting-label">Bubble Pulse Speed</label><span id="bubble-pulse-speed-val" class="slider-value">1.5s</span></div>
             <input type="range" id="bubble-pulse-speed" min="500" max="3000" value="1500" step="100">
+            <span class="setting-description">Shows how fast the aura of the dot pulses</span>
           </div>
         </div>
         <div class="setting-divider"></div>
-        <div class="setting-row">
-          <div class="setting-item"><label class="setting-label">Absorption Dot Size</label><input type="number" id="absorption-dot-size" value="4" min="2" max="12" step="1" class="w-full px-3 py-2"></div>
-          <div class="setting-item"><label class="setting-label">Absorption Glow</label><input type="number" id="absorption-glow" value="10" min="0" max="30" step="1" class="w-full px-3 py-2"></div>
-        </div>
         <div class="setting-item">
           <label class="setting-label">Absorption Threshold (USD)</label>
           <input type="number" id="absorption-threshold" value="1000000" step="10000" min="0" max="10000000" class="w-full px-3 py-2">
@@ -443,11 +589,11 @@ input[type=color]{border:none;width:200%;height:200%;transform:translate(-25%,-2
       </div></div>
     </div>
 
-    <!-- UI Elements -->
+    <!-- ─ UI Elements ─ -->
     <div class="settings-section">
       <div class="section-header" onclick="toggleSection(this)">
         <div class="section-title-wrapper">
-          <div class="section-icon"><svg class="icon-svg w-5 h-5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m0 0"/><circle cx="12" cy="12" r="10"/></svg></div>
+          <div class="section-icon"><svg class="icon-svg w-5 h-5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6"/><circle cx="12" cy="12" r="10"/></svg></div>
           <span class="section-title">UI Elements</span>
         </div>
       </div>
@@ -463,33 +609,25 @@ input[type=color]{border:none;width:200%;height:200%;transform:translate(-25%,-2
         <div class="setting-divider"></div>
         <div class="setting-item"><label class="setting-label">Price Label Font Size</label><input type="number" id="price-label-font-size" value="9" min="5" max="20" step="1" class="w-full px-3 py-2"></div>
         <div class="setting-item"><label class="setting-label">Timer Font Size</label><input type="number" id="timer-font-size" value="8" min="5" max="20" step="1" class="w-full px-3 py-2"></div>
-        <div class="setting-divider"></div>
-        <div class="setting-item">
-          <div class="slider-container">
-            <div class="slider-header"><label class="setting-label">Timer Opacity</label><span id="timer-opacity-val" class="slider-value">90%</span></div>
-            <input type="range" id="timer-opacity" min="0" max="100" value="90" step="5">
-          </div>
-        </div>
       </div></div>
     </div>
 
   </div>
 </div>
 
+<!-- ══ RIGHT-CLICK CONTEXT MENU ═════════════════════════════════════════════ -->
 <div id="ctx-menu-main" class="hidden absolute w-52 bg-[#12161f] border border-trade-border rounded-lg shadow-2xl py-1.5 z-[5000] text-sm backdrop-blur-sm">
   <div id="ctx-reset" class="menu-item px-4 py-2.5 hover:bg-blue-600/10 hover:text-blue-400 cursor-pointer flex justify-between items-center text-gray-300 transition-colors group">
     <span class="font-medium">Reset View</span><span class="text-gray-500 text-xs group-hover:text-blue-400">R</span>
   </div>
   <div class="h-px bg-trade-border mx-2 my-1"></div>
   <div id="ctx-hide-footprints" class="menu-item px-4 py-2.5 hover:bg-blue-600/10 hover:text-blue-400 cursor-pointer flex justify-between items-center text-gray-300 transition-colors group">
-    <span class="font-medium">Hide Footprints</span>
-    <span id="ctx-hide-footprints-indicator" class="text-[10px] text-gray-500 group-hover:text-blue-400">○</span>
+    <span class="font-medium">Hide Footprints</span><span id="ctx-hide-footprints-indicator" class="text-[10px] text-gray-500 group-hover:text-blue-400">○</span>
   </div>
   <div class="h-px bg-trade-border mx-2 my-1"></div>
-<div id="ctx-hide-rnlines" class="menu-item px-4 py-2.5 hover:bg-blue-600/10 hover:text-blue-400 cursor-pointer flex justify-between items-center text-gray-300 transition-colors group">
-  <span class="font-medium">Hide Round Numbers</span>
-  <span id="ctx-hide-rnlines-indicator" class="text-[10px] text-gray-500 group-hover:text-blue-400">○</span>
-</div>
+  <div id="ctx-hide-rnlines" class="menu-item px-4 py-2.5 hover:bg-blue-600/10 hover:text-blue-400 cursor-pointer flex justify-between items-center text-gray-300 transition-colors group">
+    <span class="font-medium">Hide Round Numbers</span><span id="ctx-hide-rnlines-indicator" class="text-[10px] text-gray-500 group-hover:text-blue-400">○</span>
+  </div>
   <div class="h-px bg-trade-border mx-2 my-1"></div>
   <div id="ctx-settings-trigger" class="menu-item px-4 py-2.5 hover:bg-blue-600/10 hover:text-blue-400 cursor-pointer flex justify-between items-center text-gray-300 transition-colors group">
     <span class="font-medium">Settings</span><span class="text-gray-500 text-[10px] group-hover:text-blue-400">▶</span>
@@ -499,7 +637,7 @@ input[type=color]{border:none;width:200%;height:200%;transform:translate(-25%,-2
 const HEADER_HEIGHT=48,TIME_AXIS_HEIGHT=28,MIN_PANE_HEIGHT=50,BASE_TIMEFRAME=5;
 
 let config={
-  gridSpacing:1000,gridColor:'#636363',gridOpacity:1.0,gridLineWidth:1,
+  gridSpacing:1000,gridColor:'#ffffff',gridOpacity:1.0,gridLineWidth:0.5,
   baseTickSize:2.5,minCellHeight:15,upColor:'#608feb',downColor:'#ff4242',
   candleOpacity:1.0,seriesType:'candle',minBubbleVolume:500000,
   showPriceLine:true,showPriceLabel:true,showCountdown:true,showCrosshair:true,
@@ -509,7 +647,7 @@ let config={
   accentColor:'#3b82f6',absorptionColor:'#FFD700',
   statsFontFamily:"'JetBrains Mono', monospace",statsFontSize:9,
   statsFontWeight:'400',cellFontSize:9,cellFontWeight:'400',barSpacing:50,
-  clusterBgOpacity:0,pocBorderWidth:1.5,cellBorderWidth:1,
+  clusterBgOpacity:0,pocBorderWidth:1,cellBorderWidth:0,
   bubbleInnerSize:5,bubbleOuterSize:10,bubblePulseSpeed:1500, liqBubbleThreshold: 1, liqBubbleInnerSize: 5, liqBubbleOuterSize: 10, liqBubblePulseSpeed: 1200, liqLabelFontSize: 9,
   absorptionDotSize:4,absorptionGlow:10,absorptionThreshold:1000000,
   priceLabelFontSize:9,timerFontSize:8,timerOpacity:0.9,
@@ -689,6 +827,11 @@ function initGoldenLayout(){
         indicatorManager.wrapper=wrapperEl;indicatorManager.container=indicatorsContainer;
         indicatorManager.onLayout=()=>scheduleDraw();
       }
+      newChart.subscribeCrosshairMove(param=>{
+        crosshairPos=param.point||null;
+        syncCrosshairToAllPanels(0,param);
+        scheduleDraw();
+      });
     }
     const panelIndicatorManager=isMain?indicatorManager:new IndicatorManager();
     if(!isMain){
@@ -870,7 +1013,7 @@ function toggleSwitch(el){
 function resetToDefaults(){
   if(!confirm('Reset all settings to default values? This cannot be undone.'))return;
   config={
-    gridSpacing:1000,gridColor:'#636363',gridOpacity:1.0,gridLineWidth:1,
+    gridSpacing:1000,gridColor:'#ffffff',gridOpacity:1.0,gridLineWidth:0.5,
     baseTickSize:2.5,minCellHeight:15,upColor:'#608feb',downColor:'#ff4242',
     candleOpacity:1.0,seriesType:'candle',minBubbleVolume:500000,
     showPriceLine:true,showPriceLabel:true,showCountdown:true,showCrosshair:true,
@@ -897,16 +1040,16 @@ function resetToDefaults(){
   setV('wick-thickness',1);setT('wick-thickness-val','1px');
   setV('border-thickness',1);setT('border-thickness-val','1px');
   setV('up-candle-color','#608feb');setV('down-candle-color','#ff4242');
-  setV('grid-color-input','#636363');setV('poc-color-input','#f0b90b');
+  setV('grid-color-input','#ffffff');setV('poc-color-input','#f0b90b');
   setV('bg-color-input','#0a0e1a');setV('panel-color-input','#0f1419');
   setV('accent-color-input','#3b82f6');setV('absorption-color-input','#FFD700');
   setV('grid-spacing-input',1000);setV('grid-opacity',100);setT('grid-opacity-val','100%');
-  setV('grid-line-width',1);setT('grid-line-width-val','1px');
+  setV('grid-line-width',0.5);setT('grid-line-width-val','0.5px');
   setV('base-tick-input',2.5);setV('min-cell-height-input',15);
   setV('cumulative-mode-select','all');setV('cluster-volume-threshold',50000);
   setV('cluster-bg-opacity',0);setT('cluster-bg-opacity-val','0%');
-  setV('poc-border-width',1.5);setT('poc-border-width-val','1.5px');
-  setV('cell-border-width',1);setT('cell-border-width-val','1px');
+  setV('poc-border-width',1);setT('poc-border-width-val','1px');
+  setV('cell-border-width',0);setT('cell-border-width-val','0px');
   setV('bubble-threshold-input',500000);setV('bubble-inner-size',5);setV('bubble-outer-size',10);
   setV('bubble-pulse-speed',1500);setT('bubble-pulse-speed-val','1.5s');
   setV('absorption-dot-size',4);setV('absorption-glow',10);setV('absorption-threshold',100000);
@@ -923,8 +1066,8 @@ function resetToDefaults(){
 
 // ── Settings listeners ─────────────────────────────────────────────────────────
 // Helper: bind range/number input with optional display label update
-function _bindInput(id,cb){document.getElementById(id).addEventListener('input',e=>cb(e.target.value));}
-function _bindChange(id,cb){document.getElementById(id).addEventListener('change',e=>cb(e.target.value));}
+function _bindInput(id,cb){const el=document.getElementById(id);if(!el)return;el.addEventListener('input',e=>cb(e.target.value));}
+function _bindChange(id,cb){const el=document.getElementById(id);if(!el)return;el.addEventListener('change',e=>cb(e.target.value));}
 function _lbl(id,txt){document.getElementById(id).textContent=txt;}
 
 _bindInput('bar-spacing-input',v=>{config.barSpacing=parseInt(v);chart.timeScale().applyOptions({barSpacing:config.barSpacing});scheduleDraw();});
@@ -1579,7 +1722,17 @@ function drawCumulativeCluster(cssWidth,cssHeight,candleBottomY){
     if(config.cumulativeMode==='visible'){cYT=Math.max(0,Math.min(cYT,candleBottomY));cYB=Math.max(0,Math.min(cYB,candleBottomY));if(cYT>=candleBottomY)return;}
     const hC=Math.abs(cYB-cYT),dY=Math.min(cYT,cYB),delta=data.buy-data.sell,total=data.buy+data.sell;
     offscreenCtx.fillStyle=hexToRgba(delta>=0?config.upColor:config.downColor,calculateCellOpacity(total));offscreenCtx.fillRect(clX,dY,cw,hC);
-    if(String(pk)===String(pocKey)){offscreenCtx.strokeStyle=config.pocColor;offscreenCtx.lineWidth=config.pocBorderWidth;offscreenCtx.strokeRect(clX,dY,cw,hC);}
+    if(String(pk)===String(pocKey)){
+  offscreenCtx.save();
+  offscreenCtx.strokeStyle=config.pocColor;
+  offscreenCtx.lineWidth=config.pocBorderWidth;
+  offscreenCtx.shadowColor=config.pocColor;
+  offscreenCtx.shadowBlur=8;
+  offscreenCtx.strokeRect(clX,dY,cw,hC);
+  offscreenCtx.shadowBlur=12;
+  offscreenCtx.strokeRect(clX,dY,cw,hC);
+  offscreenCtx.restore();
+}
     if(hC>14){offscreenCtx.fillStyle='#fff';offscreenCtx.fillText(formatUSD(delta),clX+cw/2,dY+hC/2);}
   });
   const totalDelta=totalBuy-totalSell,statsY=cbY-25;
@@ -1704,7 +1857,17 @@ function drawFrames(){
         const hC=Math.abs(cYB-cYT),dY=Math.min(cYT,cYB),delta=data.buy-data.sell,total=data.buy+data.sell;
         offscreenCtx.fillStyle=(config.clusterVolumeThreshold>0&&Math.abs(delta)<config.clusterVolumeThreshold)?'#485060':hexToRgba(delta>=0?config.upColor:config.downColor,calculateCellOpacity(total));
         offscreenCtx.fillRect(bxX,dY,clw,hC);
-        if(String(pk)===String(pocK)){offscreenCtx.strokeStyle=config.pocColor;offscreenCtx.lineWidth=config.pocBorderWidth;offscreenCtx.strokeRect(bxX,dY,clw,hC);}
+        if(String(pk)===String(pocK)){
+  offscreenCtx.save();
+  offscreenCtx.strokeStyle=config.pocColor;
+  offscreenCtx.lineWidth=config.pocBorderWidth;
+  offscreenCtx.shadowColor=config.pocColor;
+  offscreenCtx.shadowBlur=8;
+  offscreenCtx.strokeRect(bxX,dY,clw,hC);
+  offscreenCtx.shadowBlur=12;
+  offscreenCtx.strokeRect(bxX,dY,clw,hC);
+  offscreenCtx.restore();
+}
         if(hC>14){offscreenCtx.fillStyle='#fff';offscreenCtx.fillText(formatUSD(delta),bxX+clw/2,dY+hC/2);}
       });
     }
@@ -1722,9 +1885,9 @@ function drawFrames(){
       let tB=0,tS=0;Object.values(b).forEach(d=>{tB+=d.buy;tS+=d.sell;});
       const delta=tB-tS;const tfMultiplier=config.displayTimeframe/BASE_TIMEFRAME;if(Math.abs(delta)<config.minBubbleVolume*tfMultiplier)return;
       const isUp=candle.close>=candle.open,isDPos=delta>=0;
-      const sy=isUp?mainSeries.priceToCoordinate(candle.high)-45:mainSeries.priceToCoordinate(candle.low)+40;
+      const sy=isUp?mainSeries.priceToCoordinate(candle.low)+40:mainSeries.priceToCoordinate(candle.high)-45;
       if(sy<0||sy>cbY)return;
-      const dy=isUp?sy-30:sy+30,bcX=x-totalW/2+totalW/2,dc=isDPos?config.upColor:config.downColor;
+      const dy=isDPos?sy+30:sy-30;bcX=x-totalW/2+totalW/2,dc=isDPos?config.upColor:config.downColor;
       offscreenCtx.save();offscreenCtx.globalAlpha=pulseOp;offscreenCtx.beginPath();offscreenCtx.arc(bcX,dy,config.bubbleOuterSize,0,Math.PI*2);offscreenCtx.fillStyle=dc;offscreenCtx.fill();offscreenCtx.restore();
       offscreenCtx.save();offscreenCtx.beginPath();offscreenCtx.arc(bcX,dy,config.bubbleInnerSize,0,Math.PI*2);offscreenCtx.fillStyle=dc;offscreenCtx.fill();offscreenCtx.restore();
     });
@@ -1806,18 +1969,52 @@ drawLiquidationBubbles(cssWidth, cbY);
       const b=displayClusters[String(Math.floor(candle.time))];if(!b)return;
       let tB=0,tS=0;Object.values(b).forEach(d=>{tB+=d.buy;tS+=d.sell;});
       const total=tB+tS,delta=tB-tS;if(!total)return;
-      const isUp=candle.close>=candle.open,oiInc=(candle.oiClose||0)>(candle.oiOpen||0);
+      const isUp=candle.close>=candle.open,isDPos=delta>=0,oiInc=(candle.oiClose||0)>(candle.oiOpen||0);
       let vwN=0,vwD=0;Object.keys(b).forEach(pk=>{const pr=parseFloat(pk),vol=b[pk].buy+b[pk].sell;vwN+=pr*vol;vwD+=vol;});
       const cVWAP=vwD>0?vwN/vwD:candle.open;
       const isBullAbs=delta<=-config.absorptionThreshold&&candle.close>cVWAP&&oiInc;
       const isBearAbs=delta>=config.absorptionThreshold&&candle.close<cVWAP&&oiInc;
-      if(isBullAbs||isBearAbs){
-        const dy=isBullAbs?mainSeries.priceToCoordinate(candle.low)+25:mainSeries.priceToCoordinate(candle.high)-25;
-        if(dy>0&&dy<cbY){offscreenCtx.save();offscreenCtx.shadowColor=config.absorptionColor;offscreenCtx.shadowBlur=config.absorptionGlow;offscreenCtx.fillStyle=config.absorptionColor;offscreenCtx.beginPath();offscreenCtx.arc(x,dy,config.absorptionDotSize,0,Math.PI*2);offscreenCtx.fill();offscreenCtx.shadowBlur=0;offscreenCtx.strokeStyle='#fff';offscreenCtx.lineWidth=1;offscreenCtx.stroke();offscreenCtx.restore();}
-      }
+if(isBullAbs || isBearAbs) {
+// Anchor to candle extreme based on signal type, not candle direction
+const sy = isBearAbs
+  ? mainSeries.priceToCoordinate(candle.high) - 45
+  : mainSeries.priceToCoordinate(candle.low) + 40;
+const dy = isBearAbs ? sy - 30 : sy + 30;
+
+  if(dy > 0 && dy < cbY) {
+    const phase = (Date.now() % config.bubblePulseSpeed) / config.bubblePulseSpeed;
+    const pulseOp = 0.3 + Math.sin(phase * Math.PI * 2) * 0.3;
+
+    offscreenCtx.save();
+
+    // Outer pulsing glow ring (same as volume bubble)
+    offscreenCtx.globalAlpha = pulseOp;
+    offscreenCtx.beginPath();
+    offscreenCtx.arc(x, dy, config.bubbleOuterSize, 0, Math.PI * 2);
+    offscreenCtx.fillStyle = config.absorptionColor;
+    offscreenCtx.fill();
+
+    // Inner solid dot with shadow glow
+    offscreenCtx.globalAlpha = 1;
+    offscreenCtx.shadowColor = config.absorptionColor;
+    offscreenCtx.shadowBlur = config.absorptionGlow;
+    offscreenCtx.beginPath();
+    offscreenCtx.arc(x, dy, config.bubbleInnerSize, 0, Math.PI * 2);
+    offscreenCtx.fillStyle = config.absorptionColor;
+    offscreenCtx.fill();
+
+    // White border ring to make it stand out over the volume bubble
+    offscreenCtx.shadowBlur = 0;
+    offscreenCtx.strokeStyle = '#fff';
+    offscreenCtx.lineWidth = 1.5;
+    offscreenCtx.stroke();
+
+    offscreenCtx.restore();
+  }
+}
     if(!bsActive){
-      const sy=isUp?mainSeries.priceToCoordinate(candle.high)-45:mainSeries.priceToCoordinate(candle.low)+40;
-      if(sy>=0&&sy<=cbY){
+    const sy=isUp?mainSeries.priceToCoordinate(candle.low)+40:mainSeries.priceToCoordinate(candle.high)-45;
+    if(sy>=0&&sy<=cbY){
         const dc=delta>=0?config.upColor:config.downColor,bcX=x-totalW/2+totalW/2,gap=4;
         offscreenCtx.font=`${config.statsFontWeight} ${config.statsFontSize}px ${config.statsFontFamily}`;
         const vv=formatUSD(total),vW=offscreenCtx.measureText('V:').width,vvW=offscreenCtx.measureText(vv).width,vX=bcX-(vW+gap+vvW)/2;
@@ -2129,9 +2326,6 @@ async function init(){
   setTimeout(async()=>{
     if(!chart||!mainSeries){console.error('Golden Layout failed to map Panel 0 correctly.');return;}
     chart.timeScale().subscribeVisibleLogicalRangeChange(()=>{if(typeof scheduleDraw==='function')scheduleDraw();});
-    chart.subscribeCrosshairMove(param => {crosshairPos = param.point || null; syncCrosshairToAllPanels(0, param);   // ← broadcast to extra panels
-  scheduleDraw();
-});
     if(indicatorManager)indicatorManager.addIndicator(new OIIndicator());
     syncHeaderButtons();
     try{
