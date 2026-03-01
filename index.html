@@ -706,7 +706,9 @@ function initGoldenLayout(){
       panelIndicatorManager.onLayout=()=>schedulePanelDraw(panel);
       newSeries.setData(panel.displayCandles);extraPanels.push(panel);
       newChart.timeScale().subscribeVisibleLogicalRangeChange(()=>schedulePanelDraw(panel));
-      newChart.subscribeCrosshairMove(param=>{panel.crosshairPos=param.point||null;});
+      newChart.subscribeCrosshairMove(param => {panel.crosshairPos = param.point || null;
+      syncCrosshairToAllPanels(pid, param);   // ← broadcast to main + siblings
+});
     }
     const ro=new ResizeObserver((entries)=>{
       for(const entry of entries){
@@ -1602,7 +1604,36 @@ function syncHeaderButtons(){
   const activeTF=isMain?config.displayTimeframe:(panel?.displayTimeframe??5);
   syncHeaderTFButtons(activeTF);
 }
+function syncCrosshairToAllPanels(sourceId, param) {
+  const time = param.time ?? null;
 
+  // Helper: set or clear crosshair on a target chart
+  function applyToChart(targetChart, targetSeries) {
+    if (!time) {
+      try { targetChart.clearCrosshairPosition(); } catch(e) {}
+      return;
+    }
+    // Check the time exists on this chart's timescale
+    const coord = targetChart.timeScale().timeToCoordinate(time);
+    if (coord === null) return;
+    // Use the source Y coordinate to derive a meaningful price (or fallback to current)
+    const price = param.point
+      ? (targetSeries.coordinateToPrice(param.point.y) ?? currentPrice)
+      : currentPrice;
+    try { targetChart.setCrosshairPosition(price, time, targetSeries); } catch(e) {}
+  }
+
+  // Sync to main panel (panel 0) if source is an extra panel
+  if (sourceId !== 0 && chart && mainSeries) {
+    applyToChart(chart, mainSeries);
+  }
+
+  // Sync to all extra panels except the source
+  extraPanels.forEach(p => {
+    if (p.id === sourceId) return;
+    applyToChart(p.chart, p.mainSeries);
+  });
+}
 function drawFrames(){
   if(clustersDirty){displayClusters=aggregateClusters(base5mClusters,config.displayTimeframe);extraPanels.forEach(p=>{p.displayClusters=aggregateClusters(base5mClusters,p.displayTimeframe);});clustersDirty=false;}
   if(!offscreenCtx||!chartOverlayCanvas)return;
@@ -2098,7 +2129,9 @@ async function init(){
   setTimeout(async()=>{
     if(!chart||!mainSeries){console.error('Golden Layout failed to map Panel 0 correctly.');return;}
     chart.timeScale().subscribeVisibleLogicalRangeChange(()=>{if(typeof scheduleDraw==='function')scheduleDraw();});
-    chart.subscribeCrosshairMove(param=>{crosshairPos=param.point||null;scheduleDraw();});
+    chart.subscribeCrosshairMove(param => {crosshairPos = param.point || null; syncCrosshairToAllPanels(0, param);   // ← broadcast to extra panels
+  scheduleDraw();
+});
     if(indicatorManager)indicatorManager.addIndicator(new OIIndicator());
     syncHeaderButtons();
     try{
