@@ -607,8 +607,8 @@ input[type=color]           { border: none; width: 200%; height: 200%; transform
           <div class="setting-item"><label class="setting-label">Crosshair</label><div class="toggle-switch active" id="toggle-crosshair-switch" onclick="toggleSwitch(this)"></div></div>
         </div>
         <div class="setting-divider"></div>
-        <div class="setting-item"><label class="setting-label">Price Label Font Size</label><input type="number" id="price-label-font-size" value="9" min="5" max="20" step="1" class="w-full px-3 py-2"></div>
-        <div class="setting-item"><label class="setting-label">Timer Font Size</label><input type="number" id="timer-font-size" value="8" min="5" max="20" step="1" class="w-full px-3 py-2"></div>
+        <div class="setting-item"><label class="setting-label">Price Label Font Size</label><input type="number" id="price-label-font-size" value="10" min="5" max="20" step="1" class="w-full px-3 py-2"></div>
+        <div class="setting-item"><label class="setting-label">Timer Font Size</label><input type="number" id="timer-font-size" value="10" min="5" max="20" step="1" class="w-full px-3 py-2"></div>
       </div></div>
     </div>
 
@@ -650,7 +650,7 @@ let config={
   clusterBgOpacity:0,pocBorderWidth:1,cellBorderWidth:0,
   bubbleInnerSize:5,bubbleOuterSize:10,bubblePulseSpeed:1500, liqBubbleThreshold: 1, liqBubbleInnerSize: 5, liqBubbleOuterSize: 10, liqBubblePulseSpeed: 1200, liqLabelFontSize: 9,
   absorptionDotSize:4,absorptionGlow:10,absorptionThreshold:1000000,
-  priceLabelFontSize:9,timerFontSize:8,timerOpacity:0.9,
+  priceLabelFontSize:10,timerFontSize:10,timerOpacity:0.9,
   defaultIndicatorHeight:150,oiCandleWidth:0.5,cvdLineThickness:1,
   indicatorPadding:10,indicatorBgOpacity:0.95,drawDelay:100,interactionHold:180,
   clusterVolumeThreshold:25000,showDailyLevels:false,hideFootprints:false, hideRoundNumbers:false,
@@ -1024,7 +1024,7 @@ function resetToDefaults(){
     cellFontSize:11,cellFontWeight:'400',barSpacing:50,clusterBgOpacity:0,pocBorderWidth:1.5,
     cellBorderWidth:1,bubbleInnerSize:5,bubbleOuterSize:10,bubblePulseSpeed:1500,
     absorptionDotSize:4,absorptionGlow:10,absorptionThreshold:1000000,
-    priceLabelFontSize:9,timerFontSize:8,timerOpacity:0.9,
+    priceLabelFontSize:10,timerFontSize:10,timerOpacity:0.9,
     defaultIndicatorHeight:150,oiCandleWidth:0.5,cvdLineThickness:1,
     indicatorPadding:10,indicatorBgOpacity:0.95,drawDelay:100,interactionHold:180,
     clusterVolumeThreshold:25000,showTPO:false,tpoTickSize:100,tpoBlockWidth:8,
@@ -1885,9 +1885,9 @@ function drawFrames(){
       let tB=0,tS=0;Object.values(b).forEach(d=>{tB+=d.buy;tS+=d.sell;});
       const delta=tB-tS;const tfMultiplier=config.displayTimeframe/BASE_TIMEFRAME;if(Math.abs(delta)<config.minBubbleVolume*tfMultiplier)return;
       const isUp=candle.close>=candle.open,isDPos=delta>=0;
-      const sy=isUp?mainSeries.priceToCoordinate(candle.low)+40:mainSeries.priceToCoordinate(candle.high)-45;
+      const sy=isDPos?mainSeries.priceToCoordinate(candle.low)+40:mainSeries.priceToCoordinate(candle.high)-45;
       if(sy<0||sy>cbY)return;
-      const dy=isUp?sy+30:sy-30;bcX=x-totalW/2+totalW/2,dc=isDPos?config.upColor:config.downColor;
+      const dy=isDPos?sy+30:sy-30;bcX=x-totalW/2+totalW/2,dc=isDPos?config.upColor:config.downColor;
       offscreenCtx.save();offscreenCtx.globalAlpha=pulseOp;offscreenCtx.beginPath();offscreenCtx.arc(bcX,dy,config.bubbleOuterSize,0,Math.PI*2);offscreenCtx.fillStyle=dc;offscreenCtx.fill();offscreenCtx.restore();
       offscreenCtx.save();offscreenCtx.beginPath();offscreenCtx.arc(bcX,dy,config.bubbleInnerSize,0,Math.PI*2);offscreenCtx.fillStyle=dc;offscreenCtx.fill();offscreenCtx.restore();
     });
@@ -2013,7 +2013,7 @@ const dy = isBearAbs ? sy - 30 : sy + 30;
   }
 }
     if(!bsActive){
-    const sy=isUp?mainSeries.priceToCoordinate(candle.low)+40:mainSeries.priceToCoordinate(candle.high)-45;
+    const sy=isDPos?mainSeries.priceToCoordinate(candle.low)+40:mainSeries.priceToCoordinate(candle.high)-45;
     if(sy>=0&&sy<=cbY){
         const dc=delta>=0?config.upColor:config.downColor,bcX=x-totalW/2+totalW/2,gap=4;
         offscreenCtx.font=`${config.statsFontWeight} ${config.statsFontSize}px ${config.statsFontFamily}`;
