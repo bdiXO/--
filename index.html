@@ -611,7 +611,37 @@ input[type=color]           { border: none; width: 200%; height: 200%; transform
         <div class="setting-item"><label class="setting-label">Timer Font Size</label><input type="number" id="timer-font-size" value="10" min="5" max="20" step="1" class="w-full px-3 py-2"></div>
       </div></div>
     </div>
-
+<div class="settings-section">
+  <div class="section-header" onclick="toggleSection(this)">
+    <div class="section-title-wrapper">
+      <div class="section-icon"><svg class="icon-svg w-5 h-5" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+      <span class="section-title">Visual Debug</span>
+    </div>
+  </div>
+  <div class="section-content"><div class="section-body">
+    <div class="setting-row">
+      <div class="setting-item">
+        <label class="setting-label">Absorption</label>
+        <div class="select-wrapper"><select id="debug-absorption" class="w-full px-3 py-2">
+          <option value="none">None</option>
+          <option value="bull">Bullish</option>
+          <option value="bear">Bearish</option>
+        </select></div>
+      </div>
+      <div class="setting-item">
+        <label class="setting-label">Delta</label>
+        <div class="select-wrapper"><select id="debug-delta" class="w-full px-3 py-2">
+          <option value="pos">Positive</option>
+          <option value="neg">Negative</option>
+        </select></div>
+      </div>
+    </div>
+    <div class="setting-row">
+      <button onclick="injectDebugCandle()" class="modal-btn modal-btn-confirm" style="font-size:11px;padding:6px 12px;width:100%;">Inject Candle</button>
+      <button onclick="clearDebugCandle()" class="modal-btn modal-btn-cancel" style="font-size:11px;padding:6px 12px;width:100%;">Clear</button>
+    </div>
+  </div></div>
+</div>
   </div>
 </div>
 
@@ -1975,10 +2005,11 @@ drawLiquidationBubbles(cssWidth, cbY);
       const isBullAbs=delta<=-config.absorptionThreshold&&candle.close>cVWAP&&oiInc;
       const isBearAbs=delta>=config.absorptionThreshold&&candle.close<cVWAP&&oiInc;
 if(isBullAbs || isBearAbs) {
-// Anchor to candle extreme based on signal type, not candle direction
+const samesSide = (isBullAbs && isDPos) || (isBearAbs && !isDPos);
+const dotOffset = samesSide ? 60 : 20;
 const sy = isBearAbs
-  ? mainSeries.priceToCoordinate(candle.high) - 45
-  : mainSeries.priceToCoordinate(candle.low) + 40;
+  ? mainSeries.priceToCoordinate(candle.high) - dotOffset
+  : mainSeries.priceToCoordinate(candle.low) + dotOffset;
 const dy = isBearAbs ? sy - 30 : sy + 30;
 
   if(dy > 0 && dy < cbY) {
