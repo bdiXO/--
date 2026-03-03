@@ -1309,27 +1309,23 @@ function _getAudioCtx() {
   if (_audioCtx.state === 'suspended') _audioCtx.resume();
   return _audioCtx;
 }
-
-function playDingSound(type) {
+function playDingSound(type, amountUsd) {
   if (!config.playPulseAudio) return;
   try {
-    const ctx = _getAudioCtx();
-    const osc  = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    // bid = bullish = higher pitch  |  ask = bearish = lower pitch
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(type === 'bid' ? 880 : 520, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(type === 'bid' ? 660 : 380, ctx.currentTime + 0.25);
-
-    gain.gain.setValueAtTime(0.18, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.35);
-  } catch(e) { console.warn('Ding error:', e); }
+    const side = type === 'bid' ? 'sell filled' : 'buy filled';
+    const amt = amountUsd >= 1e6
+      ? (amountUsd / 1e6).toFixed(2) + ' million'
+      : amountUsd >= 1e3
+      ? Math.round(amountUsd / 1e3) + ' K'
+      : Math.round(amountUsd).toString();
+    const phrase = `${side}, ${amt}`;
+    const utterance = new SpeechSynthesisUtterance(phrase);
+    utterance.rate = 1.3;
+    utterance.pitch = type === 'bid' ? 0.8 : 1.2;
+    utterance.volume = 0.9;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  } catch(e) { console.warn('TTS error:', e); }
 }
 function formatTime(s){if(s>=3600){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return`${h}:${m.toString().padStart(2,'0')}`;}const m=Math.floor(s/60),sec=s%60;return`${m}:${sec.toString().padStart(2,'0')}`;}
 function getIntervalString(tf){return{1:'1',3:'3',5:'5',15:'15',30:'30',60:'60',240:'240',D:'D'}[tf]||'5';}
@@ -1523,7 +1519,7 @@ async function startBinanceWebSocket() {
         if (isConvincingHit || valUsd >= config.heatmapMinVol) {
       const fillType = isBidHit ? 'bid' : 'ask';
       activeFills.push({ price, timestamp: Date.now(), type: fillType });
-      playDingSound(fillType);
+      playDingSound(fillType, valUsd);
       scheduleDraw();
         }
       }
