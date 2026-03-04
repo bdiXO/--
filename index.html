@@ -405,7 +405,7 @@ let config={
   cellFontSize:9,cellFontWeight:'400',barSpacing:50,
   clusterBgOpacity:0,pocBorderWidth:1,cellBorderWidth:0,
   bubbleInnerSize:5,bubbleOuterSize:10,bubblePulseSpeed:1500,
-  liqBubbleThreshold:50000,liqBubbleInnerSize:5,liqBubbleOuterSize:10,liqBubblePulseSpeed:1200,liqLabelFontSize:9,
+  liqBubbleThreshold:1,liqBubbleInnerSize:5,liqBubbleOuterSize:10,liqBubblePulseSpeed:1200,liqLabelFontSize:9,
   absorptionDotSize:4,absorptionGlow:10,absorptionThreshold:1000000,
   priceLabelFontSize:10,timerFontSize:10,timerOpacity:0.9,
   defaultIndicatorHeight:150,oiCandleWidth:0.5,cvdLineThickness:1,
@@ -788,7 +788,7 @@ class OrderbookPanel {
       </div>
       <button id="ob-close-btn" style="margin-left:auto;background:none;border:none;color:var(--mute);cursor:pointer;font-size:11px;padding:2px 4px;border-radius:2px;flex-shrink:0;transition:color .12s;" onmouseover="this.style.color='#f04747'" onmouseout="this.style.color='var(--mute)'">✕</button>
     </div>
-    <div id="ob-imbalance-wrap" style="position:relative;height:22px;flex-shrink:0;border-bottom:1px solid var(--bdr);overflow:visible;cursor:default;">
+    <div id="ob-imbalance-wrap" style="position:relative;height:12px;flex-shrink:0;border-bottom:1px solid var(--bdr);overflow:visible;cursor:default;">
       <div id="ob-imbalance-bid" style="position:absolute;left:0;top:0;height:100%;background:#4ade80;width:50%;"></div>
       <div id="ob-imbalance-ask" style="position:absolute;right:0;top:0;height:100%;background:#f87171;width:50%;"></div>
       <span id="ob-imbalance-pct" style="position:absolute;left:6px;top:50%;transform:translateY(-50%);font-size:9px;line-height:1;margin-top:1px;font-weight:700;color:#000;z-index:2;pointer-events:none;white-space:nowrap;">—</span>
