@@ -205,7 +205,7 @@ input[type=color]{border:none;width:200%;height:200%;transform:translate(-25%,-2
       <button id="toggle-tpo"         class="ind-chip"><span class="dot"></span>TPO</button>
       <button id="toggle-vwap"        class="ind-chip"><span class="dot"></span>VWAP</button>
       <button id="toggle-dailylevels" class="ind-chip"><span class="dot"></span>Levels</button>
-      <button id="toggle-heatmap"     class="ind-chip"><span class="dot"></span>Heatmap</button>
+      <button id="toggle-heatmap"     class="ind-chip"><span class="dot"></span>OB</button>
     </div>
 
     <div style="height:16px;width:1px;background:var(--bdr)"></div>
@@ -423,6 +423,7 @@ let config={
 };
 
 let crosshairPos=null;
+let orderbookPanel=null;
 let heatmapData={};
 let activeFills = [];
 let obState = { bids: new Map(), asks: new Map() };
@@ -736,7 +737,365 @@ class IndicatorManager{
   handleDragEnd=()=>{if(!this.dragState)return;const ind=this.indicators.get(this.dragState.id);if(ind)ind.element.classList.remove('dragging');const phBottom=parseInt(this.placeholder.style.bottom);let newOrder=[],cumH=TIME_AXIS_HEIGHT,inserted=false;this.order.forEach(id=>{if(id===this.dragState.id)return;const ind=this.indicators.get(id);if(!ind)return;if(!inserted&&cumH>=phBottom){newOrder.push(this.dragState.id);inserted=true;}newOrder.push(id);cumH+=ind.height;});if(!inserted)newOrder.push(this.dragState.id);this.order=newOrder;if(this.placeholder){this.placeholder.remove();this.placeholder=null;}document.removeEventListener('mousemove',this.handleDragMove);document.removeEventListener('mouseup',this.handleDragEnd);this.dragState=null;this.updateLayout();}
   drawAll(cssWidth){this.indicators.forEach(ind=>{if(ind.visible){ind.draw(cssWidth);ind.render();}});}
 }
+// ═══════════════════════════════════════════
+// ORDERBOOK PANEL
+// ═══════════════════════════════════════════
+class OrderbookPanel {
+  constructor() {
+    this.element = null;
+    this.bodyEl = null;
+    this.tickSize = 50;
+    this.rowCount = 100;
+    this.autoCenter = true;
+    this.centerPrice = null;
+    this.rafId = null;
+    this.visible = false;
+    this.bidColor = '#4ade80';
+    this.askColor = '#f87171';
+    this.inversed = false;
+    this.side = 'left'; // 'left' or 'right'
+    this._resizing = false;
+    this._resizeStartX = 0;
+    this._resizeStartW = 0;
+    this._width = 268;
+    this._dragging = false;
+    this._ghost = null;
+  }
 
+  createElement() {
+    const el = document.createElement('div');
+    el.id = 'orderbook-panel';
+    this._applyPositionStyle(el);
+
+  el.innerHTML = `
+    <div id="ob-titlebar" style="display:flex;align-items:center;gap:5px;padding:5px 8px;border-bottom:1px solid var(--bdr);background:rgba(11,14,24,.97);flex-shrink:0;min-height:34px;user-select:none;cursor:grab;overflow:hidden;min-width:0;">
+      <span style="font-size:10px;font-weight:700;color:var(--gold);letter-spacing:.04em;flex-shrink:0;">BTCUSD</span>
+      <div style="width:1px;height:12px;background:var(--bdr);flex-shrink:0;"></div>
+      <div id="ob-controls" style="display:flex;align-items:center;gap:5px;overflow:hidden;flex:1;min-width:0;">
+        <div style="position:relative;flex-shrink:0;">
+          <select id="ob-tick-select" style="appearance:none;background:var(--bg);border:1px solid var(--bdr);color:var(--txl);font-family:var(--fm);font-size:9px;border-radius:3px;padding:2px 16px 2px 5px;cursor:pointer;">
+            <option value="5">$5</option><option value="10">$10</option><option value="25">$25</option>
+            <option value="50" selected>$50</option><option value="100">$100</option>
+            <option value="250">$250</option><option value="500">$500</option><option value="1000">$1000</option>
+          </select>
+          <span style="position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:7px;color:var(--mute);pointer-events:none;">▾</span>
+        </div>
+        <button id="ob-center-btn" style="padding:2px 7px;font-size:9px;font-family:var(--fm);background:transparent;border:1px solid var(--bdr);color:var(--tx);border-radius:3px;cursor:pointer;flex-shrink:0;transition:all .15s;white-space:nowrap;" onmouseover="this.style.borderColor='#3b82f6';this.style.color='#a8c0f8'" onmouseout="this.style.borderColor='var(--bdr)';this.style.color='var(--tx)'">Center</button>
+        <button id="ob-inverse-btn" style="padding:2px 7px;font-size:9px;font-family:var(--fm);background:transparent;border:1px solid var(--bdr);color:var(--tx);border-radius:3px;cursor:pointer;flex-shrink:0;transition:all .15s;white-space:nowrap;" onmouseover="this.style.borderColor='#3b82f6';this.style.color='#a8c0f8'" onmouseout="this.style.borderColor='var(--bdr)';this.style.color='var(--tx)'">Inverse</button>
+        <label style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--tx);cursor:pointer;flex-shrink:0;white-space:nowrap;">
+          <div id="ob-auto-chk" data-checked="true" style="cursor:pointer;width:11px;height:11px;border:1px solid var(--acc);border-radius:2px;background:transparent;position:relative;top:1px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:border-color .15s;"><svg id="ob-auto-chk-svg" width="8" height="8" viewBox="0 0 8 8" style="display:block;"><polyline points="1,4 3,6.5 7,1.5" style="fill:none;stroke:#3b82f6;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;"/></svg></div>Auto
+        </label>
+      </div>
+      <button id="ob-close-btn" style="margin-left:auto;background:none;border:none;color:var(--mute);cursor:pointer;font-size:11px;padding:2px 4px;border-radius:2px;flex-shrink:0;transition:color .12s;" onmouseover="this.style.color='#f04747'" onmouseout="this.style.color='var(--mute)'">✕</button>
+    </div>
+    <div id="ob-imbalance-wrap" style="position:relative;height:22px;flex-shrink:0;border-bottom:1px solid var(--bdr);overflow:visible;cursor:default;">
+      <div id="ob-imbalance-bid" style="position:absolute;left:0;top:0;height:100%;background:#4ade80;width:50%;"></div>
+      <div id="ob-imbalance-ask" style="position:absolute;right:0;top:0;height:100%;background:#f87171;width:50%;"></div>
+      <span id="ob-imbalance-pct" style="position:absolute;left:6px;top:50%;transform:translateY(-50%);font-size:9px;line-height:1;margin-top:1px;font-weight:700;color:#000;z-index:2;pointer-events:none;white-space:nowrap;">—</span>
+      <div id="ob-imbalance-tooltip" style="display:none;position:fixed;background:rgba(11,14,24,.97);border:1px solid rgba(59,130,246,.4);border-radius:5px;padding:8px 12px;z-index:99999;pointer-events:none;min-width:210px;"></div>
+    </div>
+    <div id="ob-body" style="flex:1;overflow:hidden;position:relative;"></div>
+    <div id="ob-resize-handle" style="position:absolute;top:0;bottom:0;width:5px;cursor:ew-resize;z-index:10;background:transparent;"></div>
+  `;
+
+    this.element = el;
+    this.bodyEl = el.querySelector('#ob-body');
+    document.body.appendChild(el);
+    this._updateResizeHandleSide();
+    this._bindEvents();
+    return el;
+  }
+
+  _applyPositionStyle(el) {
+    el = el || this.element;
+    if (!el) return;
+    el.style.cssText = [
+      'position:fixed',
+      `top:${HEADER_HEIGHT}px`,
+      'bottom:0',
+      `width:${this._width}px`,
+      'min-width:160px',
+      'max-width:600px',
+      'background:var(--panel)',
+      `border-${this.side === 'left' ? 'right' : 'left'}:1px solid var(--bdr)`,
+      'z-index:400',
+      'display:flex',
+      'flex-direction:column',
+      'font-family:var(--fm)',
+      `box-shadow:${this.side === 'left' ? '4px' : '-4px'} 0 20px rgba(0,0,0,.4)`,
+      this.side === 'left' ? 'left:0' : 'right:0',
+    ].join(';');
+  }
+
+  _updateResizeHandleSide() {
+    const h = this.element && this.element.querySelector('#ob-resize-handle');
+    if (!h) return;
+    if (this.side === 'left') {
+      h.style.right = '0'; h.style.left = 'auto';
+    } else {
+      h.style.left = '0'; h.style.right = 'auto';
+    }
+  }
+
+  _applyLayout() {
+    if (!this.element) return;
+    this._applyPositionStyle();
+    this._updateResizeHandleSide();
+    const cc = document.getElementById('charts-container');
+    if (!cc) return;
+    cc.style.left  = this.side === 'left'  ? this._width + 'px' : '0';
+    cc.style.right = this.side === 'right' ? this._width + 'px' : '0';
+    if (myLayout) myLayout.updateSize();
+  }
+
+  _resetLayout() {
+    const cc = document.getElementById('charts-container');
+    if (!cc) return;
+    cc.style.left  = '0';
+    cc.style.right = '0';
+    if (myLayout) myLayout.updateSize();
+  }
+
+  _bindEvents() {
+    const el = this.element;
+
+    el.querySelector('#ob-tick-select').addEventListener('change', e => {
+      this.tickSize = parseInt(e.target.value);
+    });
+    el.querySelector('#ob-center-btn').addEventListener('click', () => {
+      this.centerPrice = currentPrice;
+    });
+    el.querySelector('#ob-inverse-btn').addEventListener('click', () => {
+      this.inversed = !this.inversed;
+      const btn = el.querySelector('#ob-inverse-btn');
+      btn.style.background  = this.inversed ? 'rgba(59,130,246,.15)' : 'transparent';
+      btn.style.borderColor = this.inversed ? 'rgba(59,130,246,.4)'  : 'var(--bdr)';
+      btn.style.color       = this.inversed ? '#a8c0f8'              : 'var(--tx)';
+    });
+    const autoChk = el.querySelector('#ob-auto-chk');
+    autoChk.addEventListener('click', () => {
+      const isChecked = autoChk.dataset.checked === 'true';
+      const newChecked = !isChecked;
+      autoChk.dataset.checked = String(newChecked);
+      autoChk.style.borderColor = newChecked ? '#3b82f6' : 'var(--bdr)';
+      const svg = autoChk.querySelector('#ob-auto-chk-svg');
+      if (svg) svg.style.display = newChecked ? 'block' : 'none';
+      this.autoCenter = newChecked;
+      if (this.autoCenter) this.centerPrice = currentPrice;
+    });
+    el.querySelector('#ob-close-btn').addEventListener('click', () => {
+      this.hide();
+      const btn = document.getElementById('toggle-heatmap');
+      if (btn) btn.classList.remove('active');
+    });
+
+    // ── Titlebar drag to switch sides ──
+    const titlebar = el.querySelector('#ob-titlebar');
+    titlebar.addEventListener('mousedown', e => {
+      if (['SELECT','INPUT','BUTTON','LABEL'].includes(e.target.tagName)) return;
+      this._dragging = true;
+      titlebar.style.cursor = 'grabbing';
+
+      // Create ghost indicator
+      this._ghost = document.createElement('div');
+      this._ghost.style.cssText = `
+        position:fixed;top:${HEADER_HEIGHT}px;bottom:0;width:6px;
+        background:rgba(59,130,246,.5);z-index:9999;
+        pointer-events:none;transition:left .1s,right .1s;
+      `;
+      document.body.appendChild(this._ghost);
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', e => {
+      if (this._dragging && this._ghost) {
+        // Show ghost on left or right edge depending on cursor position
+        const midX = window.innerWidth / 2;
+        if (e.clientX < midX) {
+          this._ghost.style.left  = '0';
+          this._ghost.style.right = 'auto';
+        } else {
+          this._ghost.style.right = '0';
+          this._ghost.style.left  = 'auto';
+        }
+      }
+      if (this._resizing) {
+        const dx = this._resizeStartX - e.clientX;
+        const sign = this.side === 'left' ? -1 : 1; // left side: drag right = wider
+        this._width = Math.max(160, Math.min(600, this._resizeStartW + dx * sign));
+        this._applyLayout();
+      }
+    });
+
+    document.addEventListener('mouseup', e => {
+      if (this._dragging) {
+        this._dragging = false;
+        titlebar.style.cursor = 'grab';
+        if (this._ghost) { this._ghost.remove(); this._ghost = null; }
+        // Snap to side based on where mouse was released
+        const newSide = e.clientX < window.innerWidth / 2 ? 'left' : 'right';
+        if (newSide !== this.side) {
+          this.side = newSide;
+          this._applyLayout();
+        }
+      }
+      this._resizing = false;
+    });
+
+    // ── Edge resize ──
+    const resizeHandle = el.querySelector('#ob-resize-handle');
+    resizeHandle.addEventListener('mousedown', e => {
+      this._resizing = true;
+      this._resizeStartX = e.clientX;
+      this._resizeStartW = this._width;
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+    // Imbalance bar tooltip
+    const imbalanceWrap = el.querySelector('#ob-imbalance-wrap');
+    const imbalanceTip  = el.querySelector('#ob-imbalance-tooltip');
+
+    imbalanceWrap.addEventListener('mousemove', e => {
+      const bidTotal = this._lastBidTotal || 0;
+      const askTotal = this._lastAskTotal || 0;
+      const total    = bidTotal + askTotal;
+      const bidPct   = total > 0 ? (bidTotal / total * 100).toFixed(1) : '0.0';
+      const askPct   = total > 0 ? (askTotal / total * 100).toFixed(1) : '0.0';
+
+      const fmt = v => v >= 1e9 ? '$'+(v/1e9).toFixed(2)+'B'
+                    : v >= 1e6 ? '$'+(v/1e6).toFixed(1)+'M'
+                    : v >= 1e3 ? '$'+(v/1e3).toFixed(0)+'K'
+                    : '$'+Math.round(v);
+
+      imbalanceTip.innerHTML = `
+        <div style="font-size:9px;font-weight:700;color:#dde1ea;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">Total Orderbook Imbalance</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:#4ade80;flex-shrink:0;display:inline-block;"></span>
+          <span style="font-size:9px;color:#4ade80;">Bids: ${fmt(bidTotal)} (${bidPct}%)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:#f87171;flex-shrink:0;display:inline-block;"></span>
+          <span style="font-size:9px;color:#f87171;">Asks: ${fmt(askTotal)} (${askPct}%)</span>
+        </div>`;
+
+      const x = e.clientX, y = e.clientY;
+      imbalanceTip.style.left = (x + 14) + 'px';
+      imbalanceTip.style.top  = (y - 10) + 'px';
+      imbalanceTip.style.display = 'block';
+    });
+
+    imbalanceWrap.addEventListener('mouseleave', () => {
+      imbalanceTip.style.display = 'none';
+    });
+  }   // <-- add this closing brace
+
+  _buildRows() {
+    const cp = currentPrice || 70000;
+    const center = Math.round((this.centerPrice || cp) / this.tickSize) * this.tickSize;
+    const half = Math.floor(this.rowCount / 2);
+    const bidMap = new Map();
+    for (const [p, q] of obState.bids) {
+      const b = Math.floor(p / this.tickSize) * this.tickSize;
+      bidMap.set(b, (bidMap.get(b) || 0) + q * p);
+    }
+    const askMap = new Map();
+    for (const [p, q] of obState.asks) {
+      const b = Math.floor(p / this.tickSize) * this.tickSize;
+      askMap.set(b, (askMap.get(b) || 0) + q * p);
+    }
+    const curBucket = Math.floor(cp / this.tickSize) * this.tickSize;
+    const rows = [];
+    for (let i = this.rowCount - 1; i >= 0; i--) {
+      const price = (center - half * this.tickSize) + i * this.tickSize;
+      const side = price > curBucket ? 'ask' : 'bid';
+      const volUSD = side === 'ask' ? (askMap.get(price) || 0) : (bidMap.get(price) || 0);
+      rows.push({ price, volUSD, side, isCurrent: price === curBucket });
+    }
+    return rows;
+  }
+
+  render() {
+    if (!this.visible || !this.bodyEl) return;
+    if (this.autoCenter && currentPrice) this.centerPrice = currentPrice;
+    // Compute totals for imbalance bar
+    let bidTotal = 0, askTotal = 0;
+    for (const [p, q] of obState.bids) bidTotal += q * p;
+    for (const [p, q] of obState.asks) askTotal += q * p;
+    this._lastBidTotal = bidTotal;
+    this._lastAskTotal = askTotal;
+
+    const total = bidTotal + askTotal;
+    if (total > 0) {
+      const bidPct = bidTotal / total * 100;
+      const askPct = 100 - bidPct;
+      const fmt = v => v >= 1e9 ? '$'+(v/1e9).toFixed(1)+'B'
+                    : v >= 1e6 ? '$'+(v/1e6).toFixed(1)+'M'
+                    : v >= 1e3 ? '$'+(v/1e3).toFixed(0)+'K' : '$'+Math.round(v);
+
+      const bidEl  = this.element.querySelector('#ob-imbalance-bid');
+      const askEl  = this.element.querySelector('#ob-imbalance-ask');
+      const pctEl  = this.element.querySelector('#ob-imbalance-pct');
+
+      if (bidEl) bidEl.style.width = bidPct.toFixed(1) + '%';
+      if (askEl) askEl.style.width = askPct.toFixed(1) + '%';
+      if (pctEl) pctEl.textContent = Math.max(bidPct, askPct).toFixed(0) + '%';
+    }
+    const rows = this._buildRows();
+    if (!rows.length) return;
+    const maxVol = Math.max(...rows.map(r => r.volUSD), 1);
+    const ROW_H = 20;
+    const inv = this.inversed;
+    const bidRGB = (c => { const r=parseInt(c.slice(1,3),16),g=parseInt(c.slice(3,5),16),b=parseInt(c.slice(5,7),16); return `${r},${g},${b}`; })(this.bidColor);
+    const askRGB = (c => { const r=parseInt(c.slice(1,3),16),g=parseInt(c.slice(3,5),16),b=parseInt(c.slice(5,7),16); return `${r},${g},${b}`; })(this.askColor);
+    let html = '';
+    rows.forEach(row => {
+      const pct      = row.volUSD / maxVol;
+      const barW     = Math.min(100, pct * 100).toFixed(1);
+      const alpha    = (0.12 + pct * 0.78).toFixed(3);
+      const isBid    = row.side === 'bid';
+      const barColor = isBid ? `rgba(${bidRGB},${alpha})` : `rgba(${askRGB},${alpha})`;
+      const volText  = row.volUSD >= 1e6 ? '$'+(row.volUSD/1e6).toFixed(1)+'M'
+                     : row.volUSD >= 1e3 ? '$'+(row.volUSD/1e3).toFixed(0)+'K'
+                     : row.volUSD > 0    ? '$'+Math.round(row.volUSD) : '';
+      const priceFontW     = row.isCurrent ? '700' : '400';
+      const priceFontColor = row.isCurrent ? '#f0b90b' : 'rgba(255,255,255,0.85)';
+      const rowBorder      = row.isCurrent ? 'background:rgba(240,185,11,.06);' : '';
+      const priceSpan = `<span style="position:relative;z-index:2;width:64px;flex-shrink:0;font-size:9px;font-weight:${row.isCurrent?'500':'300'};color:${priceFontColor};letter-spacing:.02em;font-family:'JetBrains Mono',monospace;` + (inv ? 'text-align:left;padding-left:6px;' : 'text-align:right;padding-right:6px;') + `">${row.price.toLocaleString()}</span>`;
+      const barInner = inv
+        ? `<div style="position:absolute;right:0;top:0;height:100%;width:${barW}%;background:${barColor};"></div><span style="position:absolute;right:5px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:400;color:#ffffff;z-index:2;white-space:nowrap;font-family:'JetBrains Mono',monospace;">${volText}</span>`
+        : `<div style="position:absolute;left:0;top:0;height:100%;width:${barW}%;background:${barColor};"></div><span style="position:absolute;left:5px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:400;color:#ffffff;z-index:2;white-space:nowrap;font-family:'JetBrains Mono',monospace;">${volText}</span>`;
+      const histDiv = `<div style="position:relative;flex:1;height:100%;overflow:hidden;">${barInner}</div>`;
+      html += `<div style="position:relative;height:${ROW_H}px;display:flex;align-items:center;${rowBorder}overflow:hidden;${inv?'flex-direction:row-reverse;':''}border-bottom:2px solid rgba(11,14,24);">${priceSpan}${histDiv}</div>`;
+    });
+    const curIdx = rows.findIndex(r => r.isCurrent);
+    const scrollTarget = curIdx >= 0 ? curIdx * ROW_H - this.bodyEl.clientHeight / 2 + ROW_H * 0.5 : -1;
+    this.bodyEl.innerHTML = html;
+    if (this.autoCenter && scrollTarget >= 0) this.bodyEl.scrollTop = Math.max(0, scrollTarget);
+  }
+
+  _loop() {
+    if (!this.visible) return;
+    this.render();
+    this.rafId = setTimeout(() => { this.rafId = requestAnimationFrame(() => this._loop()); }, 120);
+  }
+
+  show() {
+    if (!this.element) this.createElement();
+    this.element.style.display = 'flex';
+    this.visible = true;
+    this.centerPrice = currentPrice;
+    this._applyLayout();
+    this._loop();
+  }
+
+  hide() {
+    if (this.element) this.element.style.display = 'none';
+    this.visible = false;
+    this._resetLayout();
+    if (this.rafId) { clearTimeout(this.rafId); cancelAnimationFrame(this.rafId); this.rafId = null; }
+  }
+}
 // Toggle listeners
 function _getActiveMgr(){return selectedPanelId===0?indicatorManager:extraPanels.find(p=>p.id===selectedPanelId)?.indicatorManager;}
 function _toggleIndicator(id,BtnId,Cls){
@@ -749,18 +1108,14 @@ document.getElementById('toggle-barstats').addEventListener('click',()=>schedule
 document.getElementById('toggle-dailylevels').addEventListener('click',function(){if(selectedPanelId===0){config.showDailyLevels=!config.showDailyLevels;this.classList.toggle('active',config.showDailyLevels);scheduleDraw();}else{const p=extraPanels.find(p=>p.id===selectedPanelId);if(p){p.showDailyLevels=!p.showDailyLevels;this.classList.toggle('active',p.showDailyLevels);schedulePanelDraw(p);}}});
 document.getElementById('toggle-tpo').addEventListener('click',function(){if(selectedPanelId===0){config.showTPO=!config.showTPO;this.classList.toggle('active',config.showTPO);tpoCacheKey='';scheduleDraw();}else{const p=extraPanels.find(p=>p.id===selectedPanelId);if(p){p.showTPO=!p.showTPO;this.classList.toggle('active',p.showTPO);p.tpoCacheKey='';schedulePanelDraw(p);}}});
 document.getElementById('toggle-vwap').addEventListener('click',function(){if(selectedPanelId===0){config.vwapVisible=!config.vwapVisible;this.classList.toggle('active',config.vwapVisible);scheduleDraw();}else{const p=extraPanels.find(p=>p.id===selectedPanelId);if(p){p.vwapVisible=!p.vwapVisible;this.classList.toggle('active',p.vwapVisible);schedulePanelDraw(p);}}});
-document.getElementById('toggle-heatmap').addEventListener('click',function(){
-  if(selectedPanelId===0){
-    config.showHeatmap=!config.showHeatmap;
-    this.classList.toggle('active',config.showHeatmap);
-    scheduleDraw();
-  }else{
-    const p=extraPanels.find(p=>p.id===selectedPanelId);
-    if(p){
-      p.showHeatmap=!p.showHeatmap;
-      this.classList.toggle('active',p.showHeatmap);
-      schedulePanelDraw(p);
-    }
+document.getElementById('toggle-heatmap').addEventListener('click', function() {
+  if (!orderbookPanel) orderbookPanel = new OrderbookPanel();
+  if (orderbookPanel.visible) {
+    orderbookPanel.hide();
+    this.classList.remove('active');
+  } else {
+    orderbookPanel.show();
+    this.classList.add('active');
   }
 });
 function getLineDash(style){return style==='solid'?[]:style==='dashed'?[8,4]:style==='dotted'?[2,4]:[4,4];}
@@ -782,36 +1137,23 @@ function _menuBarStats(body){const ic=getIC();body.appendChild(_iRow('Pos Color'
 function _menuTPO(body){const ic=getIC();body.appendChild(_iRow('Tick Size',_iSlider(ic.tpoTickSize,10,500,10,v=>'$'+v,v=>{getIC().tpoTickSize=v;invalidateTpoCache();scheduleDraw();})));body.appendChild(_iRow('Block Width',_iSlider(ic.tpoBlockWidth,3,24,1,v=>v+'px',v=>{getIC().tpoBlockWidth=v;scheduleDraw();})));body.appendChild(_iDivider());body.appendChild(_iRow('VA Opacity',_iSlider(Math.round(ic.tpoOpacityVA*100),10,100,5,v=>v+'%',v=>{getIC().tpoOpacityVA=v/100;scheduleDraw();})));body.appendChild(_iRow('Non-VA Opacity',_iSlider(Math.round(ic.tpoOpacityNonVA*100),5,80,5,v=>v+'%',v=>{getIC().tpoOpacityNonVA=v/100;scheduleDraw();})));body.appendChild(_iDivider());[['VA Color','tpoColorVA'],['Non-VA','tpoColorNonVA'],['Single Print','tpoColorSingle'],['POC Border','tpoColorPOC']].forEach(([l,k])=>body.appendChild(_iRow(l,_iColor(ic[k],v=>{getIC()[k]=v;scheduleDraw();}))));} 
 function _menuVWAP(body){const ic=getIC();body.appendChild(_iRow('Color',_iColor(ic.vwapColor,v=>{getIC().vwapColor=v;scheduleDraw();})));body.appendChild(_iRow('Style',_iSelect([{v:'solid',l:'─ Solid'},{v:'dashed',l:'- Dashed'},{v:'dotted',l:'· Dotted'}],ic.vwapLineStyle,v=>{getIC().vwapLineStyle=v;scheduleDraw();})));body.appendChild(_iRow('Show Label',_iToggle(ic.vwapShowLabel,v=>{getIC().vwapShowLabel=v;scheduleDraw();})));body.appendChild(_iRow('Show Price',_iToggle(ic.vwapShowPrice,v=>{getIC().vwapShowPrice=v;scheduleDraw();})));}
 function _menuLevels(body){const ic=getIC();body.appendChild(_iRow('Color',_iColor(ic.levelsColor,v=>{getIC().levelsColor=v;scheduleDraw();})));body.appendChild(_iRow('Style',_iSelect([{v:'solid',l:'─ Solid'},{v:'dashed',l:'- Dashed'},{v:'dotted',l:'· Dotted'}],ic.levelsLineStyle,v=>{getIC().levelsLineStyle=v;scheduleDraw();})));body.appendChild(_iDivider());const LABELS={dOpen:'Day Open',dHigh:'Day High',dLow:'Day Low',dEQ:'Day EQ',pdHigh:'Prev High',pdLow:'Prev Low',pdEQ:'Prev EQ'};Object.entries(LABELS).forEach(([key,label])=>body.appendChild(_iRow(label,_iToggle(ic.levelsEnabled[key],v=>{getIC().levelsEnabled[key]=v;scheduleDraw();}))));} 
-function _menuHeatmap(body) {
-  const ic = getIC();
-  const currentTick = ic.heatmapTickSize || 20; 
-  const currentVol = ic.heatmapMinVol || 5000000;
-  const currentPct = ic.pulseFillPercent || 0.50;
-  
-  body.appendChild(_iRow('Tick Size ($)', _iSlider(currentTick, 5, 100, 5, v => '$' + v, v => {
-    getIC().heatmapTickSize = v;
-    scheduleDraw(); 
-  })));
-
+function _menuOB(body) {
+  body.appendChild(_iRow('Visible Rows', _iSlider(
+    orderbookPanel ? orderbookPanel.rowCount : 100, 20, 300, 10,
+    v => v + ' rows', v => { if (orderbookPanel) orderbookPanel.rowCount = parseInt(v); }
+  )));
   body.appendChild(_iDivider());
-  body.appendChild(_iRow('Visible Wall', _iSlider(currentVol, 1000000, 20000000, 500000, v => (v / 1000000).toFixed(1) + 'M', v => {
-    getIC().heatmapMinVol = v;
-    scheduleDraw(); 
-  })));
-
-  // NEW: The "Convincing" Percentage Slider
-  body.appendChild(_iRow('Fill Required', _iSlider(Math.round(currentPct * 100), 10, 100, 5, v => v + '%', v => {
-    getIC().pulseFillPercent = v / 100;
-  })));
-  body.appendChild(_iDivider());
-  body.appendChild(_iRow('Play Sound', _iToggle(ic.playPulseAudio ?? false, v => {
-  getIC().playPulseAudio = v;
-  // Unlock AudioContext on first user interaction
-  if (v) _getAudioCtx();
-})));
+  body.appendChild(_iRow('Bid Color', _iColor(
+    orderbookPanel ? orderbookPanel.bidColor : '#4ade80',
+    v => { if (orderbookPanel) orderbookPanel.bidColor = v; }
+  )));
+  body.appendChild(_iRow('Ask Color', _iColor(
+    orderbookPanel ? orderbookPanel.askColor : '#f87171',
+    v => { if (orderbookPanel) orderbookPanel.askColor = v; }
+  )));
 }
 let _indCtxActive=null;
-function showIndicatorCtxMenu(id,anchorEl){const menu=document.getElementById('indicator-ctx-menu'),title=document.getElementById('ind-ctx-title'),body=document.getElementById('ind-ctx-body');const NAMES={oi:'Open Interest',cvd:'Volume Delta',barstats:'Bar Stats',tpo:'TPO / Market Profile',vwap:'VWAP',dailylevels:'Key Levels',heatmap: 'Orderbook Heatmap'};title.textContent=NAMES[id]||id;body.innerHTML='';({oi:_menuOI,cvd:_menuCVD,barstats:_menuBarStats,tpo:_menuTPO,vwap:_menuVWAP,dailylevels:_menuLevels,heatmap: _menuHeatmap})[id]?.(body);_indCtxActive=id;menu.style.display='block';const rect=anchorEl.getBoundingClientRect(),mw=menu.offsetWidth||240,mh=menu.offsetHeight||280;let left=rect.left,top=rect.bottom+5;if(left+mw>window.innerWidth-8)left=window.innerWidth-mw-8;if(top+mh>window.innerHeight-8)top=rect.top-mh-5;menu.style.left=left+'px';menu.style.top=top+'px';}
+function showIndicatorCtxMenu(id,anchorEl){const menu=document.getElementById('indicator-ctx-menu'),title=document.getElementById('ind-ctx-title'),body=document.getElementById('ind-ctx-body');const NAMES={oi:'Open Interest',cvd:'Volume Delta',barstats:'Bar Stats',tpo:'TPO / Market Profile',vwap:'VWAP',dailylevels:'Key Levels',heatmap:'Orderbook'};title.textContent=NAMES[id]||id;body.innerHTML='';({oi:_menuOI,cvd:_menuCVD,barstats:_menuBarStats,tpo:_menuTPO,vwap:_menuVWAP,dailylevels:_menuLevels,heatmap:_menuOB})[id]?.(body);_indCtxActive=id;menu.style.display='block';const rect=anchorEl.getBoundingClientRect(),mw=menu.offsetWidth||240,mh=menu.offsetHeight||280;let left=rect.left,top=rect.bottom+5;if(left+mw>window.innerWidth-8)left=window.innerWidth-mw-8;if(top+mh>window.innerHeight-8)top=rect.top-mh-5;menu.style.left=left+'px';menu.style.top=top+'px';}
 function hideIndicatorCtxMenu(){document.getElementById('indicator-ctx-menu').style.display='none';_indCtxActive=null;}
 ['oi','cvd','barstats','tpo','vwap','dailylevels', 'heatmap'].forEach(id=>{const btn=document.getElementById(`toggle-${id}`);if(!btn)return;btn.addEventListener('contextmenu',e=>{e.preventDefault();e.stopPropagation();showIndicatorCtxMenu(id,btn);});});
 document.addEventListener('mousedown',e=>{const m=document.getElementById('indicator-ctx-menu');if(m&&m.style.display!=='none'&&!m.contains(e.target))hideIndicatorCtxMenu();});
@@ -895,7 +1237,7 @@ function syncHeaderButtons(){
   const tpoA=isMain?config.showTPO:(panel?.showTPO??false);document.getElementById('toggle-tpo').classList.toggle('active',tpoA);
   document.getElementById('toggle-vwap').classList.toggle('active',isMain?config.vwapVisible:(panel?.vwapVisible??false));
   document.getElementById('toggle-dailylevels').classList.toggle('active',isMain?config.showDailyLevels:(panel?.showDailyLevels??false));
-  document.getElementById('toggle-heatmap').classList.toggle('active',isMain?config.showHeatmap:(panel?.showHeatmap??false));
+  document.getElementById('toggle-heatmap').classList.toggle('active', orderbookPanel?.visible ?? false);
   syncHeaderTFButtons(isMain?config.displayTimeframe:(panel?.displayTimeframe??5));
 }
 function syncCrosshairToAllPanels(sourceId,param){
@@ -1192,7 +1534,6 @@ function drawFrames(){
     offscreenCtx.lineWidth=config.gridLineWidth*1.5;offscreenCtx.strokeStyle=hexToRgba('#f0b90b',config.gridOpacity);offscreenCtx.beginPath();
     for(let p=startP;p<=endP;p+=config.gridSpacing){if(Math.round(p)%5000!==0)continue;const y=mainSeries.priceToCoordinate?.(p);if(y!==null&&y>=0&&y<=cbY){offscreenCtx.moveTo(0,y);offscreenCtx.lineTo(cssWidth-60,y);}}offscreenCtx.stroke();
   }
-  drawHeatmapLayer(cssWidth, cbY);
   drawTPO(cssWidth,cbY);drawVWAP(cssWidth,cbY);drawDailyLevels(cssWidth,cbY);
 
   // Candles
@@ -1266,17 +1607,29 @@ function drawFrames(){
     const bsActive=_getActiveMgr()?.getIndicator('barstats')?.visible;
     const liqCol='#ff9800'; // Bright Orange for all liquidations
     
+    // FIXED: Check if the Delta bubble is ACTUALLY present
+    const tfMultiplier=config.displayTimeframe/BASE_TIMEFRAME;
+    const hasDeltaBubble = !config.hideFootprints && config.minBubbleVolume > 0 && Math.abs(delta) >= config.minBubbleVolume * tfMultiplier;
+    
     // SHORT Liqs (forced buys) - Orange circles under the candle
     if(ld.buyUSD>=config.liqBubbleThreshold){const y=mainSeries.priceToCoordinate(candle.low);if(y!==null&&y>0&&y<cbY){
-      // Offset by +65 if text is under, otherwise default to +20
-      const by=(isDPos&&!bsActive)?y+65:y+20; 
+      // Offset by +70 exact match with delta bubble, +65 to clear text, otherwise +20
+      let by = y + 20;
+      if (isDPos) {
+          if (hasDeltaBubble) by = y + 70; 
+          else if (!bsActive) by = y + 65; 
+      }
       offscreenCtx.save();offscreenCtx.globalAlpha=pulseOp;offscreenCtx.beginPath();offscreenCtx.arc(x,by,oS,0,Math.PI*2);offscreenCtx.fillStyle=liqCol;offscreenCtx.fill();offscreenCtx.restore();offscreenCtx.beginPath();offscreenCtx.arc(x,by,iS,0,Math.PI*2);offscreenCtx.fillStyle=liqCol;offscreenCtx.fill();offscreenCtx.font=`600 ${config.liqLabelFontSize}px ${config.statsFontFamily}`;offscreenCtx.fillStyle=liqCol;offscreenCtx.textAlign='center';offscreenCtx.textBaseline='top';offscreenCtx.fillText(formatUSD(ld.buyUSD),x,by+oS+2);
     }}
     
     // LONG Liqs (forced sells) - Orange circles above the candle
     if(ld.sellUSD>=config.liqBubbleThreshold){const y=mainSeries.priceToCoordinate(candle.high);if(y!==null&&y>0&&y<cbY){
-      // Offset by -70 if text is above, otherwise default to -20
-      const by=(!isDPos&&!bsActive)?y-70:y-20; 
+      // Offset by -75 exact match with delta bubble, -70 to clear text, otherwise -20
+      let by = y - 20;
+      if (!isDPos) {
+          if (hasDeltaBubble) by = y - 75;
+          else if (!bsActive) by = y - 70;
+      }
       offscreenCtx.save();offscreenCtx.globalAlpha=pulseOp;offscreenCtx.beginPath();offscreenCtx.arc(x,by,oS,0,Math.PI*2);offscreenCtx.fillStyle=liqCol;offscreenCtx.fill();offscreenCtx.restore();offscreenCtx.beginPath();offscreenCtx.arc(x,by,iS,0,Math.PI*2);offscreenCtx.fillStyle=liqCol;offscreenCtx.fill();offscreenCtx.font=`600 ${config.liqLabelFontSize}px ${config.statsFontFamily}`;offscreenCtx.fillStyle=liqCol;offscreenCtx.textAlign='center';offscreenCtx.textBaseline='bottom';offscreenCtx.fillText(formatUSD(ld.sellUSD),x,by-oS-2);
     }}
   });
@@ -1411,10 +1764,33 @@ async function fetchOpenInterest(){
   try{const r=await fetch(`https://api.bybit.com/v5/market/open-interest?category=inverse&symbol=BTCUSD&intervalTime=${getOIIntervalString(BASE_TIMEFRAME)}&limit=200`);const d=await r.json();if(d.result?.list){const oiMap={},bs=getBarSeconds(BASE_TIMEFRAME);d.result.list.forEach(item=>{const ts=parseInt(item.timestamp)/1000;oiMap[Math.floor(ts/bs)*bs]=parseFloat(item.openInterest);});let prevOI=0;const fts=Object.keys(oiMap).sort()[0];if(fts)prevOI=oiMap[fts]/(base5mCandles.find(c=>c.time>=fts)?.close||1);base5mCandles.forEach(c=>{const raw=oiMap[c.time];if(raw){const oi=raw/c.close;if(!prevOI)prevOI=oi;c.oiOpen=prevOI;c.oiClose=oi;c.oiHigh=Math.max(prevOI,oi);c.oiLow=Math.min(prevOI,oi);prevOI=oi;}else{c.oiOpen=prevOI;c.oiClose=prevOI;c.oiHigh=prevOI;c.oiLow=prevOI;}});displayCandles=base5mCandles.slice();if(prevOI>0)document.getElementById('oi-display').innerText=prevOI.toFixed(2);}}catch(e){console.error('OI Fetch Error',e);}
 }
 function startWebSockets(){
-  const wsInt=getWSInterval(BASE_TIMEFRAME);ws=new WebSocket('wss://stream.bybit.com/v5/public/inverse');
-  ws.onopen=()=>ws.send(JSON.stringify({op:'subscribe',args:[`kline.${wsInt}.BTCUSD`,'publicTrade.BTCUSD','tickers.BTCUSD']}));
-  ws.onclose=()=>{console.warn('WS disconnected, reconnecting...');setTimeout(startWebSockets,3000);};
-  ws.onerror=e=>{console.error('WS error',e);ws.close();};
+  const wsInt=getWSInterval(BASE_TIMEFRAME);
+  ws=new WebSocket('wss://stream.bybit.com/v5/public/inverse');
+  
+  let pingInterval; // <-- Timer variable for the heartbeat
+
+  ws.onopen=()=>{
+    ws.send(JSON.stringify({op:'subscribe',args:[`kline.${wsInt}.BTCUSD`,'publicTrade.BTCUSD','tickers.BTCUSD']}));
+    
+    // <-- Send a heartbeat ping every 20 seconds
+    pingInterval = setInterval(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ op: 'ping' }));
+      }
+    }, 20000);
+  };
+  
+  ws.onclose=()=>{
+    console.warn('WS disconnected, reconnecting...');
+    clearInterval(pingInterval); // <-- Clear the timer so it doesn't leak memory
+    setTimeout(startWebSockets,3000);
+  };
+  
+  ws.onerror=e=>{
+    console.error('WS error',e);
+    ws.close();
+  };
+  
   ws.onmessage=event=>{
     let msg;try{msg=JSON.parse(event.data);}catch(e){return;}if(!msg.data)return;
     try{
@@ -1475,9 +1851,10 @@ async function startBinanceWebSocket() {
     if (data.asks) data.asks.forEach(([p, q]) => obState.asks.set(parseFloat(p), parseFloat(q)));
   } catch(e) { console.warn('Failed to fetch Binance OB snapshot', e); }
 
-  const ws = new WebSocket('wss://fstream.binance.com/stream?streams=btcusdt@forceOrder/btcusdt@depth@100ms/btcusdt@aggTrade');
+  // REMOVED 'btcusdt@forceOrder' from this URL
+  const ws = new WebSocket('wss://fstream.binance.com/stream?streams=btcusdt@depth@100ms/btcusdt@aggTrade');
   
-  ws.onopen = () => console.log('[Binance] Connected to Liqs & Orderbook');
+  ws.onopen = () => console.log('[Binance] Connected to Heatmap & Trades');
   ws.onclose = () => { console.warn('[Binance] disconnected'); setTimeout(startBinanceWebSocket, 5000); };
   ws.onerror = (e) => { console.error('[Binance] error', e); ws.close(); };
   
@@ -1486,21 +1863,7 @@ async function startBinanceWebSocket() {
       const msg = JSON.parse(event.data);
       if (!msg.stream) return;
 
-      if (msg.stream === 'btcusdt@forceOrder') {
-        const o = msg.data.o;
-        const qty = parseFloat(o.q);
-        const avgPx = parseFloat(o.ap || o.p);
-        if (!qty || !avgPx || isNaN(qty) || isNaN(avgPx)) return;
-        const sizeUSD = qty * avgPx;
-        if (sizeUSD < config.liqBubbleThreshold) return;
-        const tk = String(lastBarTime);
-        if (!liqData[tk]) liqData[tk] = { buyUSD: 0, sellUSD: 0 };
-        if (o.S === 'SELL') liqData[tk].sellUSD += sizeUSD;
-        else liqData[tk].buyUSD += sizeUSD;
-        scheduleDraw();
-      }
-
-// --- BINANCE ACTUAL TRADES (Dynamic Heatmap Fills) ---
+      // --- BINANCE ACTUAL TRADES (Dynamic Heatmap Fills) ---
       if (msg.stream === 'btcusdt@aggTrade') {
         const price = parseFloat(msg.data.p);
         const qty = parseFloat(msg.data.q);
@@ -1514,7 +1877,6 @@ async function startBinanceWebSocket() {
         let restingQty = 0;
         const map = isBidHit ? obState.bids : obState.asks;
         for (const [p, q] of map) {
-          // If the orderbook price falls inside this block's price range
           if (p >= bucket && p < bucket + config.heatmapTickSize) {
             restingQty += q;
           }
@@ -1522,16 +1884,14 @@ async function startBinanceWebSocket() {
         const blockUsd = restingQty * bucket;
 
         // 3. The "Convincing" Logic
-        // A) The resting block is a visible wall (>= heatmapMinVol) AND the trade eats at least X% of it.
-        // B) OR the trade is objectively massive on its own (failsafe in case depth stream cleared it 1ms prior).
         const fillPercent = config.pulseFillPercent || 0.50;
         const isConvincingHit = (blockUsd >= config.heatmapMinVol) && (valUsd >= blockUsd * fillPercent);
 
         if (isConvincingHit || valUsd >= config.heatmapMinVol) {
-      const fillType = isBidHit ? 'bid' : 'ask';
-      activeFills.push({ price, timestamp: Date.now(), type: fillType });
-      playDingSound(fillType, valUsd);
-      scheduleDraw();
+          const fillType = isBidHit ? 'bid' : 'ask';
+          activeFills.push({ price, timestamp: Date.now(), type: fillType });
+          playDingSound(fillType, valUsd);
+          scheduleDraw();
         }
       }
 
@@ -1559,6 +1919,73 @@ async function startBinanceWebSocket() {
     } catch(e) { console.warn('[Binance] parse error', e); }
   };
 }
+function startBybitLiqWebSocket() {
+  const ws = new WebSocket('wss://stream.bybit.com/v5/public/linear');
+  let pingInterval;
+  
+  ws.onopen = () => {
+    console.log('[Bybit Linear] Connected to Liquidations');
+    ws.send(JSON.stringify({ 
+      op: 'subscribe', 
+      args: ['allLiquidation.BTCUSDT'] 
+    }));
+    
+    // Heartbeat ping to keep Bybit happy
+    pingInterval = setInterval(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ op: 'ping' })); 
+      }
+    }, 20000);
+  };
+  
+  ws.onclose = () => { 
+    console.warn('[Bybit Linear] Liq disconnected. Reconnecting...'); 
+    clearInterval(pingInterval);
+    setTimeout(startBybitLiqWebSocket, 5000); 
+  };
+  
+  ws.onerror = (e) => { 
+    console.error('[Bybit Linear] error', e); 
+    ws.close(); 
+  };
+  
+  ws.onmessage = event => {
+    try {
+      const msg = JSON.parse(event.data);
+      
+      if (!msg.topic) return;
+
+      if (msg.topic.startsWith('allLiquidation')) {
+        const liqs = Array.isArray(msg.data) ? msg.data : [msg.data];
+        
+        liqs.forEach(liq => {
+          if (!liq) return;
+          
+          const price = parseFloat(liq.p);
+          const qty = parseFloat(liq.v); // Natively in BTC
+          
+          if (!qty || !price || isNaN(qty) || isNaN(price)) return;
+          
+          const sizeUSD = qty * price; 
+          
+          console.log(`💧 Bybit Liq Event: ${qty} BTC ($${sizeUSD.toFixed(0)}) at ${price}`);
+          
+          if (sizeUSD < config.liqBubbleThreshold) return;
+          
+          const tk = String(lastBarTime);
+          if (!liqData[tk]) liqData[tk] = { buyUSD: 0, sellUSD: 0 };
+          
+          const side = (liq.S || '').toLowerCase(); 
+          if (side === 'sell') liqData[tk].sellUSD += sizeUSD; 
+          else if (side === 'buy') liqData[tk].buyUSD += sizeUSD; 
+        });
+        
+        scheduleDraw();
+      }
+      
+    } catch(e) { console.warn('[Bybit Linear] parse error', e); }
+  };
+}
 document.getElementById('add-chart-btn').addEventListener('click',()=>{
   if(!myLayout)return;const title=`BTCUSD ${extraPanelCounter+1}`;
   try{if(typeof myLayout.newComponent==='function'){myLayout.newComponent('chartComponent',{isMain:false},title);return;}
@@ -1578,7 +2005,7 @@ async function init(){
       const r=await fetch(`https://api.bybit.com/v5/market/kline?category=inverse&symbol=BTCUSD&interval=${getIntervalString(BASE_TIMEFRAME)}&limit=1000`);
       const data=await r.json();
       if(data.result?.list){base5mCandles=data.result.list.map(d=>({time:parseInt(d[0])/1000,open:parseFloat(d[1]),high:parseFloat(d[2]),low:parseFloat(d[3]),close:parseFloat(d[4]),volume:parseFloat(d[5]),oiOpen:0,oiHigh:0,oiLow:0,oiClose:0})).sort((a,b)=>a.time-b.time);displayCandles=base5mCandles.slice();displayClusters=aggregateClusters(base5mClusters,config.displayTimeframe);mainSeries.setData(displayCandles);lastBarTime=base5mCandles[base5mCandles.length-1].time;currentPrice=base5mCandles[base5mCandles.length-1].close;tpoCacheKey='';await fetchOpenInterest();chart.timeScale().fitContent();updateCandleAppearance();}
-      startWebSockets();startBinanceWebSocket();setInterval(()=>{needsRedraw=true;scheduleDraw();},config.drawDelay);
+      startWebSockets();startBinanceWebSocket();startBybitLiqWebSocket();setInterval(()=>{needsRedraw=true;scheduleDraw();},config.drawDelay);
     }catch(e){console.error(e);}
   },50);
 }
