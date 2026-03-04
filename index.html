@@ -1252,13 +1252,33 @@ function drawFrames(){
     });
   }
 
-  // Liq bubbles
+// Liq bubbles (Circles with dynamic V/D offset, Orange color)
   displayCandles.forEach(candle=>{
     const x=ts.timeToCoordinate(candle.time);if(x===null||x<-20||x>cssWidth+20)return;
     const barKey=String(Math.floor(candle.time)),ld=liqData[barKey];if(!ld)return;
     const phase=(Date.now()%config.liqBubblePulseSpeed)/config.liqBubblePulseSpeed,pulseOp=0.3+Math.sin(phase*Math.PI*2)*0.3;
-    if(ld.sellUSD>=config.liqBubbleThreshold){const y=mainSeries.priceToCoordinate(candle.low);if(y!==null&&y>0&&y<cbY){const by=y+20;offscreenCtx.save();offscreenCtx.globalAlpha=pulseOp;offscreenCtx.beginPath();offscreenCtx.arc(x,by,config.liqBubbleOuterSize,0,Math.PI*2);offscreenCtx.fillStyle=config.downColor;offscreenCtx.fill();offscreenCtx.restore();offscreenCtx.beginPath();offscreenCtx.arc(x,by,config.liqBubbleInnerSize,0,Math.PI*2);offscreenCtx.fillStyle=config.downColor;offscreenCtx.fill();offscreenCtx.font=`600 ${config.liqLabelFontSize}px ${config.statsFontFamily}`;offscreenCtx.fillStyle=config.downColor;offscreenCtx.textAlign='center';offscreenCtx.textBaseline='top';offscreenCtx.fillText(formatUSD(ld.sellUSD),x,by+config.liqBubbleOuterSize+2);}}
-    if(ld.buyUSD>=config.liqBubbleThreshold){const y=mainSeries.priceToCoordinate(candle.high);if(y!==null&&y>0&&y<cbY){const by=y-20;offscreenCtx.save();offscreenCtx.globalAlpha=pulseOp;offscreenCtx.beginPath();offscreenCtx.arc(x,by,config.liqBubbleOuterSize,0,Math.PI*2);offscreenCtx.fillStyle=config.upColor;offscreenCtx.fill();offscreenCtx.restore();offscreenCtx.beginPath();offscreenCtx.arc(x,by,config.liqBubbleInnerSize,0,Math.PI*2);offscreenCtx.fillStyle=config.upColor;offscreenCtx.fill();offscreenCtx.font=`600 ${config.liqLabelFontSize}px ${config.statsFontFamily}`;offscreenCtx.fillStyle=config.upColor;offscreenCtx.textAlign='center';offscreenCtx.textBaseline='bottom';offscreenCtx.fillText(formatUSD(ld.buyUSD),x,by-config.liqBubbleOuterSize-2);}}
+    const oS=config.liqBubbleOuterSize,iS=config.liqBubbleInnerSize;
+    
+    // Calculate Delta to know where the V/D text is
+    const b=displayClusters[barKey];let tB=0,tS=0;
+    if(b)Object.values(b).forEach(d=>{tB+=d.buy;tS+=d.sell;});
+    const delta=tB-tS,isDPos=delta>=0;
+    const bsActive=_getActiveMgr()?.getIndicator('barstats')?.visible;
+    const liqCol='#ff9800'; // Bright Orange for all liquidations
+    
+    // SHORT Liqs (forced buys) - Orange circles under the candle
+    if(ld.buyUSD>=config.liqBubbleThreshold){const y=mainSeries.priceToCoordinate(candle.low);if(y!==null&&y>0&&y<cbY){
+      // Offset by +65 if text is under, otherwise default to +20
+      const by=(isDPos&&!bsActive)?y+65:y+20; 
+      offscreenCtx.save();offscreenCtx.globalAlpha=pulseOp;offscreenCtx.beginPath();offscreenCtx.arc(x,by,oS,0,Math.PI*2);offscreenCtx.fillStyle=liqCol;offscreenCtx.fill();offscreenCtx.restore();offscreenCtx.beginPath();offscreenCtx.arc(x,by,iS,0,Math.PI*2);offscreenCtx.fillStyle=liqCol;offscreenCtx.fill();offscreenCtx.font=`600 ${config.liqLabelFontSize}px ${config.statsFontFamily}`;offscreenCtx.fillStyle=liqCol;offscreenCtx.textAlign='center';offscreenCtx.textBaseline='top';offscreenCtx.fillText(formatUSD(ld.buyUSD),x,by+oS+2);
+    }}
+    
+    // LONG Liqs (forced sells) - Orange circles above the candle
+    if(ld.sellUSD>=config.liqBubbleThreshold){const y=mainSeries.priceToCoordinate(candle.high);if(y!==null&&y>0&&y<cbY){
+      // Offset by -70 if text is above, otherwise default to -20
+      const by=(!isDPos&&!bsActive)?y-70:y-20; 
+      offscreenCtx.save();offscreenCtx.globalAlpha=pulseOp;offscreenCtx.beginPath();offscreenCtx.arc(x,by,oS,0,Math.PI*2);offscreenCtx.fillStyle=liqCol;offscreenCtx.fill();offscreenCtx.restore();offscreenCtx.beginPath();offscreenCtx.arc(x,by,iS,0,Math.PI*2);offscreenCtx.fillStyle=liqCol;offscreenCtx.fill();offscreenCtx.font=`600 ${config.liqLabelFontSize}px ${config.statsFontFamily}`;offscreenCtx.fillStyle=liqCol;offscreenCtx.textAlign='center';offscreenCtx.textBaseline='bottom';offscreenCtx.fillText(formatUSD(ld.sellUSD),x,by-oS-2);
+    }}
   });
 
   // Absorption + bar stats
@@ -1301,31 +1321,23 @@ function drawFrames(){
   updateCustomPriceLabel();updatePaneRight();
   ctxOverlay.clearRect(0,0,chartOverlayCanvas.width,chartOverlayCanvas.height);ctxOverlay.drawImage(offscreenCanvas,0,0);
 }
-
-// Utilities
-let _audioCtx = null;
-function _getAudioCtx() {
-  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (_audioCtx.state === 'suspended') _audioCtx.resume();
+let _audioCtx=null, S=window.speechSynthesis;
+if(S&&S.onvoiceschanged!==undefined) S.onvoiceschanged=()=>S.getVoices();
+function _getAudioCtx(){
+  if(!_audioCtx)_audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  if(_audioCtx.state==='suspended')_audioCtx.resume();
   return _audioCtx;
 }
-function playDingSound(type, amountUsd) {
-  if (!config.playPulseAudio) return;
-  try {
-    const side = type === 'bid' ? 'sell filled' : 'buy filled';
-    const amt = amountUsd >= 1e6
-      ? (amountUsd / 1e6).toFixed(2) + ' million'
-      : amountUsd >= 1e3
-      ? Math.round(amountUsd / 1e3) + ' K'
-      : Math.round(amountUsd).toString();
-    const phrase = `${side}, ${amt}`;
-    const utterance = new SpeechSynthesisUtterance(phrase);
-    utterance.rate = 1.3;
-    utterance.pitch = type === 'bid' ? 0.8 : 1.2;
-    utterance.volume = 0.9;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
-  } catch(e) { console.warn('TTS error:', e); }
+function playDingSound(t,a){
+  if(!config.playPulseAudio)return;
+  try{
+    let v=S.getVoices(),
+        f=v.find(x=>x.lang.startsWith('en')&&/Female|Samantha|Victoria|Zira|Hazel/.test(x.name))||v.find(x=>x.lang.startsWith('en')),
+        u=new SpeechSynthesisUtterance(`${t==='bid'?'buy':'sell'} filled, ${a>=1e6?(a/1e6).toFixed(1)+' million':a>=1e3?(a/1e3).toFixed(0)+' K':Math.round(a)}`);
+    if(f) u.voice=f;
+    u.rate=1.3; u.pitch=t==='bid'?0.9:1.1; u.volume=0.9;
+    S.speak(u);
+  }catch(e){console.warn('TTS error:',e)}
 }
 function formatTime(s){if(s>=3600){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return`${h}:${m.toString().padStart(2,'0')}`;}const m=Math.floor(s/60),sec=s%60;return`${m}:${sec.toString().padStart(2,'0')}`;}
 function getIntervalString(tf){return{1:'1',3:'3',5:'5',15:'15',30:'30',60:'60',240:'240',D:'D'}[tf]||'5';}
@@ -1338,7 +1350,6 @@ async function changeTimeframe(newTF){
   else{const p=extraPanels.find(p=>p.id===selectedPanelId);if(!p)return;p.displayTimeframe=newTF;p.displayCandles=aggregateCandles(base5mCandles,newTF);p.displayClusters=aggregateClusters(base5mClusters,newTF);p.mainSeries.setData(p.displayCandles);p.tpoCacheKey='';syncHeaderTFButtons(newTF);if(p.tfBadgeEl)p.tfBadgeEl.textContent=tfLabel(newTF);setTimeout(()=>{p.chart.timeScale().fitContent();schedulePanelDraw(p);},80);}
 }
 document.querySelectorAll('.tf-btn').forEach(btn=>{btn.addEventListener('click',()=>{const tf=btn.getAttribute('data-tf');changeTimeframe(tf==='D'?1440:parseInt(tf));});});
-
 // Settings panel controls
 const ctxMenuMain=document.getElementById('ctx-menu-main'),settingsPanel=document.getElementById('settings-panel');
 document.addEventListener('click',e=>{if(!e.target.closest('.context-menu')&&!e.target.closest('#settings-panel')&&!e.target.closest('#header-settings-btn'))ctxMenuMain.classList.add('hidden');});
